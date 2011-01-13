@@ -29,10 +29,10 @@ G_BEGIN_DECLS
 
 #define OS_TYPE_OVERLAY_SCROLLBAR            (overlay_scrollbar_get_type ())
 #define OVERLAY_SCROLLBAR(obj)               (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbar))
-#define OVERLAY_SCROLLBAR_CLASS(klass)       (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarClass))
+#define OVERLAY_SCROLLBAR_CLASS(klass)       (G_TYPE_CHECK_CLASS_CAST ((klass),  OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarClass))
 #define OS_IS_OVERLAY_SCROLLBAR(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_OVERLAY_SCROLLBAR))
-#define OS_IS_OVERLAY_SCROLLBAR_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_OVERLAY_SCROLLBAR))
-#define OVERLAY_SCROLLBAR_GET_CLASS(obj)     (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarClass))
+#define OS_IS_OVERLAY_SCROLLBAR_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  OS_TYPE_OVERLAY_SCROLLBAR))
+#define OVERLAY_SCROLLBAR_GET_CLASS(obj)     (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarClass))
 
 typedef struct _OverlayScrollbar      OverlayScrollbar;
 typedef struct _OverlayScrollbarClass OverlayScrollbarClass;

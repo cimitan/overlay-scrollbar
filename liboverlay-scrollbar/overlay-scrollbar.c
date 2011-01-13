@@ -30,8 +30,6 @@ static void
 overlary_scrollbar_class_init (OverlayScrollbarClass *class)
 {
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (class);
-
-
 }
 
 static void
@@ -49,5 +47,5 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 GtkWidget*
 overlay_scrollbar_new (void)
 {
-  return g_object_new (GTK_TYPE_DIALOG, NULL);
+  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR, NULL);
 }
