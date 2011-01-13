@@ -1,5 +1,5 @@
 SUBDIRS = \
-	liboverlay-scrollbars
+	liboverlay-scrollbar
 
 distclean-local:
 	rm -rf *.cache *~
