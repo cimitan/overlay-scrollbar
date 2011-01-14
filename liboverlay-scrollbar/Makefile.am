@@ -15,7 +15,9 @@ liboverlay_scrollbarinclude_HEADERS = \
 
 liboverlay_scrollbar_la_SOURCES = \
 	$(liboverlay_scrollbar_headers) \
-	overlay-scrollbar.c
+	overlay-scrollbar.c \
+	overlay-scrollbar-cairo-support.h \
+	overlay-scrollbar-cairo-support.c
 
 liboverlay_scrollbar_la_CFLAGS = \
 	$(GTK_CFLAGS) \

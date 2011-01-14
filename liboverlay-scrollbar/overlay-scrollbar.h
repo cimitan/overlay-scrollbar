@@ -20,10 +20,10 @@
  *
  */
 
-#include <gtk/gtk.h>
-
 #ifndef __OVERLAY_SCROLLBAR_H__
 #define __OVERLAY_SCROLLBAR_H__
+
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -39,6 +39,7 @@ typedef struct _OverlayScrollbarClass OverlayScrollbarClass;
 
 struct _OverlayScrollbar
 {
+  GtkWindow parent_object;
 };
 
 struct _OverlayScrollbarClass
@@ -47,7 +48,8 @@ struct _OverlayScrollbarClass
 };
 
 
-GType overlay_scrollbar_get_type (void) G_GNUC_CONST;
+GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
+GtkWidget* overlay_scrollbar_new (void);
 
 void os_create_overlay_scrollbar (GtkWidget *widget,
                                   gint x,
