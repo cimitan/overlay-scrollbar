@@ -20,21 +20,82 @@
  *
  */
 
+/* 
+ * This test only creates an overlay scrollbar, subclass of GtkWindow,
+ * to test g_object creation.
+ */
+
 #include <gtk/gtk.h>
 
 #include <overlay-scrollbar.h>
 
+static void window_destroy_cb (GtkWidget *widget,
+                               gpointer user_data);
+
+/**
+ * window_destroy_cb:
+ * destroy callback for window
+ **/
+static void
+window_destroy_cb (GtkWidget *widget,
+                   gpointer user_data)
+{
+  gtk_main_quit ();
+}
+
+/**
+ * main:
+ * main routine
+ **/
 int
 main (int argc,
       char *argv[])
 {
-  GtkWidget *overlay;
+  GtkWidget *scrolled_window, *scrolled_window_text;
+  GtkWidget *vbox;
+  GtkWidget *text_view;
+  GtkWidget *window;
+  GtkWidget *vscrollbar;
+  GtkWidget *overlay_scrollbar;
 
   gtk_init (&argc, &argv);
 
-  overlay = overlay_scrollbar_new ();
+  /* window */
+  window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_default_size (GTK_WINDOW (window), 200, 400);
+  gtk_window_set_title (GTK_WINDOW (window), "GtkScrolledWindow \"draw\" test");
 
-  gtk_widget_show_all (overlay);
+  /* vbox */
+  vbox = gtk_vbox_new (TRUE, 10);
+
+  /* scrolled_window */
+  scrolled_window = gtk_scrolled_window_new (NULL, NULL);
+  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_window), GTK_SHADOW_IN);
+
+  /* overlar_scrollbar */
+  vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window));
+  overlay_scrollbar = overlay_scrollbar_new (GTK_RANGE (vscrollbar));
+
+  /* scrolled_window_text */
+  scrolled_window_text = gtk_scrolled_window_new (NULL, NULL);
+
+  /* text_view */
+  text_view = gtk_text_view_new ();
+  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text), text_view);
+
+  /* containers */
+  gtk_container_set_border_width (GTK_CONTAINER (window), 10);
+  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window);
+  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text);
+  gtk_container_add (GTK_CONTAINER (window), vbox);
+
+  /* signals */
+  g_signal_connect (G_OBJECT (window), "destroy",
+                    G_CALLBACK (window_destroy_cb), NULL);
+
+  gtk_widget_show_all (window);
+
+  gtk_widget_show (overlay_scrollbar);
 
   gtk_main ();
 

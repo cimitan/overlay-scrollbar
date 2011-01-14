@@ -21,24 +21,69 @@
  */
 
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#include <X11/X.h>
+#include <X11/Xlib.h>
 
 #include "overlay-scrollbar.h"
+#include "overlay-scrollbar-cairo-support.h"
+
+enum {
+  PROP_0,
+
+  PROP_SLIDER,
+
+  LAST_ARG
+};
 
 G_DEFINE_TYPE (OverlayScrollbar, overlay_scrollbar, GTK_TYPE_WINDOW);
 
+#define OVERLAY_SCROLLBAR_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarPrivate))
+
+typedef struct _OverlayScrollbarPrivate OverlayScrollbarPrivate;
+
+struct _OverlayScrollbarPrivate
+{
+  GtkWidget *slider;
+};
+
 static gboolean overlay_scrollbar_expose (GtkWidget *widget,
                                           GdkEventExpose *event);
-static void overlay_scrollbar_map (GtkWidget *widget);
+/*static void overlay_scrollbar_map (GtkWidget *widget);*/
+static void overlay_scrollbar_set_property (GObject *object,
+                                            guint prop_id,
+                                            const GValue *value,
+                                            GParamSpec *pspec);
+static void slider_size_allocate_cb (GtkWidget *widget,
+
+                         GtkAllocation *allocation,
+                                     gpointer user_data);
 
 static void
 overlay_scrollbar_class_init (OverlayScrollbarClass *class)
 {
+  GObjectClass *gobject_class;
   GtkWidgetClass *widget_class;
 
+  gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
 
   widget_class->expose_event = overlay_scrollbar_expose;
-  widget_class->map          = overlay_scrollbar_map;
+/*  widget_class->map          = overlay_scrollbar_map;*/
+  gobject_class->set_property = overlay_scrollbar_set_property;
+
+  g_type_class_add_private (gobject_class, sizeof (OverlayScrollbarPrivate));
+
+  g_object_class_install_property (gobject_class,
+                                   PROP_SLIDER,
+                                   g_param_spec_object ("slider",
+                                                        "Scrollbar Slider",
+                                                        "The slider of the attached scrollbar",
+                                                        GTK_TYPE_RANGE,
+                                                        G_PARAM_READWRITE|
+                                                        G_PARAM_STATIC_NAME|
+                                                        G_PARAM_STATIC_NICK|
+                                                        G_PARAM_STATIC_BLURB));
 }
 
 static gboolean
@@ -77,7 +122,7 @@ overlay_scrollbar_expose (GtkWidget *widget,
   cairo_set_line_width (cr, 1);
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
-  os_draw_rounded_rectangle (cr, x, y, width, height, 6);
+  os_cairo_draw_rounded_rect (cr, x, y, width, height, 6);
   pat = cairo_pattern_create_linear (x, y, width+x, y);
   cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.95, 0.95, 0.95, 1.0);
   cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 1.0);
@@ -85,7 +130,7 @@ overlay_scrollbar_expose (GtkWidget *widget,
   cairo_pattern_destroy (pat);
   cairo_fill (cr);
 
-  os_draw_rounded_rectangle (cr, x, y, width, height, 6);
+  os_cairo_draw_rounded_rect (cr, x, y, width, height, 6);
   pat = cairo_pattern_create_linear (x, y, x, height+y);
 /*  if ((handler_data != NULL && pointer_data != NULL) &&*/
 /*      (handler->button_press_event && !handler->motion_notify_event))*/
@@ -121,7 +166,7 @@ overlay_scrollbar_expose (GtkWidget *widget,
   cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0);
   cairo_stroke (cr);
 
-  os_draw_rounded_rectangle (cr, x+1, y+1, width-2, height-2, 7);
+  os_cairo_draw_rounded_rect (cr, x+1, y+1, width-2, height-2, 7);
   cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
   cairo_stroke (cr);
 
@@ -171,13 +216,59 @@ overlay_scrollbar_expose (GtkWidget *widget,
 static void
 overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 {
+  OverlayScrollbarPrivate *priv;
+/*  gint x_pos, y_pos;*/
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+/*  gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);*/
+
+  /* callbacks */
+  g_signal_connect (G_OBJECT (priv->slider), "size-allocate",
+                    G_CALLBACK (slider_size_allocate_cb), scrollbar);
+
+  /* create thumb window */
+  g_object_set (G_OBJECT (scrollbar), "type", GTK_WINDOW_POPUP, NULL);
+
+  /* initialize thumb window properties */
+  gtk_widget_set_app_paintable(GTK_WIDGET (scrollbar), TRUE);
+/*  gtk_window_set_default_size (GTK_WINDOW (*window), rec->width, 100);*/
+  gtk_window_set_skip_pager_hint (GTK_WINDOW (scrollbar), TRUE);
+  gtk_window_set_skip_taskbar_hint (GTK_WINDOW (scrollbar), TRUE);
+  gtk_window_set_has_resize_grip (GTK_WINDOW (scrollbar), FALSE);
+  gtk_window_set_decorated (GTK_WINDOW (scrollbar), FALSE);
+  gtk_window_set_focus_on_map (GTK_WINDOW (scrollbar), FALSE);
+  gtk_window_set_accept_focus (GTK_WINDOW (scrollbar), FALSE);
+
+  /* move the window next to the slider */
+/*  gtk_window_move (GTK_WINDOW (*window), x_pos+x_all, y_pos+y_all);*/
 }
 
-static void
-overlay_scrollbar_map (GtkWidget *widget)
-{
-  GTK_WIDGET_CLASS (overlay_scrollbar_parent_class)->map (widget);
-}
+/*static void*/
+/*overlay_scrollbar_map (GtkWidget *widget)*/
+/*{*/
+/*  Display *display;*/
+/*  GtkWidget *parent;*/
+/*  XWindowChanges changes;*/
+/*  guint32 xid, xid_parent;*/
+/*  int res;*/
+
+/*  parent = data;*/
+
+/*  xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));*/
+/*  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (parent));*/
+/*  display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (widget));*/
+
+/*  changes.sibling = xid_parent;*/
+/*  changes.stack_mode = Above;*/
+
+/*  gdk_error_trap_push ();*/
+/*  XConfigureWindow (display, xid,  CWSibling | CWStackMode, &changes);*/
+
+/*  gdk_flush ();*/
+/*  if (res = gdk_error_trap_pop ())*/
+/*    g_warning ("Received X error: %d\n", res);*/
+/*}*/
 
 /**
  * overlay_scrollbar_new:
@@ -187,8 +278,61 @@ overlay_scrollbar_map (GtkWidget *widget)
  * Returns: the new overlay scrollbar as a #GtkWidget
  */
 GtkWidget*
-overlay_scrollbar_new (void)
+overlay_scrollbar_new (GtkRange *slider)
 {
-  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR, NULL);
+  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR, "slider", slider, NULL);
 }
 
+static void
+overlay_scrollbar_set_property (GObject *object,
+                                guint prop_id,
+                                const GValue *value,
+                                GParamSpec *pspec)
+{
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
+  scrollbar = OVERLAY_SCROLLBAR (object);
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  switch (prop_id)
+    {
+      case PROP_SLIDER:
+        priv->slider = g_value_get_object (value);
+        break;
+    }
+}
+
+/**
+ * overlay_scrollbar_set_slider:
+ * @widget: an OverlayScrollbar widget
+ * @slider: a pointer to a GtkScrollbar slider
+ *
+ * Sets the GtkScrollbar slider to control trough the OverlayScrollbar.
+ *
+ */
+void
+overlay_scrollbar_set_slider (GtkWidget *widget,
+                              GtkWidget *slider)
+{
+  OverlayScrollbarPrivate *priv;
+
+  g_return_if_fail (OS_IS_OVERLAY_SCROLLBAR (widget) && GTK_RANGE (slider));
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (widget);
+
+  priv->slider = slider;
+}
+
+static void
+slider_size_allocate_cb (GtkWidget *widget,
+                         GtkAllocation *allocation,
+                         gpointer user_data)
+{
+  OverlayScrollbar *scrollbar;
+
+  scrollbar = OVERLAY_SCROLLBAR (user_data);
+
+  printf ("%i %i\n", allocation->x, allocation->y);
+}

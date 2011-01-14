@@ -23,26 +23,20 @@
 #include <glib.h>
 #include <cairo.h>
 
-void
-os_cairo_draw_rounded_rect (cairo_t *cr,
-                            gdouble x,
-                            gdouble y,
-                            gdouble width,
-                            gdouble height,
-                            gdouble radius)
-{
-  if (radius < 1)
-    {
-      cairo_rectangle (cr, x, y, width, height);
-      return;
-    }
+#ifndef __OVERLAY_SCROLLBAR_SUPPORT_H__
+#define __OVERLAY_SCROLLBAR_SUPPORT_H__
 
-  radius = MIN (radius, MIN (width/2.0, height/2.0));
+G_BEGIN_DECLS
 
-  cairo_move_to (cr, x+radius, y);
+G_GNUC_INTERNAL void os_present_gdk_window_with_timestamp (GtkWidget *widget,
+                                                           gint xid,
+                                                           guint32 timestamp);
 
-  cairo_arc (cr, x+width-radius, y+radius, radius, G_PI*1.5, G_PI*2);
-  cairo_arc (cr, x+width-radius, y+height-radius, radius, 0, G_PI*0.5);
-  cairo_arc (cr, x+radius, y+height-radius, radius, G_PI*0.5, G_PI);
-  cairo_arc (cr, x+radius, y+radius, radius, G_PI, G_PI*1.5);
-}
+G_GNUC_INTERNAL void os_present_window_with_timestamp (Display *default_display,
+                                                       Screen *screen,
+                                                       gint xid,
+                                                       guint32 timestamp);
+
+G_END_DECLS
+
+#endif /* __OVERLAY_SCROLLBAR_SUPPORT_H__ */
