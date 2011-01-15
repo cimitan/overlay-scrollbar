@@ -97,6 +97,8 @@ main (int argc,
 
   gtk_widget_show (overlay_scrollbar);
 
+  GtkWindowType window_type = gtk_window_get_window_type (GTK_WINDOW (overlay_scrollbar));
+
   gtk_main ();
 
   return 0;
