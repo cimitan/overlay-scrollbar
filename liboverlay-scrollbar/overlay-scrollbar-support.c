@@ -20,6 +20,7 @@
  *
  */
 
+#include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -28,11 +29,10 @@
 
 void
 os_present_gdk_window_with_timestamp (GtkWidget *widget,
-                                      gint xid,
                                       guint32 timestamp)
 {
   os_present_window_with_timestamp (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
-                                    GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget))
+                                    GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
                                     GDK_WINDOW_XID (gtk_widget_get_window (widget)),
                                     timestamp);
 }
@@ -74,5 +74,5 @@ os_present_window_with_timestamp (Display *default_display,
               SubstructureRedirectMask | SubstructureNotifyMask,
               &xev);
   XSync (default_display, False);
-  gdk_error_trap_pop_ignored ();
+  gdk_error_trap_pop ();
 }

@@ -20,8 +20,11 @@
  *
  */
 
-#include <glib.h>
+#include <gtk/gtk.h>
 #include <cairo.h>
+#include <gdk/gdkx.h>
+#include <X11/X.h>
+#include <X11/Xlib.h>
 
 #ifndef __OVERLAY_SCROLLBAR_SUPPORT_H__
 #define __OVERLAY_SCROLLBAR_SUPPORT_H__
@@ -29,7 +32,6 @@
 G_BEGIN_DECLS
 
 G_GNUC_INTERNAL void os_present_gdk_window_with_timestamp (GtkWidget *widget,
-                                                           gint xid,
                                                            guint32 timestamp);
 
 G_GNUC_INTERNAL void os_present_window_with_timestamp (Display *default_display,
