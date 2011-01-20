@@ -30,7 +30,7 @@
 #include <overlay-scrollbar.h>
 
 static void window_destroy_cb (GtkWidget *widget,
-                               gpointer user_data);
+                               gpointer   user_data);
 
 /**
  * window_destroy_cb:
@@ -38,7 +38,7 @@ static void window_destroy_cb (GtkWidget *widget,
  **/
 static void
 window_destroy_cb (GtkWidget *widget,
-                   gpointer user_data)
+                   gpointer   user_data)
 {
   gtk_main_quit ();
 }
@@ -48,7 +48,7 @@ window_destroy_cb (GtkWidget *widget,
  * main routine
  **/
 int
-main (int argc,
+main (int   argc,
       char *argv[])
 {
   GtkWidget *scrolled_window, *scrolled_window_text;

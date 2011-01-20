@@ -25,11 +25,11 @@
 
 void
 os_cairo_draw_rounded_rect (cairo_t *cr,
-                            gdouble x,
-                            gdouble y,
-                            gdouble width,
-                            gdouble height,
-                            gdouble radius)
+                            gdouble  x,
+                            gdouble  y,
+                            gdouble  width,
+                            gdouble  height,
+                            gdouble  radius)
 {
   if (radius < 1)
     {
@@ -37,12 +37,12 @@ os_cairo_draw_rounded_rect (cairo_t *cr,
       return;
     }
 
-  radius = MIN (radius, MIN (width/2.0, height/2.0));
+  radius = MIN (radius, MIN (width / 2.0, height / 2.0));
 
-  cairo_move_to (cr, x+radius, y);
+  cairo_move_to (cr, x + radius, y);
 
-  cairo_arc (cr, x+width-radius, y+radius, radius, G_PI*1.5, G_PI*2);
-  cairo_arc (cr, x+width-radius, y+height-radius, radius, 0, G_PI*0.5);
-  cairo_arc (cr, x+radius, y+height-radius, radius, G_PI*0.5, G_PI);
-  cairo_arc (cr, x+radius, y+radius, radius, G_PI, G_PI*1.5);
+  cairo_arc (cr, x + width - radius, y + radius, radius, G_PI * 1.5, G_PI * 2);
+  cairo_arc (cr, x + width - radius, y + height - radius, radius, 0, G_PI * 0.5);
+  cairo_arc (cr, x + radius, y + height - radius, radius, G_PI * 0.5, G_PI);
+  cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
 }

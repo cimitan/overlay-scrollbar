@@ -24,7 +24,7 @@ liboverlay_scrollbar_la_SOURCES = \
 liboverlay_scrollbar_la_CFLAGS = \
 	$(GTK_CFLAGS) \
 	-DG_LOG_DOMAIN=\"liboverlay-scrollbar\" \
-	-Wall -Werror
+	-Wall
 
 liboverlay_scrollbar_la_LDFLAGS = \
 	-version-info 1:0:0 \

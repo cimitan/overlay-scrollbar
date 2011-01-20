@@ -29,11 +29,11 @@
 G_BEGIN_DECLS
 
 G_GNUC_INTERNAL void os_cairo_draw_rounded_rect (cairo_t *cr,
-                                                 gdouble x,
-                                                 gdouble y,
-                                                 gdouble width,
-                                                 gdouble height,
-                                                 gdouble radius);
+                                                 gdouble  x,
+                                                 gdouble  y,
+                                                 gdouble  width,
+                                                 gdouble  height,
+                                                 gdouble  radius);
 
 G_END_DECLS
 

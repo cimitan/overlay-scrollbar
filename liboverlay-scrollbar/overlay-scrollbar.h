@@ -52,10 +52,10 @@ GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
 GtkWidget* overlay_scrollbar_new (GtkRange *widget);
 
 void os_create_overlay_scrollbar (GtkWidget *widget,
-                                  gint x,
-                                  gint y,
-                                  gint width,
-                                  gint height);
+                                  gint       x,
+                                  gint       y,
+                                  gint       width,
+                                  gint       height);
 
 void overlay_scrollbar_set_slider (GtkWidget *widget,
                                    GtkWidget *slider);
