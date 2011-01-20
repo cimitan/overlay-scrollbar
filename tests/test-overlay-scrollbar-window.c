@@ -72,16 +72,16 @@ main (int   argc,
   scrolled_window = gtk_scrolled_window_new (NULL, NULL);
   gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_window), GTK_SHADOW_IN);
 
-  /* overlar_scrollbar */
-  vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window));
-  overlay_scrollbar = overlay_scrollbar_new (GTK_RANGE (vscrollbar));
-
   /* scrolled_window_text */
   scrolled_window_text = gtk_scrolled_window_new (NULL, NULL);
 
   /* text_view */
   text_view = gtk_text_view_new ();
   gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text), text_view);
+
+  /* overlar_scrollbar */
+  vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text));
+  overlay_scrollbar = overlay_scrollbar_new (GTK_RANGE (vscrollbar));
 
   /* containers */
   gtk_container_set_border_width (GTK_CONTAINER (window), 10);
