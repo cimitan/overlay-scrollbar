@@ -809,7 +809,7 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
         priv->slider_end = priv->slider.y + priv->slider.height;
       }
     }
-  else /* priv->orientation == GTK_ORIENTATION_HORIZONTAL */
+  else
     {
       gint stepper_width, stepper_height;
 
@@ -956,6 +956,8 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
       }
     }
 
+  priv->range_rect = range_rect;
+
   /* XXX missing SENSIVITY code */
 }
 
@@ -1037,9 +1039,20 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 
   new_value = overlay_scrollbar_coord_to_value (scrollbar, c);
 
-/*  printf ("%f %i %i\n", new_value, mouse_y, priv->slide_initial_coordinate);*/
+  printf ("%f %i %i\n", new_value, priv->slider.height, priv->range_rect.height);
 
-  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+c);
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      if (c >= 0 &&
+          (c + priv->slider.height) <= priv->range_rect.height)
+        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+c);
+    }
+  else
+    {
+      if (c >= 0 &&
+          (c + priv->slider.width) <= priv->range_rect.width)
+        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x+c, priv->win_y);
+    }
 
   g_signal_emit_by_name (range, "change-value",
                          GTK_SCROLL_JUMP, new_value, &handled, NULL);
