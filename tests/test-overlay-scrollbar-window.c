@@ -51,48 +51,60 @@ int
 main (int   argc,
       char *argv[])
 {
-  GtkWidget *scrolled_window, *scrolled_window_text;
+  GtkWidget *scrolled_window_text0, *scrolled_window_text1;
   GtkWidget *vbox;
-  GtkWidget *text_view;
-  GtkTextBuffer *text_buffer;
+  GtkWidget *text_view0, *text_view1;
+  GtkTextBuffer *text_buffer0, *text_buffer1;
   GtkWidget *window;
-  GtkWidget *vscrollbar;
-  GtkWidget *overlay_scrollbar;
+  GtkWidget *vscrollbar0, *vscrollbar1;
+  GtkWidget *overlay_scrollbar0, *overlay_scrollbar1;
 
   gtk_init (&argc, &argv);
 
   /* window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_default_size (GTK_WINDOW (window), 200, 400);
+  gtk_window_set_default_size (GTK_WINDOW (window), 400, 600);
   gtk_window_set_title (GTK_WINDOW (window), "GtkScrolledWindow \"draw\" test");
 
   /* vbox */
   vbox = gtk_vbox_new (TRUE, 10);
 
-  /* scrolled_window */
-  scrolled_window = gtk_scrolled_window_new (NULL, NULL);
-  gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW (scrolled_window), GTK_SHADOW_IN);
-  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  /* scrolled_window_text0 */
+  scrolled_window_text0 = gtk_scrolled_window_new (NULL, NULL);
 
-  /* scrolled_window_text */
-  scrolled_window_text = gtk_scrolled_window_new (NULL, NULL);
+  /* text_view0 */
+  text_view0 = gtk_text_view_new ();
+  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text0), text_view0);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window_text0), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 
-  /* text_view */
-  text_view = gtk_text_view_new ();
-  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text), text_view);
-  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window_text), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  /* text_buffer0 */
+  text_buffer0 = gtk_text_view_get_buffer(GTK_TEXT_VIEW (text_view0));
+  gtk_text_buffer_set_text (text_buffer0, "Ubuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock", -1);
 
-  text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW (text_view));
-  gtk_text_buffer_set_text (text_buffer, "Ubuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock", -1);
+  /* overlar_scrollbar0 */
+  vscrollbar0 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text0));
+  overlay_scrollbar0 = overlay_scrollbar_new (GTK_RANGE (vscrollbar0));
 
-  /* overlar_scrollbar */
-  vscrollbar = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text));
-  overlay_scrollbar = overlay_scrollbar_new (GTK_RANGE (vscrollbar));
+  /* scrolled_window_text1 */
+  scrolled_window_text1 = gtk_scrolled_window_new (NULL, NULL);
+
+  /* text_view1 */
+  text_view1 = gtk_text_view_new ();
+  gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text1), text_view1);
+  gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window_text1), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+
+  /* text_buffer1 */
+  text_buffer1 = gtk_text_view_get_buffer(GTK_TEXT_VIEW (text_view1));
+  gtk_text_buffer_set_text (text_buffer1, "Ubuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock\nUbuntu is gonna rock", -1);
+
+  /* overlar_scrollbar0 */
+  vscrollbar1 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text1));
+  overlay_scrollbar1 = overlay_scrollbar_new (GTK_RANGE (vscrollbar1));
 
   /* containers */
   gtk_container_set_border_width (GTK_CONTAINER (window), 10);
-  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window);
-  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text);
+  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text0);
+  gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text1);
   gtk_container_add (GTK_CONTAINER (window), vbox);
 
   /* signals */
@@ -101,9 +113,8 @@ main (int   argc,
 
   gtk_widget_show_all (window);
 
-  gtk_widget_show (overlay_scrollbar);
-
-  GtkWindowType window_type = gtk_window_get_window_type (GTK_WINDOW (overlay_scrollbar));
+  gtk_widget_show (overlay_scrollbar0);
+  gtk_widget_show (overlay_scrollbar1);
 
   gtk_main ();
 

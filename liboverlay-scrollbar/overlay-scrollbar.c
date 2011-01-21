@@ -63,6 +63,7 @@ struct _OverlayScrollbarPrivate
   GdkRectangle trough;
   GdkRectangle slider;
 
+  GdkRectangle os_rect;
   GdkRectangle range_rect;
   GtkOrientation orientation;
   GtkWidget *range;
@@ -655,11 +656,11 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
    */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      os_clamp_dimensions (GTK_WIDGET (scrollbar), &range_rect, &border, TRUE);
+      os_clamp_dimensions (GTK_WIDGET (range), &range_rect, &border, TRUE);
     }
   else
     {
-      os_clamp_dimensions (GTK_WIDGET (scrollbar), &range_rect, &border, FALSE);
+      os_clamp_dimensions (GTK_WIDGET (range), &range_rect, &border, FALSE);
     }
 
   range_rect.x = border.left;
@@ -973,33 +974,23 @@ overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
   gint    trough_length;
   gint    trough_start;
   gint    slider_length;
-  gint    trough_border;
-  gint    trough_under_steppers;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
   range = GTK_RANGE (priv->range);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      trough_length = priv->trough.height;
-      trough_start  = priv->trough.y;
-      slider_length = priv->slider.height;
+      trough_length = priv->range_rect.height;
+      trough_start  = priv->range_rect.y;
+      slider_length = priv->os_rect.height;
     }
   else
     {
-      trough_length = priv->trough.width;
-      trough_start  = priv->trough.x;
-      slider_length = priv->slider.width;
+      trough_length = priv->range_rect.width;
+      trough_start  = priv->range_rect.y;
+      slider_length = priv->os_rect.width;
     }
 
-  os_gtk_range_get_props (range, NULL, NULL, NULL, &trough_border, NULL,
-                          &trough_under_steppers, NULL, NULL);
-
-  if (!trough_under_steppers)
-    {
-      trough_start += trough_border;
-      trough_length -= 2 * trough_border;
-    }
 
   if (trough_length == slider_length)
     frac = 1.0;
@@ -1039,18 +1030,16 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 
   new_value = overlay_scrollbar_coord_to_value (scrollbar, c);
 
-  printf ("%f %i %i\n", new_value, priv->slider.height, priv->range_rect.height);
-
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       if (c >= 0 &&
-          (c + priv->slider.height) <= priv->range_rect.height)
+          (c + priv->os_rect.height) <= priv->range_rect.height)
         gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+c);
     }
   else
     {
       if (c >= 0 &&
-          (c + priv->slider.width) <= priv->range_rect.width)
+          (c + priv->os_rect.width) <= priv->range_rect.width)
         gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x+c, priv->win_y);
     }
 
@@ -1089,7 +1078,10 @@ slider_expose_event_cb (GtkWidget      *widget,
   gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);
 
   if (!priv->motion_notify_event)
-    gtk_window_move (GTK_WINDOW (user_data), x_pos+allocation.x+20, y_pos+allocation.y);
+    {
+      overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget))); 
+      gtk_window_move (GTK_WINDOW (user_data), x_pos+allocation.x+20, y_pos+allocation.y);
+    }
 
   return FALSE;
 }
@@ -1107,6 +1099,9 @@ slider_size_allocate_cb (GtkWidget     *widget,
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   gtk_window_set_default_size (GTK_WINDOW (scrollbar), allocation->width, OVERLAY_SCROLLBAR_HEIGHT);
+
+  priv->os_rect.width = allocation->width;
+  priv->os_rect.height = OVERLAY_SCROLLBAR_HEIGHT;
 
   overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
 }
