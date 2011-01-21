@@ -213,6 +213,21 @@ overlay_scrollbar_button_release_event (GtkWidget      *widget,
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
+          if (!priv->motion_notify_event)
+            {
+              GtkAllocation allocation;
+
+              gtk_widget_get_allocation (widget, &allocation);
+
+              /* XXX missing horizontal */
+              if (priv->pointer_y < allocation.height/2)
+                g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
+              else
+                g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
+
+              priv->value_changed_event = TRUE;
+            }
+
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
 
