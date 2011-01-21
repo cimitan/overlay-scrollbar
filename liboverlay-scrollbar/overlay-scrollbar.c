@@ -29,9 +29,9 @@
 #include "overlay-scrollbar-support.h"
 #include "overlay-scrollbar-cairo-support.h"
 
-#define DEVELOPMENT_FLAG TRUE
+#define DEVELOPMENT_FLAG FALSE
 
-#ifdef DEVELOPMENT_FLAG
+#if DEVELOPMENT_FLAG
 #define DEBUG g_debug("%s()\n", __func__);
 #else
 #define DEBUG
@@ -189,6 +189,8 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
           priv->pointer_y_root = event->y_root;
 
           gtk_widget_queue_draw (widget);
+
+          overlay_scrollbar_store_window_position (OVERLAY_SCROLLBAR (widget));
         }
     }
 
@@ -512,7 +514,9 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
     {
       priv->motion_notify_event = TRUE;
 
-      overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x, event->y);
+/*      printf ("event_y; %f %i %f\n", event->y_root-priv->win_y, priv->win_y, event->y);*/
+
+      overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root-priv->win_x, event->y_root-priv->win_y);
 
       gtk_widget_queue_draw (widget);
     }
@@ -1033,10 +1037,13 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 
   new_value = overlay_scrollbar_coord_to_value (scrollbar, c);
 
+/*  printf ("%f %i %i\n", new_value, mouse_y, priv->slide_initial_coordinate);*/
+
+  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+c);
+
   g_signal_emit_by_name (range, "change-value",
                          GTK_SCROLL_JUMP, new_value, &handled, NULL);
 
-  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+priv->slider.y);
 }
 
 static void
@@ -1058,12 +1065,18 @@ slider_expose_event_cb (GtkWidget      *widget,
 {
   DEBUG
   GtkAllocation allocation;
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
   gint x_pos, y_pos;
+  scrollbar = OVERLAY_SCROLLBAR (user_data);
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   gtk_widget_get_allocation (widget, &allocation);
   gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);
 
-  gtk_window_move (GTK_WINDOW (user_data), x_pos+allocation.x+20, y_pos+allocation.y);
+  if (!priv->motion_notify_event)
+    gtk_window_move (GTK_WINDOW (user_data), x_pos+allocation.x+20, y_pos+allocation.y);
 
   return FALSE;
 }
@@ -1098,7 +1111,7 @@ slider_value_changed_cb (GtkWidget      *widget,
 
   overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
 
-  overlay_scrollbar_store_window_position (scrollbar);
+/*  overlay_scrollbar_store_window_position (scrollbar);*/
 
 /*  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+priv->slider.y);*/
 }
