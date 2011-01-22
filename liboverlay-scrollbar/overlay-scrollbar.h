@@ -49,7 +49,7 @@ struct _OverlayScrollbarClass
 
 
 GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
-GtkWidget* overlay_scrollbar_new (GtkRange *widget);
+GtkWidget* overlay_scrollbar_new (GtkWidget *widget);
 
 void os_create_overlay_scrollbar (GtkWidget *widget,
                                   gint       x,
@@ -57,8 +57,8 @@ void os_create_overlay_scrollbar (GtkWidget *widget,
                                   gint       width,
                                   gint       height);
 
-void overlay_scrollbar_set_slider (GtkWidget *widget,
-                                   GtkWidget *slider);
+void overlay_scrollbar_set_range (GtkWidget *widget,
+                                  GtkWidget *range);
 
 G_END_DECLS
 

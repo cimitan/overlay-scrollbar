@@ -321,3 +321,19 @@ os_present_window_with_timestamp (Display *default_display,
   XSync (default_display, False);
   gdk_error_trap_pop ();
 }
+
+/**
+ * os_gtk_widget_hide:
+ * wrapper for gtk_widget_hide
+ **/
+gboolean
+os_gtk_widget_hide (gpointer user_data)
+{
+  GtkWidget *widget;
+
+  widget = user_data;
+
+  gtk_widget_hide (widget);
+
+  return FALSE;
+}

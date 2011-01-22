@@ -29,7 +29,7 @@
 #include "overlay-scrollbar-support.h"
 #include "overlay-scrollbar-cairo-support.h"
 
-#define DEVELOPMENT_FLAG FALSE
+#define DEVELOPMENT_FLAG TRUE
 
 #if DEVELOPMENT_FLAG
 #define DEBUG g_debug("%s()\n", __func__);
@@ -38,11 +38,12 @@
 #endif
 
 #define OVERLAY_SCROLLBAR_HEIGHT 100
+#define PROXIMITY_WIDTH 40
 
 enum {
   PROP_0,
 
-  PROP_SLIDER,
+  PROP_RANGE,
 
   LAST_ARG
 };
@@ -73,11 +74,16 @@ struct _OverlayScrollbarPrivate
   gboolean motion_notify_event;
   gboolean value_changed_event;
 
+  gboolean toplevel_connected;
+
   gint slide_initial_slider_position;
   gint slide_initial_coordinate;
 
   gint win_x;
   gint win_y;
+
+  gint range_all_x;
+  gint range_all_y;
 
   gint pointer_x;
   gint pointer_y;
@@ -135,17 +141,30 @@ static void overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 
 static void overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar);
 
-/* SLIDER FUNCTIONS */
-static gboolean slider_expose_event_cb (GtkWidget      *widget,
-                                        GdkEventExpose *event,
-                                        gpointer        user_data);
+/* RANGE FUNCTIONS */
+static gboolean range_expose_event_cb (GtkWidget      *widget,
+                                       GdkEventExpose *event,
+                                       gpointer        user_data);
 
-static void slider_size_allocate_cb (GtkWidget     *widget,
-                                     GtkAllocation *allocation,
-                                     gpointer       user_data);
+static void range_size_allocate_cb (GtkWidget     *widget,
+                                    GtkAllocation *allocation,
+                                    gpointer       user_data);
 
-static void slider_value_changed_cb (GtkWidget      *widget,
-                                     gpointer        user_data);
+static void range_value_changed_cb (GtkWidget      *widget,
+                                    gpointer        user_data);
+
+/* TOPLEVEL FUNCTIONS */
+static gboolean toplevel_configure_event_cb (GtkWidget         *widget,
+                                             GdkEventConfigure *event,
+                                             gpointer           user_data);
+
+static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent,
+                                             GdkEvent  *event,
+                                             gpointer   user_data);
+
+static gboolean toplevel_leave_notify_event_cb (GtkWidget        *widget,
+                                                GdkEventCrossing *event,
+                                                gpointer          user_data);
 
 /* -------------------------------------------------------------------------- */
 
@@ -272,10 +291,10 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   g_type_class_add_private (gobject_class, sizeof (OverlayScrollbarPrivate));
 
   g_object_class_install_property (gobject_class,
-                                   PROP_SLIDER,
-                                   g_param_spec_object ("slider",
-                                                        "Scrollbar Slider",
-                                                        "The slider of the attached scrollbar",
+                                   PROP_RANGE,
+                                   g_param_spec_object ("range",
+                                                        "Range",
+                                                        "Attach a GtkRange",
                                                         GTK_TYPE_RANGE,
                                                         G_PARAM_READWRITE |
                                                         G_PARAM_STATIC_NAME |
@@ -460,7 +479,7 @@ overlay_scrollbar_get_property (GObject    *object,
 
   switch (prop_id)
     {
-      case PROP_SLIDER:
+      case PROP_RANGE:
         g_value_set_object (value, priv->range);
         break;
     }
@@ -580,15 +599,15 @@ overlay_scrollbar_set_property (GObject      *object,
 
   switch (prop_id)
     {
-      case PROP_SLIDER:
+      case PROP_RANGE:
         {
           priv->range = g_value_get_object (value);
           g_signal_connect (G_OBJECT (priv->range), "size-allocate",
-                            G_CALLBACK (slider_size_allocate_cb), scrollbar);
+                            G_CALLBACK (range_size_allocate_cb), scrollbar);
           g_signal_connect (G_OBJECT (priv->range), "expose-event",
-                            G_CALLBACK (slider_expose_event_cb), scrollbar);
+                            G_CALLBACK (range_expose_event_cb), scrollbar);
           g_signal_connect (G_OBJECT (priv->range), "value-changed",
-                            G_CALLBACK (slider_value_changed_cb), scrollbar);
+                            G_CALLBACK (range_value_changed_cb), scrollbar);
           break;
         }
     }
@@ -598,39 +617,39 @@ overlay_scrollbar_set_property (GObject      *object,
 
 /**
  * overlay_scrollbar_new:
- * @slider: a pointer to the GtkRange slider to connect
+ * @widget: a pointer to the GtkRange to connect
  *
  * Creates a new overlay scrollbar.
  *
  * Returns: the new overlay scrollbar as a #GtkWidget
  */
 GtkWidget*
-overlay_scrollbar_new (GtkRange *slider)
+overlay_scrollbar_new (GtkWidget *widget)
 {
   DEBUG
-  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR , "slider", slider, NULL);
+  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR , "range", widget, NULL);
 }
 
 /**
- * overlay_scrollbar_set_slider:
+ * overlay_scrollbar_set_range:
  * @widget: an OverlayScrollbar widget
- * @slider: a pointer to a GtkScrollbar slider
+ * @range: a pointer to a GtkRange
  *
- * Sets the GtkScrollbar slider to control trough the OverlayScrollbar.
+ * Sets the GtkRange to control trough the OverlayScrollbar.
  *
  */
 void
-overlay_scrollbar_set_slider (GtkWidget *widget,
-                              GtkWidget *slider)
+overlay_scrollbar_set_range (GtkWidget *widget,
+                             GtkWidget *range)
 {
   DEBUG
   OverlayScrollbarPrivate *priv;
 
-  g_return_if_fail (OS_IS_OVERLAY_SCROLLBAR (widget) && GTK_RANGE (slider));
+  g_return_if_fail (OS_IS_OVERLAY_SCROLLBAR (widget) && GTK_RANGE (range));
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (widget);
 
-  priv->range = slider;
+  priv->range = range;
 }
 
 /* HELPER FUNCTIONS */
@@ -1083,11 +1102,15 @@ overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar)
   gdk_window_get_position (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &priv->win_x, &priv->win_y);
 }
 
-/* SLIDER FUNCTIONS */
+/* RANGE FUNCTIONS */
+/**
+ * range_expose_event_cb:
+ * react to "expose-event", to connect other callbacks and useful things
+ **/
 static gboolean
-slider_expose_event_cb (GtkWidget      *widget,
-                        GdkEventExpose *event,
-                        gpointer        user_data)
+range_expose_event_cb (GtkWidget      *widget,
+                       GdkEventExpose *event,
+                       gpointer        user_data)
 {
   DEBUG
   OverlayScrollbar *scrollbar;
@@ -1097,24 +1120,40 @@ slider_expose_event_cb (GtkWidget      *widget,
   scrollbar = OVERLAY_SCROLLBAR (user_data);
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  if (!priv->motion_notify_event)
+  if (!priv->toplevel_connected)
     {
+      gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+      g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
+                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "leave-notify-event",
+                        G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
+      priv->toplevel_connected = TRUE;
+/*    }*/
+
+/*  if (!priv->motion_notify_event)*/
+/*    {*/
       GtkAllocation allocation;
 
       gtk_widget_get_allocation (widget, &allocation);
       gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);
 
       overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget))); 
-      gtk_window_move (GTK_WINDOW (user_data), x_pos+allocation.x+20, y_pos+allocation.y);
+      gtk_window_move (GTK_WINDOW (scrollbar), x_pos+allocation.x+10, y_pos+allocation.y);
+      
+/*      overlay_scrollbar_store_window_position (scrollbar);*/
     }
 
-  return FALSE;
+  return TRUE;
 }
 
+/**
+ * range_size_allocate_cb:
+ * react to "size-allocate", to set window dimensions
+ **/
 static void
-slider_size_allocate_cb (GtkWidget     *widget,
-                         GtkAllocation *allocation,
-                         gpointer       user_data)
+range_size_allocate_cb (GtkWidget     *widget,
+                        GtkAllocation *allocation,
+                        gpointer       user_data)
 {
   DEBUG
   OverlayScrollbar *scrollbar;
@@ -1128,12 +1167,19 @@ slider_size_allocate_cb (GtkWidget     *widget,
   priv->os_rect.width = allocation->width;
   priv->os_rect.height = OVERLAY_SCROLLBAR_HEIGHT;
 
+  priv->range_all_x = allocation->x;
+  priv->range_all_y = allocation->y;
+
   overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
 }
 
+/**
+ * range_value_changed_cb:
+ * react to "value-changed" signal, emitted when there's scrolling
+ **/
 static void
-slider_value_changed_cb (GtkWidget      *widget,
-                         gpointer        user_data)
+range_value_changed_cb (GtkWidget      *widget,
+                        gpointer        user_data)
 {
   DEBUG
   OverlayScrollbar *scrollbar;
@@ -1146,5 +1192,106 @@ slider_value_changed_cb (GtkWidget      *widget,
 
 /*  overlay_scrollbar_store_window_position (scrollbar);*/
 
+/*  overlay_scrollbar_store_window_position (scrollbar);*/
+
 /*  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+priv->slider.y);*/
+}
+
+/* TOPLEVEL FUNCTIONS */
+/**
+ * toplevel_configure_event_cb:
+ * react to "configure-event" signal: move windows
+ **/
+static gboolean
+toplevel_configure_event_cb (GtkWidget         *widget,
+                             GdkEventConfigure *event,
+                             gpointer           user_data)
+{
+  DEBUG
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
+  scrollbar = OVERLAY_SCROLLBAR (user_data);
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  gtk_widget_hide (GTK_WIDGET (scrollbar));
+
+  /* XXX insted using allocation please do it by storing the position of the scrollbar window */
+
+  GtkAllocation allocation;
+
+  gtk_widget_get_allocation (GTK_WIDGET (priv->range), &allocation);
+
+  overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range))); 
+  gtk_window_move (GTK_WINDOW (scrollbar), event->x+allocation.x+10, event->y+allocation.y);
+
+  overlay_scrollbar_store_window_position (scrollbar);
+
+  return FALSE;
+}
+
+/**
+ * toplevel_filter_func:
+ * add a filter to the toplevel GdkWindow, to activate proximity effect
+ **/
+static GdkFilterReturn
+toplevel_filter_func (GdkXEvent *gdkxevent,
+                      GdkEvent  *event,
+                      gpointer   user_data)
+{
+  DEBUG
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+  XEvent *xevent;
+
+  scrollbar = OVERLAY_SCROLLBAR (user_data);
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+  xevent = gdkxevent;
+
+  overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
+
+  /* get the motion_notify_event trough XEvent */
+  if (xevent->type == MotionNotify)
+    {
+      /* proximity area */
+      if ((priv->range_all_x-xevent->xmotion.x < PROXIMITY_WIDTH &&
+           priv->range_all_x+priv->range_rect.width-xevent->xmotion.x > 0) &&
+          (xevent->xmotion.y >= priv->range_all_y &&
+           xevent->xmotion.y <= priv->range_all_y+priv->range_rect.height))
+        {
+          gtk_widget_show (GTK_WIDGET (scrollbar));
+          overlay_scrollbar_map (GTK_WIDGET (scrollbar));
+        }
+      else
+        {
+          gtk_widget_hide (GTK_WIDGET (scrollbar));
+        }
+    }
+
+  return GDK_FILTER_CONTINUE;
+}
+
+/**
+ * toplevel_leave_notify_event_cb:
+ * hide the OverlayScrollbar, when the pointer leaves the toplevel GtkWindow
+ **/
+static gboolean
+toplevel_leave_notify_event_cb (GtkWidget        *widget,
+                                GdkEventCrossing *event,
+                                gpointer          user_data)
+{
+  DEBUG
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
+  scrollbar = OVERLAY_SCROLLBAR (user_data);
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  if (!priv->button_press_event && !priv->enter_notify_event)
+    {
+  /*    g_timeout_add (2000, thumb_widget_hide, os->thumb);*/
+  /*    gtk_widget_hide (os->thumb);*/
+    }
+
+  return FALSE;
 }
