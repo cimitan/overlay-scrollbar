@@ -122,7 +122,7 @@ os_clamp_dimensions (GtkWidget    *widget,
 
 /**
  * os_gtk_range_calc_request:
- * calculate range_rect
+ * calculate GtkRange range_rect
  **/
 void
 os_gtk_range_calc_request (GtkRange      *range,

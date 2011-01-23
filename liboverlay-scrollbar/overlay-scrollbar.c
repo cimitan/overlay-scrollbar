@@ -26,8 +26,9 @@
 #include <X11/Xlib.h>
 
 #include "overlay-scrollbar.h"
-#include "overlay-scrollbar-support.h"
 #include "overlay-scrollbar-cairo-support.h"
+#include "overlay-scrollbar-support.h"
+
 
 #define DEVELOPMENT_FLAG FALSE
 
@@ -256,14 +257,14 @@ overlay_scrollbar_button_release_event (GtkWidget      *widget,
 
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if (priv->pointer_y < allocation.height/2)
+                  if (priv->pointer_y < allocation.height / 2)
                     g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
                   else
                     g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
                 }
               else
                 {
-                  if (priv->pointer_x < allocation.width/2)
+                  if (priv->pointer_x < allocation.width / 2)
                     g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
                   else
                     g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
@@ -406,7 +407,7 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
   os_cairo_draw_rounded_rect (cr, x, y, width, height, 6);
-  pat = cairo_pattern_create_linear (x, y, width+x, y);
+  pat = cairo_pattern_create_linear (x, y, width + x, y);
   cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.95, 0.95, 0.95, 1.0);
   cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 1.0);
   cairo_set_source (cr, pat);
@@ -414,10 +415,10 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   cairo_fill (cr);
 
   os_cairo_draw_rounded_rect (cr, x, y, width, height, 6);
-  pat = cairo_pattern_create_linear (x, y, x, height+y);
+  pat = cairo_pattern_create_linear (x, y, x, height + y);
   if (priv->button_press_event && !priv->motion_notify_event)
     {
-      if (priv->pointer_y < height/2)
+      if (priv->pointer_y < height / 2)
         {
           state_type_up = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.8, 0.8, 0.8, 0.8);
@@ -448,17 +449,17 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0);
   cairo_stroke (cr);
 
-  os_cairo_draw_rounded_rect (cr, x+1, y+1, width-2, height-2, 7);
+  os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, 7);
   cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
   cairo_stroke (cr);
 
-  cairo_move_to (cr, x+0.5, y-1+height/2);
-  cairo_line_to (cr, width-0.5, y-1+height/2);
+  cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
+  cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
   cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
   cairo_stroke (cr);
 
-  cairo_move_to (cr, x+0.5, y+height/2);
-  cairo_line_to (cr, width-0.5, y+height/2);
+  cairo_move_to (cr, x + 0.5, y + height / 2);
+  cairo_line_to (cr, width - 0.5, y + height / 2);
   cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
   cairo_stroke (cr);
 
@@ -475,8 +476,8 @@ overlay_scrollbar_expose (GtkWidget      *widget,
                    FALSE,
                    4,
                    4,
-                   width-8,
-                   width-8);
+                   width - 8,
+                   width - 8);
 
   gtk_paint_arrow (gtk_widget_get_style (widget),
                    gtk_widget_get_window (widget),
@@ -488,9 +489,9 @@ overlay_scrollbar_expose (GtkWidget      *widget,
                    GTK_ARROW_DOWN,
                    FALSE,
                    4,
-                   height-(width-8)-4,
-                   width-8,
-                   width-8);
+                   height - (width - 8) - 4,
+                   width - 8,
+                   width - 8);
 
   cairo_destroy (cr);
 
@@ -631,9 +632,7 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
     {
       priv->motion_notify_event = TRUE;
 
-/*      printf ("event_y; %f %i %f\n", event->y_root-priv->win_y, priv->win_y, event->y);*/
-
-      overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root-priv->win_x, event->y_root-priv->win_y);
+      overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root - priv->win_x, event->y_root - priv->win_y);
 
       gtk_widget_queue_draw (widget);
     }
@@ -1171,13 +1170,13 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
     {
       if (c >= 0 &&
           (c + priv->os_rect.height) <= priv->range_rect.height)
-        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y+c);
+        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y + c);
     }
   else
     {
       if (c >= 0 &&
           (c + priv->os_rect.width) <= priv->range_rect.width)
-        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x+c, priv->win_y);
+        gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x + c, priv->win_y);
     }
 
   g_signal_emit_by_name (range, "change-value",
@@ -1236,7 +1235,7 @@ range_expose_event_cb (GtkWidget      *widget,
       gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);
 
       overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (widget))); 
-      gtk_window_move (GTK_WINDOW (scrollbar), x_pos+allocation.x+10, y_pos+allocation.y);
+      gtk_window_move (GTK_WINDOW (scrollbar), x_pos + allocation.x + 10, y_pos + allocation.y);
       
 /*      overlay_scrollbar_store_window_position (scrollbar);*/
     }
@@ -1321,7 +1320,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   gtk_widget_get_allocation (GTK_WIDGET (priv->range), &allocation);
 
   overlay_scrollbar_calc_layout (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range))); 
-  gtk_window_move (GTK_WINDOW (scrollbar), event->x+allocation.x+10, event->y+allocation.y);
+  gtk_window_move (GTK_WINDOW (scrollbar), event->x+allocation.x + 10, event->y+allocation.y);
 
   overlay_scrollbar_store_window_position (scrollbar);
 
@@ -1352,10 +1351,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   if (xevent->type == MotionNotify)
     {
       /* proximity area */
-      if ((priv->range_all_x-xevent->xmotion.x < PROXIMITY_WIDTH &&
-           priv->range_all_x+priv->range_rect.width-xevent->xmotion.x > 0) &&
+      if ((priv->range_all_x - xevent->xmotion.x < PROXIMITY_WIDTH &&
+           priv->range_all_x + priv->range_rect.width - xevent->xmotion.x > 0) &&
           (xevent->xmotion.y >= priv->range_all_y &&
-           xevent->xmotion.y <= priv->range_all_y+priv->range_rect.height))
+           xevent->xmotion.y <= priv->range_all_y + priv->range_rect.height))
         {
           priv->can_hide = FALSE;
           gtk_widget_show (GTK_WIDGET (scrollbar));
