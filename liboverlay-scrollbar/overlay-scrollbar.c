@@ -37,8 +37,9 @@
 #define DEBUG
 #endif
 
-#define OVERLAY_SCROLLBAR_HEIGHT 100
-#define PROXIMITY_WIDTH 40
+#define OVERLAY_SCROLLBAR_HEIGHT 100 /* height/width of the overlay scrollbar, in pixels */
+#define PROXIMITY_WIDTH 40 /* width/height of the proximity effect, in pixels */
+#define TIMEOUT_HIDE 1000 /* timeout before hiding, in milliseconds */
 
 enum {
   PROP_0,
@@ -75,6 +76,8 @@ struct _OverlayScrollbarPrivate
   gboolean value_changed_event;
 
   gboolean toplevel_connected;
+
+  gboolean can_hide;
 
   gint slide_initial_slider_position;
   gint slide_initial_coordinate;
@@ -115,6 +118,9 @@ static void overlay_scrollbar_get_property (GObject    *object,
                                             GValue     *value,
                                             GParamSpec *pspec);
 
+static gboolean overlay_scrollbar_leave_notify_event (GtkWidget        *widget,
+                                                      GdkEventCrossing *event);
+
 static void overlay_scrollbar_map (GtkWidget *widget);
 
 static gboolean overlay_scrollbar_motion_notify_event (GtkWidget      *widget,
@@ -134,6 +140,8 @@ static void overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
 
 static gdouble overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
                                                  gint              coord);
+
+static gboolean overlay_scrollbar_hide (gpointer user_data);
 
 static void overlay_scrollbar_move (OverlayScrollbar *scrollbar,
                                     gint              mouse_x,
@@ -280,6 +288,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   widget_class->button_release_event = overlay_scrollbar_button_release_event;
   widget_class->enter_notify_event   = overlay_scrollbar_enter_notify_event;
   widget_class->expose_event         = overlay_scrollbar_expose;
+  widget_class->leave_notify_event   = overlay_scrollbar_leave_notify_event;
   widget_class->map                  = overlay_scrollbar_map;
   widget_class->motion_notify_event  = overlay_scrollbar_motion_notify_event;
   widget_class->screen_changed       = overlay_scrollbar_screen_changed;
@@ -329,6 +338,7 @@ overlay_scrollbar_enter_notify_event (GtkWidget        *widget,
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
 
   priv->enter_notify_event = TRUE;
+  priv->can_hide = FALSE;
 
   return TRUE;
 }
@@ -496,6 +506,8 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 
   priv->orientation = GTK_ORIENTATION_VERTICAL;
 
+  priv->can_hide = TRUE;
+
   gtk_window_set_skip_pager_hint (GTK_WINDOW (scrollbar), TRUE);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (scrollbar), TRUE);
   gtk_window_set_has_resize_grip (GTK_WINDOW (scrollbar), FALSE);
@@ -508,6 +520,23 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
                                                  GDK_POINTER_MOTION_MASK);
 
   overlay_scrollbar_screen_changed (GTK_WIDGET (scrollbar), NULL);
+}
+
+static gboolean
+overlay_scrollbar_leave_notify_event (GtkWidget        *widget,
+                                      GdkEventCrossing *event)
+{
+  DEBUG
+  OverlayScrollbarPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
+
+  if (!priv->motion_notify_event)
+    priv->can_hide = TRUE;
+
+  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, widget);
+
+  return TRUE;
 }
 
 static void
@@ -1048,6 +1077,26 @@ overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
   return value;
 }
 
+/**
+ * overlay_scrollbar_hide:
+ * hide if it's ok to hide
+ **/
+static gboolean
+overlay_scrollbar_hide (gpointer user_data)
+{
+  DEBUG
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
+  scrollbar = user_data;
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  if (priv->can_hide)
+    gtk_widget_hide (GTK_WIDGET (scrollbar));
+
+  return FALSE;
+}
+
 static void
 overlay_scrollbar_move (OverlayScrollbar *scrollbar,
                         gint              mouse_x,
@@ -1259,12 +1308,14 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           (xevent->xmotion.y >= priv->range_all_y &&
            xevent->xmotion.y <= priv->range_all_y+priv->range_rect.height))
         {
+          priv->can_hide = FALSE;
           gtk_widget_show (GTK_WIDGET (scrollbar));
           overlay_scrollbar_map (GTK_WIDGET (scrollbar));
         }
       else
         {
-          gtk_widget_hide (GTK_WIDGET (scrollbar));
+          priv->can_hide = TRUE;
+          overlay_scrollbar_hide (scrollbar);
         }
     }
 
@@ -1287,11 +1338,11 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OVERLAY_SCROLLBAR (user_data);
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  if (!priv->button_press_event && !priv->enter_notify_event)
-    {
-  /*    g_timeout_add (2000, thumb_widget_hide, os->thumb);*/
-  /*    gtk_widget_hide (os->thumb);*/
-    }
+/*  if (!priv->button_press_event && !priv->enter_notify_event)*/
+/*    {*/
+      g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
+/*      gtk_widget_hide (os->thumb);*/
+/*    }*/
 
   return FALSE;
 }

@@ -67,8 +67,6 @@ G_GNUC_INTERNAL void os_present_window_with_timestamp (Display *default_display,
                                                        gint     xid,
                                                        guint32  timestamp);
 
-G_GNUC_INTERNAL gboolean os_gtk_widget_hide (gpointer user_data);
-
 G_END_DECLS
 
 #endif /* __OVERLAY_SCROLLBAR_SUPPORT_H__ */
