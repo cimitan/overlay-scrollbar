@@ -93,7 +93,7 @@ Ubuntu is gonna rock!\nUbuntu is gonna rock!\nUbuntu is gonna rock!", -1);
 
   /* overlar_scrollbar0 */
   vscrollbar0 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text0));
-  overlay_scrollbar0 = overlay_scrollbar_new (GTK_RANGE (vscrollbar0));
+  overlay_scrollbar0 = overlay_scrollbar_new (vscrollbar0);
 
   /* scrolled_window_text1 */
   scrolled_window_text1 = gtk_scrolled_window_new (NULL, NULL);
@@ -139,7 +139,7 @@ Ubuntu is gonna rock!\nUbuntu is gonna rock!\nUbuntu is gonna rock!", -1);
 
   /* overlar_scrollbar0 */
   vscrollbar1 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text1));
-  overlay_scrollbar1 = overlay_scrollbar_new (GTK_RANGE (vscrollbar1));
+  overlay_scrollbar1 = overlay_scrollbar_new (vscrollbar1);
 
   /* containers */
   gtk_container_set_border_width (GTK_CONTAINER (window), 10);
@@ -152,9 +152,6 @@ Ubuntu is gonna rock!\nUbuntu is gonna rock!\nUbuntu is gonna rock!", -1);
                     G_CALLBACK (window_destroy_cb), NULL);
 
   gtk_widget_show_all (window);
-
-  gtk_widget_show (overlay_scrollbar0);
-  gtk_widget_show (overlay_scrollbar1);
 
   gtk_main ();
 

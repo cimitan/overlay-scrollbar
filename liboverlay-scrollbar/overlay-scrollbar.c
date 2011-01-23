@@ -29,7 +29,7 @@
 #include "overlay-scrollbar-support.h"
 #include "overlay-scrollbar-cairo-support.h"
 
-#define DEVELOPMENT_FLAG TRUE
+#define DEVELOPMENT_FLAG FALSE
 
 #if DEVELOPMENT_FLAG
 #define DEBUG g_debug("%s()\n", __func__);
