@@ -27,6 +27,10 @@
 
 #include "overlay-scrollbar-support.h"
 
+/**
+ * os_clamp_dimensions:
+ * clamp the dimensions of the GtkRange
+ **/
 void
 os_clamp_dimensions (GtkWidget    *widget,
                      GdkRectangle *rect,
@@ -116,6 +120,10 @@ os_clamp_dimensions (GtkWidget    *widget,
     }
 }
 
+/**
+ * os_gtk_range_calc_request:
+ * calculate range_rect
+ **/
 void
 os_gtk_range_calc_request (GtkRange      *range,
                            gint           slider_width,
@@ -201,6 +209,10 @@ os_gtk_range_calc_request (GtkRange      *range,
     *slider_length_p = slider_length;
 }
 
+/**
+ * os_gtk_range_get_props:
+ * get GtkRange properties
+ **/
 void
 os_gtk_range_get_props (GtkRange  *range,
                         gint      *slider_width,
@@ -272,6 +284,10 @@ os_gtk_range_get_props (GtkRange  *range,
     *arrow_displacement_y = tmp_arrow_displacement_y;
 }
 
+/**
+ * os_present_gdk_window_with_timestamp:
+ * present a GdkWindow
+ **/
 void
 os_present_gdk_window_with_timestamp (GtkWidget *widget,
                                       guint32    timestamp)
@@ -282,6 +298,10 @@ os_present_gdk_window_with_timestamp (GtkWidget *widget,
                                     timestamp);
 }
 
+/**
+ * os_present_window_with_timestamp:
+ * present a Window using its xid
+ **/
 void
 os_present_window_with_timestamp (Display *default_display,
                                   Screen  *screen,

@@ -23,6 +23,10 @@
 #include <glib.h>
 #include <cairo.h>
 
+/**
+ * os_cairo_draw_rounded_rect:
+ * draw a rounded rectangle
+ **/
 void
 os_cairo_draw_rounded_rect (cairo_t *cr,
                             gdouble  x,

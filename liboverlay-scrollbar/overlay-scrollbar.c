@@ -176,6 +176,10 @@ static gboolean toplevel_leave_notify_event_cb (GtkWidget        *widget,
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * overlay_scrollbar_button_press_event:
+ * override class function
+ **/
 /* SUBCLASS FUNCTIONS */
 static gboolean
 overlay_scrollbar_button_press_event (GtkWidget      *widget,
@@ -225,6 +229,10 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
   return FALSE;
 }
 
+/**
+ * overlay_scrollbar_button_release_event:
+ * override class function
+ **/
 static gboolean
 overlay_scrollbar_button_release_event (GtkWidget      *widget,
                                         GdkEventButton *event)
@@ -274,6 +282,10 @@ overlay_scrollbar_button_release_event (GtkWidget      *widget,
   return FALSE;
 }
 
+/**
+ * overlay_scrollbar_class_init:
+ * class init function
+ **/
 static void
 overlay_scrollbar_class_init (OverlayScrollbarClass *class)
 {
@@ -311,6 +323,10 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
                                                         G_PARAM_STATIC_BLURB));
 }
 
+/**
+ * overlay_scrollbar_constructor:
+ * override class function
+ **/
 static GObject*
 overlay_scrollbar_constructor (GType                  type,
                                guint                  n_construct_properties,
@@ -328,6 +344,10 @@ overlay_scrollbar_constructor (GType                  type,
   return object;
 }
 
+/**
+ * overlay_scrollbar_enter_notify_event:
+ * override class function
+ **/
 static gboolean
 overlay_scrollbar_enter_notify_event (GtkWidget        *widget,
                                       GdkEventCrossing *event)
@@ -343,6 +363,10 @@ overlay_scrollbar_enter_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
+/**
+ * overlay_scrollbar_expose:
+ * override class function
+ **/
 static gboolean
 overlay_scrollbar_expose (GtkWidget      *widget,
                           GdkEventExpose *event)
@@ -473,6 +497,10 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   return FALSE;
 }
 
+/**
+ * overlay_scrollbar_get_property:
+ * override class function
+ **/
 static void
 overlay_scrollbar_get_property (GObject    *object,
                                 guint       prop_id,
@@ -495,6 +523,10 @@ overlay_scrollbar_get_property (GObject    *object,
     }
 }
 
+/**
+ * overlay_scrollbar_init:
+ * init function
+ **/
 static void
 overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 {
@@ -522,6 +554,10 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
   overlay_scrollbar_screen_changed (GTK_WIDGET (scrollbar), NULL);
 }
 
+/**
+ * overlay_scrollbar_leave_notify_event:
+ * override class function
+ **/
 static gboolean
 overlay_scrollbar_leave_notify_event (GtkWidget        *widget,
                                       GdkEventCrossing *event)
@@ -531,7 +567,7 @@ overlay_scrollbar_leave_notify_event (GtkWidget        *widget,
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
 
-  if (!priv->motion_notify_event)
+  if (!priv->button_press_event)
     priv->can_hide = TRUE;
 
   g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, widget);
@@ -539,6 +575,10 @@ overlay_scrollbar_leave_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
+/**
+ * overlay_scrollbar_map:
+ * override class function
+ **/
 static void
 overlay_scrollbar_map (GtkWidget *widget)
 {
@@ -573,6 +613,10 @@ overlay_scrollbar_map (GtkWidget *widget)
   GTK_WIDGET_CLASS (overlay_scrollbar_parent_class)->map (widget);
 }
 
+/**
+ * overlay_scrollbar_motion_notify_event:
+ * override class function
+ **/
 static gboolean
 overlay_scrollbar_motion_notify_event (GtkWidget *widget,
                                        GdkEventMotion *event)
@@ -597,6 +641,10 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
   return TRUE;
 }
 
+/**
+ * overlay_scrollbar_screen_changed:
+ * override class function
+ **/
 static void
 overlay_scrollbar_screen_changed (GtkWidget *widget,
                                   GdkScreen *old_screen)
@@ -612,6 +660,10 @@ overlay_scrollbar_screen_changed (GtkWidget *widget,
     gtk_widget_set_colormap (widget, colormap);
 }
 
+/**
+ * overlay_scrollbar_set_property:
+ * override class function
+ **/
 static void
 overlay_scrollbar_set_property (GObject      *object,
                                 guint         prop_id,
@@ -642,8 +694,7 @@ overlay_scrollbar_set_property (GObject      *object,
     }
 }
 
-/* public functions */
-
+/* PUBLIC FUNCTIONS*/
 /**
  * overlay_scrollbar_new:
  * @widget: a pointer to the GtkRange to connect
@@ -682,6 +733,10 @@ overlay_scrollbar_set_range (GtkWidget *widget,
 }
 
 /* HELPER FUNCTIONS */
+/**
+ * overlay_scrollbar_calc_layout:
+ * calculate GtkRange layout and store info
+ **/
 static void
 overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
                                gdouble           adjustment_value)
@@ -759,12 +814,9 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
       else
         stepper_height = MIN (stepper_size, (range_rect.height / n_steppers));
 
-      /* Stepper A */
-
       priv->stepper_a.x = range_rect.x + focus_width + trough_border * trough_under_steppers;
       priv->stepper_a.y = range_rect.y + focus_width + trough_border * trough_under_steppers;
 
-      /* Stepper B */
       if (range->has_stepper_a)
         {
           priv->stepper_a.width = stepper_width;
@@ -775,8 +827,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
           priv->stepper_a.width = 0;
           priv->stepper_a.height = 0;
         }
-
-      /* Stepper B */
 
       priv->stepper_b.x = priv->stepper_a.x;
       priv->stepper_b.y = priv->stepper_a.y + priv->stepper_a.height;
@@ -792,8 +842,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
           priv->stepper_b.height = 0;
         }
 
-      /* Stepper D */
-
       if (range->has_stepper_d)
         {
           priv->stepper_d.width = stepper_width;
@@ -807,8 +855,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
 
       priv->stepper_d.x = priv->stepper_a.x;
       priv->stepper_d.y = range_rect.y + range_rect.height - priv->stepper_d.height - focus_width - trough_border * trough_under_steppers;
-
-      /* Stepper C */
 
       if (range->has_stepper_c)
         {
@@ -903,8 +949,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
       else
         stepper_width = MIN (stepper_size, (range_rect.width / n_steppers));
 
-      /* Stepper A */
-
       priv->stepper_a.x = range_rect.x + focus_width + trough_border * trough_under_steppers;
       priv->stepper_a.y = range_rect.y + focus_width + trough_border * trough_under_steppers;
 
@@ -918,8 +962,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
           priv->stepper_a.width = 0;
           priv->stepper_a.height = 0;
         }
-
-      /* Stepper B */
 
       priv->stepper_b.x = priv->stepper_a.x + priv->stepper_a.width;
       priv->stepper_b.y = priv->stepper_a.y;
@@ -935,8 +977,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
           priv->stepper_b.height = 0;
         }
 
-      /* Stepper D */
-
       if (range->has_stepper_d)
         {
           priv->stepper_d.width = stepper_width;
@@ -950,9 +990,6 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
 
       priv->stepper_d.x = range_rect.x + range_rect.width - priv->stepper_d.width - focus_width - trough_border * trough_under_steppers;
       priv->stepper_d.y = priv->stepper_a.y;
-
-
-      /* Stepper C */
 
       if (range->has_stepper_c)
         {
@@ -1034,6 +1071,10 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
   /* XXX missing SENSIVITY code */
 }
 
+/**
+ * overlay_scrollbar_coord_to_value:
+ * traduce pixels into proper GtkRange values
+ **/
 static gdouble
 overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
                                   gint              coord)
@@ -1097,6 +1138,10 @@ overlay_scrollbar_hide (gpointer user_data)
   return FALSE;
 }
 
+/**
+ * overlay_scrollbar_move:
+ * move the scrollbar
+ **/
 static void
 overlay_scrollbar_move (OverlayScrollbar *scrollbar,
                         gint              mouse_x,
@@ -1140,6 +1185,10 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 
 }
 
+/**
+ * overlay_scrollbar_store_window_position:
+ * store scrollbar window position
+ **/
 static void
 overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar)
 {
