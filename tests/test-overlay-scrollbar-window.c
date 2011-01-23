@@ -67,7 +67,7 @@ main (int   argc,
   gtk_window_set_title (GTK_WINDOW (window), "Vertical \"Overlay Scrollbar\" test");
 
   /* vbox */
-  vbox = gtk_vbox_new (TRUE, 10);
+  vbox = gtk_vbox_new (TRUE, 2);
 
   /* scrolled_window_text0 */
   scrolled_window_text0 = gtk_scrolled_window_new (NULL, NULL);
@@ -142,7 +142,7 @@ Ubuntu is gonna rock!\nUbuntu is gonna rock!\nUbuntu is gonna rock!", -1);
   overlay_scrollbar1 = overlay_scrollbar_new (vscrollbar1);
 
   /* containers */
-  gtk_container_set_border_width (GTK_CONTAINER (window), 10);
+  gtk_container_set_border_width (GTK_CONTAINER (window), 2);
   gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text0);
   gtk_container_add (GTK_CONTAINER (vbox), scrolled_window_text1);
   gtk_container_add (GTK_CONTAINER (window), vbox);
