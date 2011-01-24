@@ -30,10 +30,10 @@
 #include "overlay-scrollbar-support.h"
 
 
-#define DEVELOPMENT_FLAG FALSE
+#define DEVELOPMENT_FLAG TRUE
 
 #if DEVELOPMENT_FLAG
-#define DEBUG g_debug("%s()\n", __func__);
+#define DEBUG printf("%s()\n", __func__);
 #else
 #define DEBUG
 #endif
@@ -532,7 +532,6 @@ static void
 overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 {
   DEBUG
-
   OverlayScrollbarPrivate *priv;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
@@ -745,12 +744,8 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
   GtkBorder border;
   GtkRange *range;
   OverlayScrollbarPrivate *priv;
-  gint slider_width, stepper_size, focus_width, trough_border, stepper_spacing;
+  gint slider_width, trough_border;
   gint slider_length;
-  gint n_steppers;
-  gboolean has_steppers_ab;
-  gboolean has_steppers_cd;
-  gboolean trough_under_steppers;
 
   /* If we have a too-small allocation, we prefer the steppers over
    * the trough/slider, probably the steppers are a more useful
@@ -766,16 +761,12 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
   range = GTK_RANGE (priv->range);
 
   os_gtk_range_get_props (range,
-                          &slider_width, &stepper_size,
-                          &focus_width, &trough_border,
-                          &stepper_spacing, &trough_under_steppers,
+                          &slider_width, &trough_border,
                           NULL, NULL);
 
   os_gtk_range_calc_request (range,
-                             slider_width, stepper_size,
-                             focus_width, trough_border, stepper_spacing,
-                             &range_rect, &border, &n_steppers,
-                             &has_steppers_ab, &has_steppers_cd, &slider_length);
+                             slider_width, trough_border,
+                             &range_rect, &border, &slider_length);
 
   /* We never expand to fill available space in the small dimension
    * (i.e. vertical scrollbars are always a fixed width)
@@ -792,277 +783,84 @@ overlay_scrollbar_calc_layout (OverlayScrollbar *scrollbar,
   range_rect.x = border.left;
   range_rect.y = border.top;
 
+  priv->trough.x = range_rect.x;
+  priv->trough.y = range_rect.y;
+  priv->trough.width = range_rect.width;
+  priv->trough.height = range_rect.height;
+
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      gint stepper_width, stepper_height;
+      gint y, bottom, top, height;
 
-      /* Steppers are the width of the range, and stepper_size in
-       * height, or if we don't have enough height, divided equally
-       * among available space.
+      top = priv->trough.y;
+      bottom = priv->trough.y + priv->trough.height;
+
+      /* slider height is the fraction (page_size /
+       * total_adjustment_range) times the trough height in pixels
        */
-      stepper_width = range_rect.width - focus_width * 2;
 
-      if (trough_under_steppers)
-        stepper_width -= trough_border * 2;
-
-      if (stepper_width < 1)
-        stepper_width = range_rect.width; /* screw the trough border */
-
-      if (n_steppers == 0)
-        stepper_height = 0; /* avoid divide by n_steppers */
+      if (range->adjustment->upper - range->adjustment->lower != 0)
+        height = ((bottom - top) * (range->adjustment->page_size /
+                                   (range->adjustment->upper - range->adjustment->lower)));
       else
-        stepper_height = MIN (stepper_size, (range_rect.height / n_steppers));
+        height = range->min_slider_size;
 
-      priv->stepper_a.x = range_rect.x + focus_width + trough_border * trough_under_steppers;
-      priv->stepper_a.y = range_rect.y + focus_width + trough_border * trough_under_steppers;
+      if (height < range->min_slider_size ||
+          range->slider_size_fixed)
+        height = range->min_slider_size;
 
-      if (range->has_stepper_a)
-        {
-          priv->stepper_a.width = stepper_width;
-          priv->stepper_a.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_a.width = 0;
-          priv->stepper_a.height = 0;
-        }
+      height = MIN (height, priv->trough.height);
 
-      priv->stepper_b.x = priv->stepper_a.x;
-      priv->stepper_b.y = priv->stepper_a.y + priv->stepper_a.height;
+      y = top;
 
-      if (range->has_stepper_b)
-        {
-          priv->stepper_b.width = stepper_width;
-          priv->stepper_b.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_b.width = 0;
-          priv->stepper_b.height = 0;
-        }
+      if (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size != 0)
+        y += (bottom - top - height) * ((adjustment_value - range->adjustment->lower) /
+                                        (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size));
 
-      if (range->has_stepper_d)
-        {
-          priv->stepper_d.width = stepper_width;
-          priv->stepper_d.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_d.width = 0;
-          priv->stepper_d.height = 0;
-        }
+      y = CLAMP (y, top, bottom);
 
-      priv->stepper_d.x = priv->stepper_a.x;
-      priv->stepper_d.y = range_rect.y + range_rect.height - priv->stepper_d.height - focus_width - trough_border * trough_under_steppers;
+      priv->slider.y = y;
+      priv->slider.height = height;
 
-      if (range->has_stepper_c)
-        {
-          priv->stepper_c.width = stepper_width;
-          priv->stepper_c.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_c.width = 0;
-          priv->stepper_c.height = 0;
-        }
-
-      priv->stepper_c.x = priv->stepper_a.x;
-      priv->stepper_c.y = priv->stepper_d.y - priv->stepper_c.height;
-
-      /* Now the trough is the remaining space between steppers B and C,
-       * if any, minus spacing
-       */
-      priv->trough.x = range_rect.x;
-      priv->trough.y = priv->stepper_b.y + priv->stepper_b.height + stepper_spacing * has_steppers_ab;
-      priv->trough.width = range_rect.width;
-      priv->trough.height = priv->stepper_c.y - priv->trough.y - stepper_spacing * has_steppers_cd;
-
-      /* Slider fits into the trough, with stepper_spacing on either side,
-       * and the size/position based on the adjustment or fixed, depending.
-       */
-      priv->slider.x = priv->trough.x + focus_width + trough_border;
-      priv->slider.width = priv->trough.width - (focus_width + trough_border) * 2;
-
-      /* Compute slider position/length */
-      {
-        gint y, bottom, top, height;
-
-        top = priv->trough.y;
-        bottom = priv->trough.y + priv->trough.height;
-
-        if (! trough_under_steppers)
-          {
-            top += trough_border;
-            bottom -= trough_border;
-          }
-
-        /* slider height is the fraction (page_size /
-         * total_adjustment_range) times the trough height in pixels
-         */
-
-        if (range->adjustment->upper - range->adjustment->lower != 0)
-          height = ((bottom - top) * (range->adjustment->page_size /
-                                     (range->adjustment->upper - range->adjustment->lower)));
-        else
-          height = range->min_slider_size;
-
-        if (height < range->min_slider_size ||
-            range->slider_size_fixed)
-          height = range->min_slider_size;
-
-        height = MIN (height, priv->trough.height);
-
-        y = top;
-
-        if (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size != 0)
-          y += (bottom - top - height) * ((adjustment_value - range->adjustment->lower) /
-                                          (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size));
-
-        y = CLAMP (y, top, bottom);
-
-        priv->slider.y = y;
-        priv->slider.height = height;
-
-        priv->slider_start = priv->slider.y;
-        priv->slider_end = priv->slider.y + priv->slider.height;
-      }
+      priv->slider_start = priv->slider.y;
+      priv->slider_end = priv->slider.y + priv->slider.height;
     }
   else
     {
-      gint stepper_width, stepper_height;
+      gint x, left, right, width;
 
-      /* Steppers are the height of the range, and stepper_size in
-       * width, or if we don't have enough width, divided equally
-       * among available space.
+      left = priv->trough.x;
+      right = priv->trough.x + priv->trough.width;
+
+      /* slider width is the fraction (page_size /
+       * total_adjustment_range) times the trough width in pixels
        */
-      stepper_height = range_rect.height + focus_width * 2;
 
-      if (trough_under_steppers)
-        stepper_height -= trough_border * 2;
-
-      if (stepper_height < 1)
-        stepper_height = range_rect.height; /* screw the trough border */
-
-      if (n_steppers == 0)
-        stepper_width = 0; /* avoid divide by n_steppers */
+      if (range->adjustment->upper - range->adjustment->lower != 0)
+        width = ((right - left) * (range->adjustment->page_size /
+                                  (range->adjustment->upper - range->adjustment->lower)));
       else
-        stepper_width = MIN (stepper_size, (range_rect.width / n_steppers));
+        width = range->min_slider_size;
 
-      priv->stepper_a.x = range_rect.x + focus_width + trough_border * trough_under_steppers;
-      priv->stepper_a.y = range_rect.y + focus_width + trough_border * trough_under_steppers;
+      if (width < range->min_slider_size ||
+          range->slider_size_fixed)
+        width = range->min_slider_size;
 
-      if (range->has_stepper_a)
-        {
-          priv->stepper_a.width = stepper_width;
-          priv->stepper_a.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_a.width = 0;
-          priv->stepper_a.height = 0;
-        }
+      width = MIN (width, priv->trough.width);
 
-      priv->stepper_b.x = priv->stepper_a.x + priv->stepper_a.width;
-      priv->stepper_b.y = priv->stepper_a.y;
+      x = left;
 
-      if (range->has_stepper_b)
-        {
-          priv->stepper_b.width = stepper_width;
-          priv->stepper_b.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_b.width = 0;
-          priv->stepper_b.height = 0;
-        }
+      if (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size != 0)
+        x += (right - left - width) * ((adjustment_value - range->adjustment->lower) /
+                                       (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size));
 
-      if (range->has_stepper_d)
-        {
-          priv->stepper_d.width = stepper_width;
-          priv->stepper_d.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_d.width = 0;
-          priv->stepper_d.height = 0;
-        }
+      x = CLAMP (x, left, right);
 
-      priv->stepper_d.x = range_rect.x + range_rect.width - priv->stepper_d.width - focus_width - trough_border * trough_under_steppers;
-      priv->stepper_d.y = priv->stepper_a.y;
+      priv->slider.x = x;
+      priv->slider.width = width;
 
-      if (range->has_stepper_c)
-        {
-          priv->stepper_c.width = stepper_width;
-          priv->stepper_c.height = stepper_height;
-        }
-      else
-        {
-          priv->stepper_c.width = 0;
-          priv->stepper_c.height = 0;
-        }
-
-      priv->stepper_c.x = priv->stepper_d.x - priv->stepper_c.width;
-      priv->stepper_c.y = priv->stepper_a.y;
-
-      /* Now the trough is the remaining space between steppers B and C,
-       * if any
-       */
-      priv->trough.x = priv->stepper_b.x + priv->stepper_b.width + stepper_spacing * has_steppers_ab;
-      priv->trough.y = range_rect.y;
-
-      priv->trough.width = priv->stepper_c.x - priv->trough.x - stepper_spacing * has_steppers_cd;
-      priv->trough.height = range_rect.height;
-
-      /* Slider fits into the trough, with stepper_spacing on either side,
-       * and the size/position based on the adjustment or fixed, depending.
-       */
-      priv->slider.y = priv->trough.y + focus_width + trough_border;
-      priv->slider.height = priv->trough.height - (focus_width + trough_border) * 2;
-
-      /* Compute slider position/length */
-      {
-        gint x, left, right, width;
-
-        left = priv->trough.x;
-        right = priv->trough.x + priv->trough.width;
-
-        if (! trough_under_steppers)
-          {
-            left += trough_border;
-            right -= trough_border;
-          }
-
-        /* slider width is the fraction (page_size /
-         * total_adjustment_range) times the trough width in pixels
-         */
-
-        if (range->adjustment->upper - range->adjustment->lower != 0)
-          width = ((right - left) * (range->adjustment->page_size /
-                                    (range->adjustment->upper - range->adjustment->lower)));
-        else
-          width = range->min_slider_size;
-
-        if (width < range->min_slider_size ||
-            range->slider_size_fixed)
-          width = range->min_slider_size;
-
-        width = MIN (width, priv->trough.width);
-
-        x = left;
-
-        if (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size != 0)
-          x += (right - left - width) * ((adjustment_value - range->adjustment->lower) /
-                                         (range->adjustment->upper - range->adjustment->lower - range->adjustment->page_size));
-
-        x = CLAMP (x, left, right);
-
-
-        priv->slider.x = x;
-        priv->slider.width = width;
-
-        priv->slider_start = priv->slider.x;
-        priv->slider_end = priv->slider.x + priv->slider.width;
-      }
+      priv->slider_start = priv->slider.x;
+      priv->slider_end = priv->slider.x + priv->slider.width;
     }
 
   priv->range_rect = range_rect;

@@ -38,24 +38,14 @@ G_GNUC_INTERNAL void os_clamp_dimensions (GtkWidget    *widget,
 
 G_GNUC_INTERNAL void os_gtk_range_calc_request (GtkRange      *range,
                                                 gint           slider_width,
-                                                gint           stepper_size,
-                                                gint           focus_width,
                                                 gint           trough_border,
-                                                gint           stepper_spacing,
                                                 GdkRectangle  *range_rect,
                                                 GtkBorder     *border,
-                                                gint          *n_steppers_p,
-                                                gboolean      *has_steppers_ab,
-                                                gboolean      *has_steppers_cd,
                                                 gint          *slider_length_p);
 
 G_GNUC_INTERNAL void os_gtk_range_get_props (GtkRange  *range,
                                              gint      *slider_width,
-                                             gint      *stepper_size,
-                                             gint      *focus_width,
                                              gint      *trough_border,
-                                             gint      *stepper_spacing,
-                                             gboolean  *trough_under_steppers,
                                              gint      *arrow_displacement_x,
                                              gint      *arrow_displacement_y);
 
