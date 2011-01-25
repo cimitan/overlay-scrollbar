@@ -1142,8 +1142,9 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   gtk_widget_get_allocation (GTK_WIDGET (priv->range), &allocation);
 
-  overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range))); 
-  gtk_window_move (GTK_WINDOW (scrollbar), event->x+allocation.x + 10, event->y+allocation.y);
+  overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
+  overlay_scrollbar_calc_layout_slider (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
+  gtk_window_move (GTK_WINDOW (scrollbar), event->x+allocation.x + 10 + priv->slider.x, event->y+allocation.y + priv->slider.y);
 
   overlay_scrollbar_store_window_position (scrollbar);
 
