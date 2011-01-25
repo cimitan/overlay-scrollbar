@@ -85,8 +85,6 @@ struct _OverlayScrollbarPrivate
 
   gint pointer_x;
   gint pointer_y;
-  gint pointer_x_root;
-  gint pointer_y_root;
 };
 
 /* SUBCLASS FUNCTIONS */
@@ -209,8 +207,6 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
-          priv->pointer_x_root = event->x_root;
-          priv->pointer_y_root = event->y_root;
 
           gtk_widget_queue_draw (widget);
 
