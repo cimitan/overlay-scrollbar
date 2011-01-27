@@ -1159,7 +1159,7 @@ range_value_changed_cb (GtkWidget      *widget,
   overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
   overlay_scrollbar_calc_layout_slider (scrollbar, range->adjustment->value);
 
-  if (!priv->motion_notify_event)
+  if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (scrollbar));
 /*  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x + priv->slider.x, priv->win_y + priv->slider.y);*/
 
