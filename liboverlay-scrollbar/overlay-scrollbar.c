@@ -432,6 +432,14 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   cairo_fill_preserve (cr);
 
   cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0);
+
+  if (priv->motion_notify_event)
+    {
+      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
+      cairo_fill_preserve (cr);
+      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 1.0);
+    }
+
   cairo_stroke (cr);
 
   os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, 7);
