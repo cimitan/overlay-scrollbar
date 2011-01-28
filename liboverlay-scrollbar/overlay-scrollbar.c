@@ -70,7 +70,6 @@ struct _OverlayScrollbarPrivate
   gboolean enter_notify_event;
   gboolean motion_notify_event;
   gboolean value_changed_event;
-
   gboolean toplevel_connected;
 
   gboolean can_hide;
@@ -624,6 +623,24 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
     {
       gint x, y;
 
+      /* reconnect slider and overlay after key press */
+      if (priv->value_changed_event)
+        {
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              priv->slide_initial_slider_position = event->y_root - priv->win_y - event->y;
+              priv->slide_initial_coordinate = event->y_root;
+            }
+          else
+            {
+              priv->slide_initial_slider_position = event->x_root - priv->win_x - event->x;
+              priv->slide_initial_coordinate = event->x_root;
+            }
+
+          overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root, event->y_root);
+          priv->value_changed_event = FALSE;
+        }
+
       priv->motion_notify_event = TRUE;
 
       overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root, event->y_root);
@@ -1003,7 +1020,10 @@ overlay_scrollbar_hide (gpointer user_data)
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   if (priv->can_hide)
+  {
+    priv->value_changed_event = FALSE;
     gtk_widget_hide (GTK_WIDGET (scrollbar));
+  }
 
   return FALSE;
 }
@@ -1246,6 +1266,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                          priv->range_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
               gtk_window_move (GTK_WINDOW (scrollbar), x_pos + x, y_pos + y);
+            }
+          else
+            {
+              gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y + priv->slider.y);
             }
 
           gtk_widget_show (GTK_WIDGET (scrollbar));
