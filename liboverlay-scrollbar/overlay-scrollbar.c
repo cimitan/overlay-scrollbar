@@ -38,7 +38,8 @@
 #define DEBUG
 #endif
 
-#define OVERLAY_SCROLLBAR_HEIGHT 100 /* height/width of the overlay scrollbar, in pixels */
+#define OVERLAY_SCROLLBAR_WIDTH 15 /* width/height of the overlay scrollbar, in pixels */
+#define OVERLAY_SCROLLBAR_HEIGHT 80 /* height/width of the overlay scrollbar, in pixels */
 #define PROXIMITY_WIDTH 40 /* width/height of the proximity effect, in pixels */
 #define TIMEOUT_HIDE 1000 /* timeout before hiding, in milliseconds */
 
@@ -1150,9 +1151,9 @@ range_size_allocate_cb (GtkWidget     *widget,
   scrollbar = OVERLAY_SCROLLBAR (user_data);
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  gtk_window_set_default_size (GTK_WINDOW (scrollbar), allocation->width, OVERLAY_SCROLLBAR_HEIGHT);
+  gtk_window_set_default_size (GTK_WINDOW (scrollbar), OVERLAY_SCROLLBAR_WIDTH, OVERLAY_SCROLLBAR_HEIGHT);
 
-  priv->slider.width = allocation->width;
+  priv->slider.width = OVERLAY_SCROLLBAR_WIDTH;
   priv->slider.height = OVERLAY_SCROLLBAR_HEIGHT;
 
   priv->range_all = *allocation;
