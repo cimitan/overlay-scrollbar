@@ -21,8 +21,7 @@ AC_LIBTOOL_WIN32_DLL
 AM_PROG_LIBTOOL
 
 # Don't forget to update the README when changing this.
-PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 2.22.0,,
-                  AC_MSG_ERROR([GTK+-2.0 is required to compile liboverlay-scrollbar]))
+PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 2.22.0, , AC_MSG_ERROR([GTK+-2.0 is required to compile liboverlay-scrollbar]))
 
 AC_SUBST(GTK_CFLAGS)
 AC_SUBST(GTK_LIBS)
