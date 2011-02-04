@@ -210,8 +210,6 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
           priv->pointer_y = event->y;
 
           gtk_widget_queue_draw (widget);
-
-          overlay_scrollbar_store_window_position (OVERLAY_SCROLLBAR (widget));
         }
     }
 
@@ -1286,7 +1284,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
            xevent->xmotion.y <= priv->range_all.y + priv->overlay.y + priv->overlay.height))
         {
           priv->can_hide = FALSE;
-          overlay_scrollbar_store_window_position (scrollbar);
 
           if (priv->overlay.height > priv->slider.height)
             {
