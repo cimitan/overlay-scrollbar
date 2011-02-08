@@ -10,12 +10,12 @@ LDADDS = \
 	$(GTK_LIBS)
 
 bin_PROGRAMS = \
-	test-overlay-scrollbar-window
+	overlay-scrollbar-test
 
-test_overlay_scrollbar_window_DEPENDENCIES = $(DEPS)
+overlay_scrollbar_test_DEPENDENCIES = $(DEPS)
 
-test_overlay_scrollbar_window_LDADD = $(LDADDS)
+overlay_scrollbar_test_LDADD = $(LDADDS)
 
-test_overlay_scrollbar_window_SOURCES = test-overlay-scrollbar-window.c
+overlay_scrollbar_test_SOURCES = overlay-scrollbar-test.c
 
 #EXTRA_DIST +=
