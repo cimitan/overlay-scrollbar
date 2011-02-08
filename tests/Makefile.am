@@ -9,7 +9,7 @@ LDADDS = \
 	$(top_builddir)/liboverlay-scrollbar/liboverlay-scrollbar.la \
 	$(GTK_LIBS)
 
-noinst_PROGRAMS = \
+bin_PROGRAMS = \
 	test-overlay-scrollbar-window
 
 test_overlay_scrollbar_window_DEPENDENCIES = $(DEPS)
