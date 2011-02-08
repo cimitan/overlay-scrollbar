@@ -27,7 +27,7 @@
 
 #include <gtk/gtk.h>
 
-#include <overlay-scrollbar.h>
+#include "overlay-scrollbar.h"
 
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);

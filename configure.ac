@@ -35,6 +35,7 @@ AC_CONFIG_FILES([
 Makefile
 liboverlay-scrollbar/Makefile
 liboverlay-scrollbar/overlay-scrollbar.pc
+tests/Makefile
 ])
 
 AC_OUTPUT
