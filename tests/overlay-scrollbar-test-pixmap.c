@@ -32,10 +32,45 @@
 #define DEBUG(msg) \
         do { fprintf (stderr, "DEBUG: %s\n", msg); } while (0)
 
+static void os_cairo_draw_rounded_rect (cairo_t *cr,
+                                        gdouble  x,
+                                        gdouble  y,
+                                        gdouble  width,
+                                        gdouble  height,
+                                        gdouble  radius);
+
 static void pixmap_draw (GdkPixmap *pixmap);
 
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
+
+/**
+ * os_cairo_draw_rounded_rect:
+ * draw a rounded rectangle
+ **/
+static void
+os_cairo_draw_rounded_rect (cairo_t *cr,
+                            gdouble  x,
+                            gdouble  y,
+                            gdouble  width,
+                            gdouble  height,
+                            gdouble  radius)
+{
+  if (radius < 1)
+    {
+      cairo_rectangle (cr, x, y, width, height);
+      return;
+    }
+
+  radius = MIN (radius, MIN (width / 2.0, height / 2.0));
+
+  cairo_move_to (cr, x + radius, y);
+
+  cairo_arc (cr, x + width - radius, y + radius, radius, G_PI * 1.5, G_PI * 2);
+  cairo_arc (cr, x + width - radius, y + height - radius, radius, 0, G_PI * 0.5);
+  cairo_arc (cr, x + radius, y + height - radius, radius, G_PI * 0.5, G_PI);
+  cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
+}
 
 /**
  * pixmap_draw:
@@ -56,7 +91,7 @@ pixmap_draw (GdkPixmap *pixmap)
 
   cr_surface = cairo_create (surface);
 
-  cairo_rectangle (cr_surface, 10, 10, width - 20, height - 20);
+  os_cairo_draw_rounded_rect (cr_surface, 10, 10, width - 20, height - 20, 20);
   cairo_set_source_rgba (cr_surface, 1.0, 0.6, 0.6, 0.5);
   cairo_fill_preserve (cr_surface);
 
