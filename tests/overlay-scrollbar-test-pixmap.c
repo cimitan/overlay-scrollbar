@@ -32,6 +32,8 @@
 #define DEBUG(msg) \
         do { fprintf (stderr, "DEBUG: %s\n", msg); } while (0)
 
+static void bitmap_draw (GdkBitmap *bitmap);
+
 static void os_cairo_draw_rounded_rect (cairo_t *cr,
                                         gdouble  x,
                                         gdouble  y,
@@ -43,6 +45,44 @@ static void pixmap_draw (GdkPixmap *pixmap);
 
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
+
+/**
+ * bitmap_draw:
+ * draw on the bitmap
+ **/
+static void
+bitmap_draw (GdkBitmap *bitmap)
+{
+  cairo_t *cr_surface;
+  cairo_surface_t *surface;
+  cairo_status_t status;
+  gint width, height;
+
+  gdk_drawable_get_size (bitmap, &width, &height);
+
+  surface = cairo_xlib_surface_create_for_bitmap (GDK_DRAWABLE_XDISPLAY (bitmap), gdk_x11_drawable_get_xid (bitmap),
+                                                  GDK_SCREEN_XSCREEN (gdk_drawable_get_screen (bitmap)), width, height);
+
+  cr_surface = cairo_create (surface);
+
+  cairo_set_operator (cr_surface, CAIRO_OPERATOR_SOURCE);
+  cairo_set_source_rgba (cr_surface, 0.0, 0.0, 0.0, 0.0);
+  cairo_paint (cr_surface);
+
+  cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
+  os_cairo_draw_rounded_rect (cr_surface, 0, 0, width, height, 20);
+  cairo_set_source_rgba (cr_surface, 1.0, 1.0, 1.0, 1.0);
+  cairo_fill (cr_surface);
+
+  status = cairo_surface_write_to_png (surface, "/tmp/overlay-scrollbar-test-pixmap_bitmap.png");
+
+  if (status == CAIRO_STATUS_SUCCESS)
+    printf ("cairo_surface_t written to /tmp/overlay-scrollbar-test-pixmap_bitmap.png\n");
+  else
+    DEBUG (cairo_status_to_string (status));
+
+  cairo_destroy (cr_surface);
+}
 
 /**
  * os_cairo_draw_rounded_rect:
@@ -84,7 +124,7 @@ pixmap_draw (GdkPixmap *pixmap)
   cairo_status_t status;
   gint width, height;
 
-  gdk_pixmap_get_size (pixmap, &width, &height);
+  gdk_drawable_get_size (pixmap, &width, &height);
 
   surface = cairo_xlib_surface_create (GDK_DRAWABLE_XDISPLAY (pixmap), gdk_x11_drawable_get_xid (pixmap),
                                        GDK_VISUAL_XVISUAL (gdk_drawable_get_visual (pixmap)), width, height);
@@ -104,10 +144,10 @@ pixmap_draw (GdkPixmap *pixmap)
   cairo_set_source_rgba (cr_surface, 0.8, 0.4, 0.4, 1.0);
   cairo_stroke (cr_surface);
 
-  status = cairo_surface_write_to_png (surface, "/tmp/overlay-scrollbar-test-pixmap.png");
+  status = cairo_surface_write_to_png (surface, "/tmp/overlay-scrollbar-test-pixmap_pixmap.png");
 
   if (status == CAIRO_STATUS_SUCCESS)
-    printf ("cairo_surface_t written to /tmp/overlay-scrollbar-test-pixmap.png\n");
+    printf ("cairo_surface_t written to /tmp/overlay-scrollbar-test-pixmap_pixmap.png\n");
   else
     DEBUG (cairo_status_to_string (status));
 
@@ -139,12 +179,17 @@ main (int   argc,
   GtkWidget *frame;
   GtkWidget *frame_window;
   GtkWidget *image;
+  GdkBitmap *bitmap;
   GdkPixmap *pixmap;
   GdkWindowAttr attributes;
   GdkWindow *child_window;
   gint attributes_mask;
 
   gtk_init (&argc, &argv);
+
+  /* bitmap */
+  bitmap = gdk_pixmap_new (NULL, 120, 100, 1);
+  bitmap_draw (bitmap);
 
   /* pixmap */
   pixmap = gdk_pixmap_new (NULL, 120, 100, 24);
@@ -193,6 +238,7 @@ main (int   argc,
   attributes_mask = GDK_WA_X | GDK_WA_Y;
   child_window = gdk_window_new (gtk_widget_get_window (window), &attributes, attributes_mask);
 
+  gdk_window_shape_combine_mask (child_window, bitmap, 0, 0);
   gdk_window_set_back_pixmap (child_window, pixmap, FALSE);
   gdk_window_show (child_window);
 
