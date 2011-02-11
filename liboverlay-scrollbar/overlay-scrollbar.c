@@ -614,11 +614,15 @@ static void
 overlay_scrollbar_map (GtkWidget *widget)
 {
   DEBUG
+
+  GTK_WIDGET_CLASS (overlay_scrollbar_parent_class)->map (widget);
+
   Display *display;
   GtkWidget *parent;
   OverlayScrollbarPrivate *priv;
   XWindowChanges changes;
-  guint32 xid, xid_parent;
+  guint32 xid, xid_parent, xid_parent_parent;
+  unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
@@ -629,19 +633,43 @@ overlay_scrollbar_map (GtkWidget *widget)
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (parent));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (widget));
 
+  xid_parent_parent = GDK_WINDOW_XID (gdk_window_get_parent (gtk_widget_get_window (parent)));
+
   changes.sibling = xid_parent;
   changes.stack_mode = Above;
 
-/*  printf ("xid: %i, xid_parent: %i\n", xid, xid_parent);*/
-
   gdk_error_trap_push ();
-  XConfigureWindow (display, xid,  CWSibling | CWStackMode, &changes);
+  XConfigureWindow (display, xid, value_mask, &changes);
 
   gdk_flush ();
   if ((res = gdk_error_trap_pop ()))
-    g_warning ("Received X error: %d\n", res);
+    {
+      XEvent event;
+      Window xroot = gdk_x11_get_default_root_xwindow ();
 
-  GTK_WIDGET_CLASS (overlay_scrollbar_parent_class)->map (widget);
+      printf ("xid: %i, xid_parent: %i, xid_parent_parent: %i, xroot: %i\n", xid, xid_parent, xid_parent_parent, xroot);
+
+      /* Synthetic ConfigureRequest (so it looks to the window manager
+       * like a normal ConfigureRequest) so it can handle that
+       * and *actually* Configure the window without errors
+       */
+      event.type = ConfigureRequest;
+      
+      /* The WM will know the event is synthetic since the send_event
+       * field is always set */
+      event.xconfigurerequest.window = xid;
+      event.xconfigurerequest.parent = xid_parent;
+      event.xconfigurerequest.detail = changes.stack_mode;
+      event.xconfigurerequest.above = changes.sibling;
+      event.xconfigurerequest.value_mask = value_mask;
+
+      /* Sends the event to the root window (which the WM has the Selection
+       * on) so now Compiz will get a ConfigureRequest for the scrollbar
+       * to stack relative to the reparented window */
+      XSendEvent (display, xroot, FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &event);
+
+      g_warning ("Received X error: %d, working around\n", res);
+    }
 }
 
 /**
@@ -694,16 +722,16 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
                          priv->win_y + priv->overlay.y,
                          priv->win_y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-            if (priv->overlay.y == 0)
-              {
-                priv->slide_initial_slider_position = 0;
-                priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
-              }
-            else if (priv->overlay.y + priv->overlay.height >= priv->trough.y + priv->trough.height)
-              {
-                priv->slide_initial_slider_position = priv->trough.y + priv->trough.height - priv->overlay.height;
-                priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
-              }
+              if (priv->overlay.y == 0)
+                {
+                  priv->slide_initial_slider_position = 0;
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
+                }
+              else if (priv->overlay.y + priv->overlay.height >= priv->trough.y + priv->trough.height)
+                {
+                  priv->slide_initial_slider_position = priv->trough.y + priv->trough.height - priv->overlay.height;
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
+                }
             }
           else
             {
