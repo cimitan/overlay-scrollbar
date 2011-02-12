@@ -200,7 +200,7 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
 
           priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
 
-/*          overlay_scrollbar_map (widget);*/
+          overlay_scrollbar_map (widget);
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
           os_present_gdk_window_with_timestamp (priv->range, event->time);
 
@@ -303,7 +303,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   widget_class->enter_notify_event   = overlay_scrollbar_enter_notify_event;
   widget_class->expose_event         = overlay_scrollbar_expose;
   widget_class->leave_notify_event   = overlay_scrollbar_leave_notify_event;
-/*  widget_class->map                  = overlay_scrollbar_map;*/
+  widget_class->map                  = overlay_scrollbar_map;
   widget_class->motion_notify_event  = overlay_scrollbar_motion_notify_event;
   widget_class->screen_changed       = overlay_scrollbar_screen_changed;
 
@@ -641,7 +641,7 @@ overlay_scrollbar_map (GtkWidget *widget)
   GtkWidget *parent;
   OverlayScrollbarPrivate *priv;
   XWindowChanges changes;
-  guint32 xid, xid_parent, xid_parent_parent;
+  guint32 xid, xid_parent;
   unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
@@ -652,8 +652,6 @@ overlay_scrollbar_map (GtkWidget *widget)
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (parent));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (widget));
-
-  xid_parent_parent = GDK_WINDOW_XID (gdk_window_get_parent (gtk_widget_get_window (parent)));
 
   changes.sibling = xid_parent;
   changes.stack_mode = Above;
@@ -666,8 +664,6 @@ overlay_scrollbar_map (GtkWidget *widget)
     {
       XEvent event;
       Window xroot = gdk_x11_get_default_root_xwindow ();
-
-      printf ("xid: %i, xid_parent: %i, xid_parent_parent: %i, xroot: %i\n", xid, xid_parent, xid_parent_parent, xroot);
 
       /* Synthetic ConfigureRequest (so it looks to the window manager
        * like a normal ConfigureRequest) so it can handle that
@@ -1575,7 +1571,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
 
           gtk_widget_show (GTK_WIDGET (scrollbar));
-/*          overlay_scrollbar_map (GTK_WIDGET (scrollbar));*/
+          overlay_scrollbar_map (GTK_WIDGET (scrollbar));
         }
       else
         {
