@@ -951,8 +951,8 @@ overlay_scrollbar_calc_layout_range (OverlayScrollbar *scrollbar,
       priv->overlay.y = y;
       priv->overlay.height = height;
 
-/*      if (tmp_height != height);*/
-/*        overlay_resize_window (priv->overlay_window, 5, priv->overlay.height);*/
+      if (tmp_height != height);
+        overlay_resize_window (priv->overlay_window, 3, height);
     }
   else
     {
