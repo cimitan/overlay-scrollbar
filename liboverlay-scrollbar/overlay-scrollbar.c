@@ -484,23 +484,25 @@ overlay_scrollbar_expose (GtkWidget      *widget,
       cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
       cairo_fill_preserve (cr);
       cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 1.0);
+      cairo_stroke (cr);
     }
+  else
+    {
+      cairo_stroke (cr);
 
-  cairo_stroke (cr);
+      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius+1);
+      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      cairo_stroke (cr);
+      cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
+      cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
+      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
+      cairo_stroke (cr);
 
-  os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius+1);
-  cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
-  cairo_stroke (cr);
-
-  cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
-  cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
-  cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
-  cairo_stroke (cr);
-
-  cairo_move_to (cr, x + 0.5, y + height / 2);
-  cairo_line_to (cr, width - 0.5, y + height / 2);
-  cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
-  cairo_stroke (cr);
+      cairo_move_to (cr, x + 0.5, y + height / 2);
+      cairo_line_to (cr, width - 0.5, y + height / 2);
+      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      cairo_stroke (cr);
+    }
 
   cairo_restore (cr);
 
@@ -717,6 +719,9 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
           priv->value_changed_event = FALSE;
         }
 
+      if (!priv->motion_notify_event)
+        gtk_widget_queue_draw (widget);
+
       priv->motion_notify_event = TRUE;
 
       overlay_scrollbar_move (OVERLAY_SCROLLBAR (widget), event->x_root, event->y_root);
@@ -757,8 +762,6 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
         }
 
       gtk_window_move (GTK_WINDOW (widget), x - 4, y);
-
-      gtk_widget_queue_draw (widget);
     }
 
   return TRUE;
@@ -1192,8 +1195,8 @@ overlay_create_window (OverlayScrollbar *scrollbar)
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   /* bitmap */
-  overlay_bitmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 1);
-  overlay_draw_bitmap (overlay_bitmap);
+/*  overlay_bitmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 1);*/
+/*  overlay_draw_bitmap (overlay_bitmap);*/
 
   /* pixmap */
   overlay_pixmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 24);
@@ -1206,7 +1209,7 @@ overlay_create_window (OverlayScrollbar *scrollbar)
   attributes.window_type = GDK_WINDOW_CHILD;
   overlay_window = gdk_window_new (gtk_widget_get_window (priv->range), &attributes, 0);
 
-  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);
+/*  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);*/
   gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
   gdk_window_raise (overlay_window);
 
@@ -1338,8 +1341,8 @@ overlay_resize_window (GdkWindow *overlay_window,
   GdkPixmap *overlay_pixmap;
 
   /* bitmap */
-  overlay_bitmap = gdk_pixmap_new (NULL, width, height, 1);
-  overlay_draw_bitmap (overlay_bitmap);
+/*  overlay_bitmap = gdk_pixmap_new (NULL, width, height, 1);*/
+/*  overlay_draw_bitmap (overlay_bitmap);*/
 
   /* pixmap */
   overlay_pixmap = gdk_pixmap_new (NULL, width, height, 24);
@@ -1348,7 +1351,7 @@ overlay_resize_window (GdkWindow *overlay_window,
   /* overlay_window */
   gdk_window_resize (overlay_window, width, height);
 
-  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);
+/*  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);*/
   gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
 }
 

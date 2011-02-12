@@ -243,4 +243,6 @@ main (int   argc,
   gdk_window_show (child_window);
 
   gtk_main ();
+
+  return 0;
 }
