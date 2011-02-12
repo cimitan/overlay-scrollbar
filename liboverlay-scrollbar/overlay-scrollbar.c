@@ -20,6 +20,7 @@
  *
  */
 
+#include <cairo-xlib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
 #include <X11/X.h>
@@ -67,7 +68,7 @@ struct _OverlayScrollbarPrivate
   GtkAllocation range_all;
   GtkOrientation orientation;
   GtkWidget *range;
-  GtkWindow *overlay_window;
+  GdkWindow *overlay_window;
 
   gboolean button_press_event;
   gboolean enter_notify_event;
@@ -146,9 +147,17 @@ static void overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar
 /* OVERLAY FUNCTIONS */
 static void overlay_create_window (OverlayScrollbar *scrollbar);
 
+static void overlay_draw_bitmap (GdkBitmap *bitmap);
+
+static void overlay_draw_pixmap (GdkPixmap *pixmap);
+
 static void overlay_expose_event_cb (GtkWidget      *widget,
                                      GdkEventExpose *event,
                                      gpointer        user_data);
+
+static void overlay_resize_window (GdkWindow *overlay_window,
+                                   gint       width,
+                                   gint       height);
 
 /* RANGE FUNCTIONS */
 static gboolean range_expose_event_cb (GtkWidget      *widget,
@@ -195,7 +204,7 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
 
           priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
 
-          overlay_scrollbar_map (widget);
+/*          overlay_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
           os_present_gdk_window_with_timestamp (priv->range, event->time);
 
@@ -298,7 +307,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   widget_class->enter_notify_event   = overlay_scrollbar_enter_notify_event;
   widget_class->expose_event         = overlay_scrollbar_expose;
   widget_class->leave_notify_event   = overlay_scrollbar_leave_notify_event;
-  widget_class->map                  = overlay_scrollbar_map;
+/*  widget_class->map                  = overlay_scrollbar_map;*/
   widget_class->motion_notify_event  = overlay_scrollbar_motion_notify_event;
   widget_class->screen_changed       = overlay_scrollbar_screen_changed;
 
@@ -747,7 +756,7 @@ overlay_scrollbar_motion_notify_event (GtkWidget *widget,
           y = priv->win_y;
         }
 
-      gtk_window_move (GTK_WINDOW (widget), x, y);
+      gtk_window_move (GTK_WINDOW (widget), x - 4, y);
 
       gtk_widget_queue_draw (widget);
     }
@@ -934,8 +943,8 @@ overlay_scrollbar_calc_layout_range (OverlayScrollbar *scrollbar,
       priv->overlay.y = y;
       priv->overlay.height = height;
 
-      if (tmp_height != height);
-        gtk_window_resize (GTK_WINDOW (priv->overlay_window), 5, priv->overlay.height);
+/*      if (tmp_height != height);*/
+/*        overlay_resize_window (priv->overlay_window, 5, priv->overlay.height);*/
     }
   else
     {
@@ -1174,26 +1183,34 @@ static void
 overlay_create_window (OverlayScrollbar *scrollbar)
 {
   DEBUG
+  GdkBitmap *overlay_bitmap;
+  GdkPixmap *overlay_pixmap;
+  GdkWindow *overlay_window;
+  GdkWindowAttr attributes;
   OverlayScrollbarPrivate *priv;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  priv->overlay_window = gtk_window_new (GTK_WINDOW_POPUP);
+  /* bitmap */
+  overlay_bitmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 1);
+  overlay_draw_bitmap (overlay_bitmap);
 
-  gtk_window_set_default_size (priv->overlay_window, 5, 100);
-  gtk_window_set_skip_pager_hint (priv->overlay_window, TRUE);
-  gtk_window_set_skip_taskbar_hint (priv->overlay_window, TRUE);
-  gtk_window_set_has_resize_grip (priv->overlay_window, FALSE);
-  gtk_window_set_decorated (priv->overlay_window, FALSE);
-  gtk_window_set_focus_on_map (priv->overlay_window, FALSE);
-  gtk_window_set_accept_focus (priv->overlay_window, FALSE);
-  gtk_widget_set_app_paintable (GTK_WIDGET (priv->overlay_window), TRUE);
+  /* pixmap */
+  overlay_pixmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 24);
+  overlay_draw_pixmap (overlay_pixmap);
 
-  overlay_scrollbar_screen_changed (GTK_WIDGET (priv->overlay_window), NULL);
+  /* overlay_window */
+  attributes.width = 3;
+  attributes.height = priv->overlay.height;
+  attributes.wclass = GDK_INPUT_OUTPUT;
+  attributes.window_type = GDK_WINDOW_CHILD;
+  overlay_window = gdk_window_new (gtk_widget_get_window (priv->range), &attributes, 0);
 
-  /* draw the thumb */
-  g_signal_connect (G_OBJECT (priv->overlay_window), "expose-event",
-                    G_CALLBACK (overlay_expose_event_cb), scrollbar);
+  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);
+  gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
+  gdk_window_raise (overlay_window);
+
+  priv->overlay_window = overlay_window;
 }
 
 /**
@@ -1241,6 +1258,100 @@ overlay_expose_event_cb (GtkWidget      *widget,
   cairo_destroy (cr);
 }
 
+/**
+ * overlay_draw_bitmap:
+ * draw on the bitmap of the overlay, to get a mask
+ **/
+static void
+overlay_draw_bitmap (GdkBitmap *bitmap)
+{
+  cairo_t *cr_surface;
+  cairo_surface_t *surface;
+  gint width, height;
+
+  gdk_drawable_get_size (bitmap, &width, &height);
+
+  surface = cairo_xlib_surface_create_for_bitmap (GDK_DRAWABLE_XDISPLAY (bitmap),
+                                                  gdk_x11_drawable_get_xid (bitmap),
+                                                  GDK_SCREEN_XSCREEN (gdk_drawable_get_screen (bitmap)),
+                                                  width, height);
+
+  cr_surface = cairo_create (surface);
+
+  cairo_set_operator (cr_surface, CAIRO_OPERATOR_SOURCE);
+  cairo_set_source_rgba (cr_surface, 0.0, 0.0, 0.0, 0.0);
+  cairo_paint (cr_surface);
+
+  cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
+/*  os_cairo_draw_rounded_rect (cr_surface, 1, 0, 1, height, 5);*/
+  cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
+  os_cairo_draw_rounded_rect (cr_surface, 0, 1, width, height - 2, 5);
+  cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
+/*  cairo_fill (cr_surface);*/
+  cairo_fill (cr_surface);
+
+  cairo_destroy (cr_surface);
+}
+
+/**
+ * overlay_draw_pixmap:
+ * draw on the pixmap of the overlay, the real drawing
+ **/
+static void
+overlay_draw_pixmap (GdkPixmap *pixmap)
+{
+  cairo_t *cr_surface;
+  cairo_surface_t *surface;
+  gint width, height;
+
+  gdk_drawable_get_size (pixmap, &width, &height);
+
+  surface = cairo_xlib_surface_create (GDK_DRAWABLE_XDISPLAY (pixmap),
+                                       gdk_x11_drawable_get_xid (pixmap),
+                                       GDK_VISUAL_XVISUAL (gdk_drawable_get_visual (pixmap)),
+                                       width, height);
+
+  cr_surface = cairo_create (surface);
+
+  cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
+  cairo_paint (cr_surface);
+
+/*  cairo_set_line_width (cr_surface, 1.0);*/
+/*  os_cairo_draw_rounded_rect (cr_surface, 0.5, 0.5, width - 1, height - 1, 2);*/
+/*  cairo_set_source_rgba (cr_surface, 0.8, 0.4, 0.4, 1.0);*/
+/*  cairo_stroke (cr_surface);*/
+
+  cairo_destroy (cr_surface);
+}
+
+/**
+ * overlay_resize_window:
+ * resize the overlay window
+ **/
+static void
+overlay_resize_window (GdkWindow *overlay_window,
+                       gint       width,
+                       gint       height)
+{
+  DEBUG
+  GdkBitmap *overlay_bitmap;
+  GdkPixmap *overlay_pixmap;
+
+  /* bitmap */
+  overlay_bitmap = gdk_pixmap_new (NULL, width, height, 1);
+  overlay_draw_bitmap (overlay_bitmap);
+
+  /* pixmap */
+  overlay_pixmap = gdk_pixmap_new (NULL, width, height, 24);
+  overlay_draw_pixmap (overlay_pixmap);
+
+  /* overlay_window */
+  gdk_window_resize (overlay_window, width, height);
+
+  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);
+  gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
+}
+
 /* RANGE FUNCTIONS */
 /**
  * range_expose_event_cb:
@@ -1279,10 +1390,11 @@ range_expose_event_cb (GtkWidget      *widget,
       overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
 
       overlay_create_window (scrollbar);
-      gtk_window_move (GTK_WINDOW (scrollbar), x_pos + allocation.x, y_pos + allocation.y);
-      gtk_window_move (priv->overlay_window, x_pos + allocation.x + priv->overlay.x, y_pos + allocation.y + priv->overlay.y);
+      gtk_window_move (GTK_WINDOW (scrollbar), x_pos + allocation.x - 4, y_pos + allocation.y);
+      gdk_window_move (priv->overlay_window, allocation.x + priv->overlay.x, allocation.y + priv->overlay.y);
 
-      gtk_widget_show (GTK_WIDGET (priv->overlay_window));
+      gdk_window_show (priv->overlay_window);
+/*      gtk_widget_show (GTK_WIDGET (priv->overlay_window));*/
       overlay_scrollbar_store_window_position (scrollbar);
 /*      printf ("init: %i %i\n", priv->win_x, priv->win_y);*/
     }
@@ -1350,8 +1462,8 @@ range_value_changed_cb (GtkWidget      *widget,
 
   gdk_window_get_position (gtk_widget_get_window (scrolled_window), &x_pos, &y_pos);
 
-  gtk_window_move (GTK_WINDOW (priv->overlay_window), x_pos + allocation.x + allocation.width - 10,
-                                                      y_pos + allocation.y + priv->overlay.y);
+  gdk_window_move (priv->overlay_window, allocation.x + allocation.width - 8,
+                                         allocation.y + priv->overlay.y);
 
 /*  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x + priv->slider.x, priv->win_y + priv->slider.y);*/
 
@@ -1385,7 +1497,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
   overlay_scrollbar_calc_layout_slider (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
-  gtk_window_move (GTK_WINDOW (scrollbar), event->x + allocation.x + priv->slider.x, event->y + allocation.y + priv->slider.y);
+  gtk_window_move (GTK_WINDOW (scrollbar), event->x + allocation.x + priv->slider.x - 4, event->y + allocation.y + priv->slider.y);
   GtkWidget *scrolled_window;
 
   scrolled_window = gtk_widget_get_parent (priv->range);
@@ -1398,9 +1510,9 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   gdk_window_get_position (gtk_widget_get_window (scrolled_window), &x_pos, &y_pos);
 
-  gtk_window_resize (GTK_WINDOW (priv->overlay_window), 5, priv->overlay.height);
-  gtk_window_move (GTK_WINDOW (priv->overlay_window), x_pos + allocation.x + allocation.width - 10,
-                                                      y_pos + allocation.y + priv->overlay.y);
+  overlay_resize_window (priv->overlay_window, 3, priv->overlay.height);
+  gdk_window_move (priv->overlay_window, allocation.x + allocation.width - 8,
+                                         allocation.y + priv->overlay.y);
 
   overlay_scrollbar_store_window_position (scrollbar);
 
@@ -1435,7 +1547,7 @@ toplevel_enter_notify_event_cb (GtkWidget        *widget,
 
   gdk_window_get_position (gtk_widget_get_window (scrolled_window), &x_pos, &y_pos);
 
-  gtk_window_resize (GTK_WINDOW (priv->overlay_window), 5, priv->overlay.height);
+  gtk_window_resize (GTK_WINDOW (priv->overlay_window), 3, priv->overlay.height);
   gtk_window_move (GTK_WINDOW (priv->overlay_window), x_pos + allocation.x + allocation.width - 10,
                                                       y_pos + allocation.y + priv->overlay.y);
 
@@ -1488,15 +1600,15 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                          priv->range_all.y + priv->overlay.y,
                          priv->range_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-              gtk_window_move (GTK_WINDOW (scrollbar), x_pos + x, y_pos + y);
+              gtk_window_move (GTK_WINDOW (scrollbar), x_pos + x - 4, y_pos + y);
             }
           else
             {
-              gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x, priv->win_y + priv->slider.y);
+              gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x - 4, priv->win_y + priv->slider.y);
             }
 
           gtk_widget_show (GTK_WIDGET (scrollbar));
-          overlay_scrollbar_map (GTK_WIDGET (scrollbar));
+/*          overlay_scrollbar_map (GTK_WIDGET (scrollbar));*/
         }
       else
         {

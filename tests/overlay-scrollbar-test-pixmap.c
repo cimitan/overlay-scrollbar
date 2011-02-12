@@ -236,7 +236,7 @@ main (int   argc,
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes_mask = GDK_WA_X | GDK_WA_Y;
-  child_window = gdk_window_new (gtk_widget_get_window (window), &attributes, attributes_mask);
+  child_window = gdk_window_new (gtk_widget_get_window (window), &attributes, 0);
 
   gdk_window_shape_combine_mask (child_window, bitmap, 0, 0);
   gdk_window_set_back_pixmap (child_window, pixmap, FALSE);
