@@ -151,10 +151,6 @@ static void overlay_draw_bitmap (GdkBitmap *bitmap);
 
 static void overlay_draw_pixmap (GdkPixmap *pixmap);
 
-static void overlay_expose_event_cb (GtkWidget      *widget,
-                                     GdkEventExpose *event,
-                                     gpointer        user_data);
-
 static void overlay_resize_window (GdkWindow *overlay_window,
                                    gint       width,
                                    gint       height);
@@ -484,6 +480,19 @@ overlay_scrollbar_expose (GtkWidget      *widget,
       cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
       cairo_fill_preserve (cr);
       cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 1.0);
+      cairo_stroke (cr);
+
+      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius+1);
+      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      cairo_stroke (cr);
+      cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
+      cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
+      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
+      cairo_stroke (cr);
+
+      cairo_move_to (cr, x + 0.5, y + height / 2);
+      cairo_line_to (cr, width - 0.5, y + height / 2);
+      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
   else
@@ -1214,51 +1223,6 @@ overlay_create_window (OverlayScrollbar *scrollbar)
   gdk_window_raise (overlay_window);
 
   priv->overlay_window = overlay_window;
-}
-
-/**
- * overlay_expose_event_cb:
- * handle the "expose-event" of the overlay
- **/
-static void
-overlay_expose_event_cb (GtkWidget      *widget,
-                         GdkEventExpose *event,
-                         gpointer        user_data)
-{
-  DEBUG
-  GtkAllocation allocation;
-  OverlayScrollbarPrivate *priv;
-  cairo_t *cr;
-  gint x, y, width, height;
-
-  cr = gdk_cairo_create (widget->window);
-
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (user_data));
-
-  gtk_widget_get_allocation (widget, &allocation);
-
-  x = 0;
-  y = 1;
-  width = allocation.width;
-  height = allocation.height - 2;
-
-  /* clear the background */
-  cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-  cairo_set_source_rgba (cr, 1, 1, 1, 0);
-  cairo_paint (cr);
-
-  os_cairo_draw_rounded_rect (cr, x, y, width, height, 6);
-
-  cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-  cairo_set_source_rgba (cr, 1, 0.5, 0.5, 0.5);
-  cairo_fill (cr);
-
-  cairo_set_line_width (cr, 1);
-  os_cairo_draw_rounded_rect (cr, x+0.5, y+0.5, width-1, height-1, 6);
-  cairo_set_source_rgba (cr, 1, 0.5, 0.5, 0.6);
-  cairo_stroke (cr);
-
-  cairo_destroy (cr);
 }
 
 /**
