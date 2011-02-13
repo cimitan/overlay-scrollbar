@@ -198,7 +198,6 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
     {
       if (event->button == 1)
         {
-          GtkRange *range;
           OverlayScrollbarPrivate *priv;
 
           priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
@@ -206,8 +205,6 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
 /*          overlay_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
           os_present_gdk_window_with_timestamp (priv->range, event->time);
-
-          range = GTK_RANGE (priv->range);
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
@@ -1185,7 +1182,6 @@ overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar)
       priv->win_x = win_x + priv->range_all.x;
       priv->win_y = win_y + priv->range_all.y;
     }
-/*  printf ("%i %i\n", priv->win_x, priv->win_y);*/
 }
 
 /* OVERLAY FUNCTIONS */
@@ -1256,7 +1252,6 @@ overlay_draw_bitmap (GdkBitmap *bitmap)
   cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
   os_cairo_draw_rounded_rect (cr_surface, 0, 1, width, height - 2, 5);
   cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
-/*  cairo_fill (cr_surface);*/
   cairo_fill (cr_surface);
 
   cairo_destroy (cr_surface);
@@ -1381,9 +1376,8 @@ range_expose_event_cb (GtkWidget      *widget,
       overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
 
       gdk_window_show (priv->overlay_window);
-/*      gtk_widget_show (GTK_WIDGET (priv->overlay_window));*/
+
       overlay_scrollbar_store_window_position (scrollbar);
-/*      printf ("init: %i %i\n", priv->win_x, priv->win_y);*/
     }
 
   return TRUE;
@@ -1437,23 +1431,7 @@ range_value_changed_cb (GtkWidget      *widget,
   if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (scrollbar));
 
-  GtkWidget *scrolled_window;
-
-  scrolled_window = gtk_widget_get_parent (priv->range);
-
-  GtkAllocation allocation;
-
-  gtk_widget_get_allocation (scrolled_window, &allocation);
-
-  gint x_pos, y_pos;
-
-  gdk_window_get_position (gtk_widget_get_window (scrolled_window), &x_pos, &y_pos);
-
   overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
-
-/*  gtk_window_move (GTK_WINDOW (scrollbar), priv->win_x + priv->slider.x, priv->win_y + priv->slider.y);*/
-
-/*  overlay_scrollbar_store_window_position (scrollbar);*/
 }
 
 /* TOPLEVEL FUNCTIONS */
@@ -1484,17 +1462,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
   overlay_scrollbar_calc_layout_slider (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
   gtk_window_move (GTK_WINDOW (scrollbar), event->x + allocation.x + priv->slider.x - 4, event->y + allocation.y + priv->slider.y);
-  GtkWidget *scrolled_window;
-
-  scrolled_window = gtk_widget_get_parent (priv->range);
-
-/*  GtkAllocation allocation;*/
-
-  gtk_widget_get_allocation (scrolled_window, &allocation);
-
-  gint x_pos, y_pos;
-
-  gdk_window_get_position (gtk_widget_get_window (scrolled_window), &x_pos, &y_pos);
 
   overlay_resize_window (priv->overlay_window, 3, priv->overlay.height);
   overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
@@ -1586,8 +1553,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
         }
     }
 
-/*  gtk_widget_show (GTK_WIDGET (priv->overlay_window));*/
-
   return GDK_FILTER_CONTINUE;
 }
 
@@ -1607,13 +1572,7 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OVERLAY_SCROLLBAR (user_data);
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-/*  gtk_widget_hide (GTK_WIDGET (priv->overlay_window));*/
-
-/*  if (!priv->button_press_event && !priv->enter_notify_event)*/
-/*    {*/
-      g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
-/*      gtk_widget_hide (os->thumb);*/
-/*    }*/
+  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
 
   return FALSE;
 }
