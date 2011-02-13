@@ -417,7 +417,7 @@ overlay_scrollbar_expose (GtkWidget      *widget,
   y = 0;
   width = allocation.width;
   height = allocation.height;
-  radius = priv->can_rgba ? 6 : 0;
+  radius = priv->can_rgba ? 18 : 0;
 
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
 
