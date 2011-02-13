@@ -203,7 +203,7 @@ overlay_scrollbar_button_press_event (GtkWidget      *widget,
 
           priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
 
-          overlay_scrollbar_map (widget);
+/*          overlay_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
           os_present_gdk_window_with_timestamp (priv->range, event->time);
 
@@ -306,7 +306,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   widget_class->enter_notify_event   = overlay_scrollbar_enter_notify_event;
   widget_class->expose_event         = overlay_scrollbar_expose;
   widget_class->leave_notify_event   = overlay_scrollbar_leave_notify_event;
-  widget_class->map                  = overlay_scrollbar_map;
+/*  widget_class->map                  = overlay_scrollbar_map;*/
   widget_class->motion_notify_event  = overlay_scrollbar_motion_notify_event;
   widget_class->screen_changed       = overlay_scrollbar_screen_changed;
 
@@ -1577,7 +1577,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
 
           gtk_widget_show (GTK_WIDGET (scrollbar));
-          overlay_scrollbar_map (GTK_WIDGET (scrollbar));
+/*          overlay_scrollbar_map (GTK_WIDGET (scrollbar));*/
         }
       else
         {
