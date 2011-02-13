@@ -46,6 +46,8 @@ static void pixmap_draw (GdkPixmap *pixmap);
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
 
+GdkWindow *child_window = NULL;
+
 /**
  * bitmap_draw:
  * draw on the bitmap
@@ -131,9 +133,9 @@ pixmap_draw (GdkPixmap *pixmap)
 
   cr_surface = cairo_create (surface);
 
-  cairo_set_operator (cr_surface, CAIRO_OPERATOR_SOURCE);
-  cairo_set_source_rgba (cr_surface, 1.0, 1.0, 1.0, 1.0);
-  cairo_paint (cr_surface);
+/*  cairo_set_operator (cr_surface, CAIRO_OPERATOR_SOURCE);*/
+/*  cairo_set_source_rgba (cr_surface, 1.0, 1.0, 1.0, 0.0);*/
+/*  cairo_paint (cr_surface);*/
 
   cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
   os_cairo_draw_rounded_rect (cr_surface, 1, 1, width - 2, height - 2, 20);
@@ -165,6 +167,29 @@ window_destroy_cb (GtkWidget *widget,
   gtk_main_quit ();
 }
 
+static gboolean
+window_expose_event (GtkWidget      *widget,
+                     GdkEventExpose *event)
+{
+
+  cairo_t *cr;
+  /* create a cairo context to draw to the window */
+  cr = gdk_cairo_create (widget->window);
+  /* the source data is the (composited) event box */
+  gdk_cairo_set_source_pixmap (cr, child_window,
+                               20,
+                               100);
+  /* composite, with a 50% opacity */
+  cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+  cairo_paint_with_alpha (cr, 0.5);
+  /* we're done */
+  cairo_destroy (cr);
+  
+  
+  gdk_window_move (child_window, 10, 60);
+  return FALSE;
+}
+
 /**
  * main:
  * main routine
@@ -182,7 +207,7 @@ main (int   argc,
   GdkBitmap *bitmap;
   GdkPixmap *pixmap;
   GdkWindowAttr attributes;
-  GdkWindow *child_window;
+
   gint attributes_mask;
 
   gtk_init (&argc, &argv);
@@ -226,6 +251,8 @@ main (int   argc,
 
   gtk_widget_show_all (window);
 
+
+
   gtk_widget_get_allocation (frame_window, &allocation);
 
   /* child_window */
@@ -233,14 +260,21 @@ main (int   argc,
   attributes.y = allocation.y+20;
   attributes.width = 120;
   attributes.height = 100;
+  attributes.colormap = gdk_screen_get_rgba_colormap (gtk_widget_get_screen (window));
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
-  attributes_mask = GDK_WA_X | GDK_WA_Y;
-  child_window = gdk_window_new (gtk_widget_get_window (window), &attributes, 0);
+  attributes_mask = GDK_WA_X | GDK_WA_Y; //| GDK_WA_COLORMAP;
+  child_window = gdk_window_new (gtk_widget_get_window (window), &attributes, attributes_mask);
 
-  gdk_window_shape_combine_mask (child_window, bitmap, 0, 0);
+
+/*  gdk_window_shape_combine_mask (child_window, bitmap, 0, 0);*/
   gdk_window_set_back_pixmap (child_window, pixmap, FALSE);
   gdk_window_show (child_window);
+
+  gdk_window_set_composited (child_window, TRUE);
+
+  g_signal_connect_after (window, "expose-event",
+                          G_CALLBACK (window_expose_event), NULL);
 
   gtk_main ();
 
