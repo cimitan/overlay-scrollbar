@@ -19,6 +19,8 @@ liboverlay_scrollbar_la_SOURCES = \
 	overlay-scrollbar-cairo-support.c \
 	overlay-scrollbar-support.h \
 	overlay-scrollbar-support.c \
+	overlay-thumb.h \
+	overlay-thumb.c \
 	overlay-scrollbar.c
 
 liboverlay_scrollbar_la_CFLAGS = \
