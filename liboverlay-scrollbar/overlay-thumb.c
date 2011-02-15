@@ -20,26 +20,14 @@
  *
  */
 
-#include <cairo-xlib.h>
 #include <gtk/gtk.h>
-#include <gdk/gdkx.h>
-#include <X11/X.h>
-#include <X11/Xlib.h>
 
 #include "overlay-thumb.h"
 #include "overlay-scrollbar-cairo-support.h"
 #include "overlay-scrollbar-support.h"
 
-#define DEVELOPMENT_FLAG FALSE
-
-#if DEVELOPMENT_FLAG
-#define DEBUG printf("%s()\n", __func__);
-#else
-#define DEBUG
-#endif
-
-#define OVERLAY_THUMB_WIDTH 15 /* width/height of the overlay_thumb, in pixels */
-#define OVERLAY_THUMB_HEIGHT 80 /* height/width of the overlay_thumb, in pixels */
+#define OVERLAY_THUMB_WIDTH 15 /* width/height of the OverlayThumb, in pixels */
+#define OVERLAY_THUMB_HEIGHT 80 /* height/width of the OverlayThumb, in pixels */
 
 G_DEFINE_TYPE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW);
 
@@ -64,7 +52,6 @@ struct _OverlayThumbPrivate
   gint pointer_y;
 };
 
-/* SUBCLASS FUNCTIONS */
 static gboolean overlay_thumb_button_press_event (GtkWidget      *widget,
                                                   GdkEventButton *event);
 
@@ -86,14 +73,13 @@ static gboolean overlay_thumb_expose (GtkWidget      *widget,
 static gboolean overlay_thumb_leave_notify_event (GtkWidget        *widget,
                                                   GdkEventCrossing *event);
 
-static void overlay_thumb_map (GtkWidget *widget);
-
 static gboolean overlay_thumb_motion_notify_event (GtkWidget      *widget,
                                                    GdkEventMotion *event);
 
 static void overlay_thumb_screen_changed (GtkWidget *widget,
                                           GdkScreen *old_screen);
 
+/* SUBCLASS FUNCTIONS */
 /**
  * overlay_thumb_button_press_event:
  * override class function
@@ -166,7 +152,7 @@ overlay_thumb_class_init (OverlayThumbClass *class)
   widget_class->composited_changed   = overlay_thumb_composited_changed;
   widget_class->enter_notify_event   = overlay_thumb_enter_notify_event;
   widget_class->expose_event         = overlay_thumb_expose;
-/*  widget_class->map                  = overlay_thumb_map;*/
+  widget_class->leave_notify_event   = overlay_thumb_leave_notify_event;
   widget_class->motion_notify_event  = overlay_thumb_motion_notify_event;
   widget_class->screen_changed       = overlay_thumb_screen_changed;
 
@@ -218,6 +204,25 @@ overlay_thumb_constructor (GType                  type,
   g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
 
   return object;
+}
+
+/**
+ * overlay_thumb_enter_notify_event:
+ * override class function
+ **/
+static gboolean
+overlay_thumb_enter_notify_event (GtkWidget        *widget,
+                                  GdkEventCrossing *event)
+{
+  DEBUG
+  OverlayThumbPrivate *priv;
+
+  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+
+  priv->enter_notify_event = TRUE;
+  priv->can_hide = FALSE;
+
+  return TRUE;
 }
 
 /**
@@ -313,7 +318,7 @@ overlay_thumb_expose (GtkWidget      *widget,
       cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 1.0);
       cairo_stroke (cr);
 
-      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius+1);
+      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
       cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
@@ -330,7 +335,7 @@ overlay_thumb_expose (GtkWidget      *widget,
     {
       cairo_stroke (cr);
 
-      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius+1);
+      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
       cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
@@ -396,8 +401,8 @@ overlay_thumb_init (OverlayThumb *thumb)
   priv->can_rgba = FALSE;
 
   gtk_window_set_default_size (GTK_WINDOW (thumb),
-                               OVERLAY_SCROLLBAR_WIDTH,
-                               OVERLAY_SCROLLBAR_HEIGHT);
+                               OVERLAY_THUMB_WIDTH,
+                               OVERLAY_THUMB_HEIGHT);
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
   gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE);
@@ -409,8 +414,29 @@ overlay_thumb_init (OverlayThumb *thumb)
                                              GDK_BUTTON_RELEASE_MASK |
                                              GDK_POINTER_MOTION_MASK);
 
-  overlay_scrollbar_thumb_changed (GTK_WIDGET (thumb), NULL);
-  overlay_scrollbar_thumb_changed (GTK_WIDGET (thumb));
+  overlay_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
+  overlay_thumb_composited_changed (GTK_WIDGET (thumb));
+}
+
+/**
+ * overlay_thumb_leave_notify_event:
+ * override class function
+ **/
+static gboolean
+overlay_thumb_leave_notify_event (GtkWidget        *widget,
+                                  GdkEventCrossing *event)
+{
+  DEBUG
+  OverlayThumbPrivate *priv;
+
+  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+
+  if (!priv->button_press_event)
+    priv->can_hide = TRUE;
+
+/*  g_timeout_add (TIMEOUT_HIDE, overlay_thumb_hide, widget);*/
+
+  return TRUE;
 }
 
 /**
@@ -422,9 +448,9 @@ overlay_thumb_motion_notify_event (GtkWidget      *widget,
                                    GdkEventMotion *event)
 {
   DEBUG
-  OverlayScrollbarPrivate *priv;
+  OverlayThumbPrivate *priv;
 
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
+  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
 
   if (priv->button_press_event)
     {
@@ -435,4 +461,38 @@ overlay_thumb_motion_notify_event (GtkWidget      *widget,
     }
 
   return TRUE;
+}
+
+/**
+ * overlay_thumb_screen_changed:
+ * override class function
+ **/
+static void
+overlay_thumb_screen_changed (GtkWidget *widget,
+                              GdkScreen *old_screen)
+{
+  DEBUG
+  GdkScreen *screen;
+  GdkColormap *colormap;
+
+  screen = gtk_widget_get_screen (widget);
+  colormap = gdk_screen_get_rgba_colormap (screen);
+
+  if (colormap)
+    gtk_widget_set_colormap (widget, colormap);
+}
+
+/* PUBLIC FUNCTIONS */
+/**
+ * overlay_thumb_new:
+ *
+ * Creates a new OverlayThumb.
+ *
+ * Returns: the new OverlayThumb as a #GtkWidget
+ */
+GtkWidget*
+overlay_thumb_new ()
+{
+  DEBUG
+  return g_object_new (OS_TYPE_OVERLAY_THUMB, NULL);
 }

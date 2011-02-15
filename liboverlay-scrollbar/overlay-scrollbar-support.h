@@ -26,6 +26,14 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 
+#define DEVELOPMENT_FLAG FALSE
+
+#if DEVELOPMENT_FLAG
+#define DEBUG printf("%s()\n", __func__);
+#else
+#define DEBUG
+#endif
+
 #ifndef __OVERLAY_SCROLLBAR_SUPPORT_H__
 #define __OVERLAY_SCROLLBAR_SUPPORT_H__
 
