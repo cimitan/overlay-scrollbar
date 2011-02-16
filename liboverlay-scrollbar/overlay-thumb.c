@@ -521,7 +521,7 @@ overlay_thumb_get_property (GObject    *object,
   DEBUG
   OverlayThumbPrivate *priv;
 
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_THUMB (object));
+  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (object));
 
   switch (prop_id)
     {
@@ -544,7 +544,7 @@ overlay_thumb_set_property (GObject      *object,
   DEBUG
   OverlayThumbPrivate *priv;
 
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_THUMB (object));
+  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (object));
 
   switch (prop_id)
     {

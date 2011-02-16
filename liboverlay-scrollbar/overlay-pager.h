@@ -47,6 +47,13 @@ struct _OverlayPagerClass
 
 GType overlay_pager_get_type (void) G_GNUC_CONST;
 
+void overlay_pager_draw (OverlayPager *overlay);
+
+GObject* overlay_pager_new (GdkWindow    *window,
+                            gint          width,
+                            gint          height,
+                            GdkRectangle *mask);
+
 G_END_DECLS
 
 #endif /* __OVERLAY_PAGER_H__ */
