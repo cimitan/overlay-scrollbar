@@ -48,7 +48,7 @@ struct _OverlayThumbClass
 };
 
 GType      overlay_thumb_get_type (void) G_GNUC_CONST;
-GtkWidget* overlay_thumb_new (void);
+GtkWidget* overlay_thumb_new (GtkOrientation orientation);
 
 G_END_DECLS
 

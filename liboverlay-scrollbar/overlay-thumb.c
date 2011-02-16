@@ -29,9 +29,11 @@
 #define OVERLAY_THUMB_WIDTH 15 /* width/height of the OverlayThumb, in pixels */
 #define OVERLAY_THUMB_HEIGHT 80 /* height/width of the OverlayThumb, in pixels */
 
-G_DEFINE_TYPE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW);
-
 #define OVERLAY_THUMB_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_THUMB, OverlayThumbPrivate))
+
+G_DEFINE_ABSTRACT_TYPE_WITH_CODE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW,
+                                  G_IMPLEMENT_INTERFACE (GTK_TYPE_ORIENTABLE,
+                                                         NULL));
 
 typedef struct _OverlayThumbPrivate OverlayThumbPrivate;
 
@@ -42,8 +44,6 @@ struct _OverlayThumbPrivate
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
-  gboolean value_changed_event;
-  gboolean toplevel_connected;
 
   gboolean can_hide;
   gboolean can_rgba;
@@ -52,6 +52,13 @@ struct _OverlayThumbPrivate
   gint pointer_y;
 };
 
+enum {
+  PROP_0,
+  PROP_ORIENTATION,
+  LAST_ARG
+};
+
+/* WIDGET CLASS FUNCTIONS */
 static gboolean overlay_thumb_button_press_event (GtkWidget      *widget,
                                                   GdkEventButton *event);
 
@@ -59,10 +66,6 @@ static gboolean overlay_thumb_button_release_event (GtkWidget      *widget,
                                                     GdkEventButton *event);
 
 static void overlay_thumb_composited_changed (GtkWidget *widget);
-
-static GObject* overlay_thumb_constructor (GType                  type,
-                                           guint                  n_construct_properties,
-                                           GObjectConstructParam *construct_properties);
 
 static gboolean overlay_thumb_enter_notify_event (GtkWidget        *widget,
                                                   GdkEventCrossing *event);
@@ -79,7 +82,91 @@ static gboolean overlay_thumb_motion_notify_event (GtkWidget      *widget,
 static void overlay_thumb_screen_changed (GtkWidget *widget,
                                           GdkScreen *old_screen);
 
-/* SUBCLASS FUNCTIONS */
+/* GOBJECT CLASS FUNCTIONS */
+static GObject* overlay_thumb_constructor (GType                  type,
+                                           guint                  n_construct_properties,
+                                           GObjectConstructParam *construct_properties);
+
+static void overlay_thumb_get_property (GObject    *object,
+                                        guint       prop_id,
+                                        GValue     *value,
+                                        GParamSpec *pspec);
+
+static void overlay_thumb_set_property (GObject      *object,
+                                        guint         prop_id,
+                                        const GValue *value,
+                                        GParamSpec   *pspec);
+
+/* CLASS FUNCTIONS */
+/**
+ * overlay_thumb_class_init:
+ * class init function
+ **/
+static void
+overlay_thumb_class_init (OverlayThumbClass *class)
+{
+  DEBUG
+  GObjectClass *gobject_class;
+  GtkWidgetClass *widget_class;
+
+  gobject_class = G_OBJECT_CLASS (class);
+  widget_class = GTK_WIDGET_CLASS (class);
+
+  widget_class->button_press_event   = overlay_thumb_button_press_event;
+  widget_class->button_release_event = overlay_thumb_button_release_event;
+  widget_class->composited_changed   = overlay_thumb_composited_changed;
+  widget_class->enter_notify_event   = overlay_thumb_enter_notify_event;
+  widget_class->expose_event         = overlay_thumb_expose;
+  widget_class->leave_notify_event   = overlay_thumb_leave_notify_event;
+  widget_class->motion_notify_event  = overlay_thumb_motion_notify_event;
+  widget_class->screen_changed       = overlay_thumb_screen_changed;
+
+  gobject_class->constructor  = overlay_thumb_constructor;
+  gobject_class->get_property = overlay_thumb_get_property;
+  gobject_class->set_property = overlay_thumb_set_property;
+
+  g_object_class_override_property (gobject_class,
+                                    PROP_ORIENTATION,
+                                    "orientation");
+
+  g_type_class_add_private (gobject_class, sizeof (OverlayThumbPrivate));
+}
+
+/**
+ * overlay_thumb_init:
+ * init function
+ **/
+static void
+overlay_thumb_init (OverlayThumb *thumb)
+{
+  DEBUG
+  OverlayThumbPrivate *priv;
+
+  priv = OVERLAY_THUMB_GET_PRIVATE (thumb);
+
+  priv->orientation = GTK_ORIENTATION_VERTICAL;
+  priv->can_hide = TRUE;
+  priv->can_rgba = FALSE;
+
+  gtk_window_set_default_size (GTK_WINDOW (thumb),
+                               OVERLAY_THUMB_WIDTH,
+                               OVERLAY_THUMB_HEIGHT);
+  gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
+  gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
+  gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE);
+  gtk_window_set_decorated (GTK_WINDOW (thumb), FALSE);
+  gtk_window_set_focus_on_map (GTK_WINDOW (thumb), FALSE);
+  gtk_window_set_accept_focus (GTK_WINDOW (thumb), FALSE);
+  gtk_widget_set_app_paintable (GTK_WIDGET (thumb), TRUE);
+  gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
+                                             GDK_BUTTON_RELEASE_MASK |
+                                             GDK_POINTER_MOTION_MASK);
+
+  overlay_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
+  overlay_thumb_composited_changed (GTK_WIDGET (thumb));
+}
+
+/* WIDGET CLASS FUNCTIONS */
 /**
  * overlay_thumb_button_press_event:
  * override class function
@@ -134,34 +221,6 @@ overlay_thumb_button_release_event (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_class_init:
- * class init function
- **/
-static void
-overlay_thumb_class_init (OverlayThumbClass *class)
-{
-  DEBUG
-  GObjectClass *gobject_class;
-  GtkWidgetClass *widget_class;
-
-  gobject_class = G_OBJECT_CLASS (class);
-  widget_class = GTK_WIDGET_CLASS (class);
-
-  widget_class->button_press_event   = overlay_thumb_button_press_event;
-  widget_class->button_release_event = overlay_thumb_button_release_event;
-  widget_class->composited_changed   = overlay_thumb_composited_changed;
-  widget_class->enter_notify_event   = overlay_thumb_enter_notify_event;
-  widget_class->expose_event         = overlay_thumb_expose;
-  widget_class->leave_notify_event   = overlay_thumb_leave_notify_event;
-  widget_class->motion_notify_event  = overlay_thumb_motion_notify_event;
-  widget_class->screen_changed       = overlay_thumb_screen_changed;
-
-  gobject_class->constructor  = overlay_thumb_constructor;
-
-  g_type_class_add_private (gobject_class, sizeof (OverlayThumbPrivate));
-}
-
-/**
  * overlay_thumb_composited_changed:
  * override class function
  **/
@@ -183,27 +242,6 @@ overlay_thumb_composited_changed (GtkWidget *widget)
     }
 
   gtk_widget_queue_draw (widget);
-}
-
-/**
- * overlay_thumb_constructor:
- * override class function
- **/
-static GObject*
-overlay_thumb_constructor (GType                  type,
-                           guint                  n_construct_properties,
-                           GObjectConstructParam *construct_properties)
-{
-  DEBUG
-  GObject *object;
-
-  object = G_OBJECT_CLASS (overlay_thumb_parent_class)->constructor (type,
-                                                                     n_construct_properties,
-                                                                     construct_properties);
-
-  g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
-
-  return object;
 }
 
 /**
@@ -385,40 +423,6 @@ overlay_thumb_expose (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_init:
- * init function
- **/
-static void
-overlay_thumb_init (OverlayThumb *thumb)
-{
-  DEBUG
-  OverlayThumbPrivate *priv;
-
-  priv = OVERLAY_THUMB_GET_PRIVATE (thumb);
-
-  priv->orientation = GTK_ORIENTATION_VERTICAL;
-  priv->can_hide = TRUE;
-  priv->can_rgba = FALSE;
-
-  gtk_window_set_default_size (GTK_WINDOW (thumb),
-                               OVERLAY_THUMB_WIDTH,
-                               OVERLAY_THUMB_HEIGHT);
-  gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
-  gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
-  gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE);
-  gtk_window_set_decorated (GTK_WINDOW (thumb), FALSE);
-  gtk_window_set_focus_on_map (GTK_WINDOW (thumb), FALSE);
-  gtk_window_set_accept_focus (GTK_WINDOW (thumb), FALSE);
-  gtk_widget_set_app_paintable (GTK_WIDGET (thumb), TRUE);
-  gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
-                                             GDK_BUTTON_RELEASE_MASK |
-                                             GDK_POINTER_MOTION_MASK);
-
-  overlay_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
-  overlay_thumb_composited_changed (GTK_WIDGET (thumb));
-}
-
-/**
  * overlay_thumb_leave_notify_event:
  * override class function
  **/
@@ -482,6 +486,74 @@ overlay_thumb_screen_changed (GtkWidget *widget,
     gtk_widget_set_colormap (widget, colormap);
 }
 
+/* GOBJECT CLASS FUNCTIONS */
+/**
+ * overlay_thumb_constructor:
+ * override class function
+ **/
+static GObject*
+overlay_thumb_constructor (GType                  type,
+                           guint                  n_construct_properties,
+                           GObjectConstructParam *construct_properties)
+{
+  DEBUG
+  GObject *object;
+
+  object = G_OBJECT_CLASS (overlay_thumb_parent_class)->constructor (type,
+                                                                     n_construct_properties,
+                                                                     construct_properties);
+
+  g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
+
+  return object;
+}
+
+/**
+ * overlay_thumb_get_property:
+ * override class function
+ **/
+static void
+overlay_thumb_get_property (GObject    *object,
+                            guint       prop_id,
+                            GValue     *value,
+                            GParamSpec *pspec)
+{
+  DEBUG
+  OverlayThumbPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_THUMB (object));
+
+  switch (prop_id)
+    {
+      case PROP_ORIENTATION:
+        g_value_set_enum (value, priv->orientation);
+        break;
+    }
+}
+
+/**
+ * overlay_thumb_set_property:
+ * override class function
+ **/
+static void
+overlay_thumb_set_property (GObject      *object,
+                            guint         prop_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
+{
+  DEBUG
+  OverlayThumbPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_THUMB (object));
+
+  switch (prop_id)
+    {
+      case PROP_ORIENTATION:
+        priv->orientation = g_value_get_enum (value);
+        break;
+    }
+}
+
 /* PUBLIC FUNCTIONS */
 /**
  * overlay_thumb_new:
@@ -491,8 +563,8 @@ overlay_thumb_screen_changed (GtkWidget *widget,
  * Returns: the new OverlayThumb as a #GtkWidget
  */
 GtkWidget*
-overlay_thumb_new ()
+overlay_thumb_new (GtkOrientation orientation)
 {
   DEBUG
-  return g_object_new (OS_TYPE_OVERLAY_THUMB, NULL);
+  return g_object_new (OS_TYPE_OVERLAY_THUMB, "orientation", orientation, NULL);
 }
