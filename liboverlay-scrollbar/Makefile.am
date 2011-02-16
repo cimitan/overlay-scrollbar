@@ -21,6 +21,8 @@ liboverlay_scrollbar_la_SOURCES = \
 	overlay-scrollbar-support.c \
 	overlay-thumb.h \
 	overlay-thumb.c \
+	overlay-pager.h \
+	overlay-pager.c \
 	overlay-scrollbar.c
 
 liboverlay_scrollbar_la_CFLAGS = \
