@@ -126,7 +126,6 @@ overlay_pager_init (OverlayPager *overlay)
   allocation.height = 1;
 
   priv->allocation = allocation;
-
 }
 
 /* GOBJECT CLASS FUNCTIONS */
@@ -235,7 +234,6 @@ GObject*
 overlay_pager_new (GtkWidget *widget)
 {
   DEBUG
-
   return g_object_new (OS_TYPE_OVERLAY_PAGER,
                        "parent", widget,
                        NULL);
@@ -391,8 +389,7 @@ overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
 
   cr_surface = cairo_create (surface);
 
-  cairo_set_operator (cr_surface, CAIRO_OPERATOR_SOURCE);
-  cairo_set_source_rgba (cr_surface, 0.0, 0.0, 0.0, 0.0);
+  cairo_set_operator (cr_surface, CAIRO_OPERATOR_CLEAR);
   cairo_paint (cr_surface);
 
   cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);

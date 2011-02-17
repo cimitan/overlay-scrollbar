@@ -526,7 +526,7 @@ overlay_thumb_get_property (GObject    *object,
   switch (prop_id)
     {
       case PROP_ORIENTATION:
-        g_value_set_enum (value, priv->orientation);
+        g_value_set_object (value, priv->orientation);
         break;
     }
 }
@@ -549,7 +549,7 @@ overlay_thumb_set_property (GObject      *object,
   switch (prop_id)
     {
       case PROP_ORIENTATION:
-        priv->orientation = g_value_get_enum (value);
+        priv->orientation = g_value_get_object (value);
         break;
     }
 }
