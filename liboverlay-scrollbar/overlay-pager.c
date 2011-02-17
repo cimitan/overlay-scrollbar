@@ -178,12 +178,31 @@ overlay_pager_set_property (GObject      *object,
 
 /* PUBLIC FUNCTIONS */
 /**
+ * overlay_pager_hide:
+ * @overlay: a #OverlayPager
+ *
+ * Hides the #OverlayPager
+ **/
+void
+overlay_pager_hide (OverlayPager *overlay)
+{
+  DEBUG
+  OverlayPagerPrivate *priv;
+
+  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+
+  if (priv->overlay_window == NULL)
+    return;
+
+  gdk_window_hide (priv->overlay_window);
+}
+
+/**
  * overlay_pager_move_resize:
  * @overlay: a #OverlayPager
  * @mask: a #GdkRectangle with the position and dimension of the #OverlayPager
  *
  * moves and resizes the #OverlayPager
- 
  **/
 void
 overlay_pager_move_resize (OverlayPager *overlay,
@@ -227,7 +246,7 @@ overlay_pager_new (GtkWidget *widget)
  * @overlay: a #OverlayPager
  * @rectangle: a #GdkRectangle
  *
- * sets the position and dimension of the whole area
+ * Sets the position and dimension of the whole area
  **/
 void
 overlay_pager_size_allocate (OverlayPager *overlay,

@@ -49,6 +49,8 @@ struct _OverlayPagerClass
 
 GType overlay_pager_get_type (void) G_GNUC_CONST;
 
+void overlay_pager_hide (OverlayPager *overlay);
+
 void overlay_pager_move_resize (OverlayPager *overlay,
                                 GdkRectangle  mask);
 

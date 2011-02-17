@@ -947,7 +947,7 @@ overlay_scrollbar_calc_layout_range (OverlayScrollbar *scrollbar,
           if (priv->pager != NULL)
           {
 /*          overlay_resize_window (scrollbar);*/
-          overlay_move (scrollbar);
+            overlay_move (scrollbar);
           }
         }
     }
@@ -1198,6 +1198,7 @@ overlay_create_window (OverlayScrollbar *scrollbar)
 
   overlay_pager_show (priv->pager);
 }
+
 
 /**
  * overlay_move:
