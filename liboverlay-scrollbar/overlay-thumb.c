@@ -31,15 +31,13 @@
 
 #define OVERLAY_THUMB_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_THUMB, OverlayThumbPrivate))
 
-G_DEFINE_ABSTRACT_TYPE_WITH_CODE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW,
-                                  G_IMPLEMENT_INTERFACE (GTK_TYPE_ORIENTABLE,
-                                                         NULL));
+G_DEFINE_TYPE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW);
 
 typedef struct _OverlayThumbPrivate OverlayThumbPrivate;
 
 struct _OverlayThumbPrivate
 {
-  GtkOrientation *orientation;
+  GtkOrientation orientation;
 
   gboolean button_press_event;
   gboolean enter_notify_event;
@@ -504,7 +502,7 @@ overlay_thumb_constructor (GType                  type,
                                                                      construct_properties);
 
   g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
-
+printf ("here\n");
   return object;
 }
 
@@ -526,7 +524,7 @@ overlay_thumb_get_property (GObject    *object,
   switch (prop_id)
     {
       case PROP_ORIENTATION:
-        g_value_set_object (value, priv->orientation);
+        g_value_set_enum (value, priv->orientation);
         break;
     }
 }
@@ -549,7 +547,7 @@ overlay_thumb_set_property (GObject      *object,
   switch (prop_id)
     {
       case PROP_ORIENTATION:
-        priv->orientation = g_value_get_object (value);
+        priv->orientation = g_value_get_enum (value);
         break;
     }
 }
