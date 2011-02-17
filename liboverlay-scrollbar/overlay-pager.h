@@ -20,6 +20,8 @@
  *
  */
 
+#include <gtk/gtk.h>
+
 #ifndef __OVERLAY_PAGER_H__
 #define __OVERLAY_PAGER_H__
 
@@ -47,12 +49,15 @@ struct _OverlayPagerClass
 
 GType overlay_pager_get_type (void) G_GNUC_CONST;
 
-void overlay_pager_draw (OverlayPager *overlay);
+void overlay_pager_move_resize (OverlayPager *overlay,
+                                GdkRectangle  mask);
 
-GObject* overlay_pager_new (GdkWindow    *window,
-                            gint          width,
-                            gint          height,
-                            GdkRectangle *mask);
+GObject* overlay_pager_new (GtkWidget *widget);
+
+void overlay_pager_size_allocate (OverlayPager *overlay,
+                                  GdkRectangle  rectangle);
+
+void overlay_pager_show (OverlayPager *overlay);
 
 G_END_DECLS
 

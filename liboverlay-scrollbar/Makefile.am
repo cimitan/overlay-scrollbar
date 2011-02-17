@@ -8,7 +8,9 @@ liboverlay_scrollbarincludedir = $(includedir)/liboverlay-scrollbar
 lib_LTLIBRARIES = liboverlay-scrollbar.la
 
 liboverlay_scrollbar_headers = \
-	overlay-scrollbar.h
+	overlay-scrollbar.h \
+	overlay-thumb.h \
+  overlay-pager.h
 
 liboverlay_scrollbarinclude_HEADERS = \
 	$(liboverlay_scrollbar_headers)
@@ -19,9 +21,7 @@ liboverlay_scrollbar_la_SOURCES = \
 	overlay-scrollbar-cairo-support.c \
 	overlay-scrollbar-support.h \
 	overlay-scrollbar-support.c \
-	overlay-thumb.h \
 	overlay-thumb.c \
-	overlay-pager.h \
 	overlay-pager.c \
 	overlay-scrollbar.c
 

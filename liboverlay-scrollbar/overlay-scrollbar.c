@@ -29,15 +29,7 @@
 #include "overlay-scrollbar.h"
 #include "overlay-scrollbar-cairo-support.h"
 #include "overlay-scrollbar-support.h"
-
-
-#define DEVELOPMENT_FLAG FALSE
-
-#if DEVELOPMENT_FLAG
-#define DEBUG printf("%s()\n", __func__);
-#else
-#define DEBUG
-#endif
+#include "overlay-pager.h"
 
 #define OVERLAY_SCROLLBAR_WIDTH 15 /* width/height of the overlay scrollbar, in pixels */
 #define OVERLAY_SCROLLBAR_HEIGHT 80 /* height/width of the overlay scrollbar, in pixels */
@@ -64,6 +56,8 @@ struct _OverlayScrollbarPrivate
   GdkRectangle overlay;
   GdkRectangle slider;
   GdkDrawable *overlay_drawable;
+
+  OverlayPager *pager;
 
   GtkAllocation range_all;
   GtkOrientation orientation;
@@ -151,12 +145,9 @@ static void overlay_draw_bitmap (GdkBitmap *bitmap);
 
 static void overlay_draw_pixmap (GdkPixmap *pixmap);
 
-static void overlay_move (OverlayScrollbar *scrollbar,
-                          GtkWidget        *scrolled_window);
+static void overlay_move (OverlayScrollbar *scrollbar);
 
-static void overlay_resize_window (GdkWindow *overlay_window,
-                                   gint       width,
-                                   gint       height);
+static void overlay_resize_window (OverlayScrollbar *scrollbar);
 
 /* RANGE FUNCTIONS */
 static gboolean range_expose_event_cb (GtkWidget      *widget,
@@ -953,8 +944,11 @@ overlay_scrollbar_calc_layout_range (OverlayScrollbar *scrollbar,
 
       if (tmp_height != height);
         {
-          overlay_resize_window (priv->overlay_window, 3, height);
-          overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
+          if (priv->pager != NULL)
+          {
+/*          overlay_resize_window (scrollbar);*/
+          overlay_move (scrollbar);
+          }
         }
     }
   else
@@ -1193,34 +1187,16 @@ static void
 overlay_create_window (OverlayScrollbar *scrollbar)
 {
   DEBUG
-  GdkBitmap *overlay_bitmap;
-  GdkPixmap *overlay_pixmap;
-  GdkWindow *overlay_window;
-  GdkWindowAttr attributes;
+  
   OverlayScrollbarPrivate *priv;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  /* bitmap */
-/*  overlay_bitmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 1);*/
-/*  overlay_draw_bitmap (overlay_bitmap);*/
+  priv->pager = overlay_pager_new (priv->range);
+  overlay_resize_window (scrollbar);
+  overlay_move (scrollbar);
 
-  /* pixmap */
-  overlay_pixmap = gdk_pixmap_new (NULL, 3, priv->overlay.height, 24);
-  overlay_draw_pixmap (overlay_pixmap);
-
-  /* overlay_window */
-  attributes.width = 3;
-  attributes.height = priv->overlay.height;
-  attributes.wclass = GDK_INPUT_OUTPUT;
-  attributes.window_type = GDK_WINDOW_CHILD;
-  overlay_window = gdk_window_new (gtk_widget_get_window (priv->range), &attributes, 0);
-
-/*  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);*/
-  gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
-  gdk_window_raise (overlay_window);
-
-  priv->overlay_window = overlay_window;
+  overlay_pager_show (priv->pager);
 }
 
 /**
@@ -1293,20 +1269,22 @@ overlay_draw_pixmap (GdkPixmap *pixmap)
  * move the overlay_window to the right position
  **/
 static void
-overlay_move (OverlayScrollbar *scrollbar,
-              GtkWidget        *scrolled_window)
+overlay_move (OverlayScrollbar *scrollbar)
 {
   DEBUG
-  GtkAllocation allocation;
   OverlayScrollbarPrivate *priv;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  gtk_widget_get_allocation (scrolled_window, &allocation);
+  GdkRectangle mask;
+  mask.x = 0;
+  mask.y = priv->overlay.y;
+  mask.width = 3;
+  mask.height = priv->overlay.height;
 
-  /* XXX missing horizontal and - 8 is hardcoded */
-  gdk_window_move (priv->overlay_window, allocation.x + allocation.width - 8,
-                                         allocation.y + priv->overlay.y);
+/*  printf ("move: %i\n", priv->pager);*/
+/*   XXX missing horizontal and - 8 is hardcoded */
+  overlay_pager_move_resize (priv->pager, mask);
 }
 
 /**
@@ -1314,27 +1292,22 @@ overlay_move (OverlayScrollbar *scrollbar,
  * resize the overlay window
  **/
 static void
-overlay_resize_window (GdkWindow *overlay_window,
-                       gint       width,
-                       gint       height)
+overlay_resize_window (OverlayScrollbar *scrollbar)
 {
   DEBUG
-  GdkBitmap *overlay_bitmap;
-  GdkPixmap *overlay_pixmap;
+  OverlayScrollbarPrivate *priv;
 
-  /* bitmap */
-/*  overlay_bitmap = gdk_pixmap_new (NULL, width, height, 1);*/
-/*  overlay_draw_bitmap (overlay_bitmap);*/
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  /* pixmap */
-  overlay_pixmap = gdk_pixmap_new (NULL, width, height, 24);
-  overlay_draw_pixmap (overlay_pixmap);
+  GtkAllocation allocation;
+  gtk_widget_get_allocation (gtk_widget_get_parent (priv->range), &allocation);
+  GdkRectangle rect;
+  rect.x = allocation.x + allocation.width - 8;
+  rect.y = allocation.y;
+  rect.width = 3;
+  rect.height = allocation.height;
 
-  /* overlay_window */
-  gdk_window_resize (overlay_window, width, height);
-
-/*  gdk_window_shape_combine_mask (overlay_window, overlay_bitmap, 0, 0);*/
-  gdk_window_set_back_pixmap (overlay_window, overlay_pixmap, FALSE);
+  overlay_pager_size_allocate (priv->pager, rect);
 }
 
 /* RANGE FUNCTIONS */
@@ -1371,11 +1344,11 @@ range_expose_event_cb (GtkWidget      *widget,
 
       overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
 
-      overlay_create_window (scrollbar);
-      gtk_window_move (GTK_WINDOW (scrollbar), x_pos + allocation.x - 4, y_pos + allocation.y);
-      overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
 
-      gdk_window_show (priv->overlay_window);
+      gtk_window_move (GTK_WINDOW (scrollbar), x_pos + allocation.x - 4, y_pos + allocation.y);
+
+      priv->pager = overlay_pager_new (priv->range);
+      overlay_pager_show (priv->pager);
 
       overlay_scrollbar_store_window_position (scrollbar);
     }
@@ -1407,6 +1380,10 @@ range_size_allocate_cb (GtkWidget     *widget,
   priv->range_all = *allocation;
 
   overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
+  if (priv->pager != NULL)
+  overlay_resize_window (scrollbar);
+
+      overlay_scrollbar_store_window_position (scrollbar);
 }
 
 /**
@@ -1431,7 +1408,7 @@ range_value_changed_cb (GtkWidget      *widget,
   if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (scrollbar));
 
-  overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
+  overlay_move (scrollbar);
 }
 
 /* TOPLEVEL FUNCTIONS */
@@ -1463,10 +1440,11 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   overlay_scrollbar_calc_layout_slider (scrollbar, gtk_range_get_value (GTK_RANGE (priv->range)));
   gtk_window_move (GTK_WINDOW (scrollbar), event->x + allocation.x + priv->slider.x - 4, event->y + allocation.y + priv->slider.y);
 
-  overlay_resize_window (priv->overlay_window, 3, priv->overlay.height);
-  overlay_move (scrollbar, gtk_widget_get_parent (priv->range));
-
   overlay_scrollbar_store_window_position (scrollbar);
+
+
+  overlay_resize_window (scrollbar);
+  overlay_move (scrollbar);
 
   return FALSE;
 }
