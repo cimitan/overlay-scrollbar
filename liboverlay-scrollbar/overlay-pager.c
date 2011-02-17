@@ -26,6 +26,7 @@
 #include <gdk/gdkx.h>
 
 #include "overlay-pager.h"
+#include "overlay-scrollbar-cairo-support.h"
 #include "overlay-scrollbar-support.h"
 
 #define OVERLAY_PAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_PAGER, OverlayPagerPrivate))
@@ -177,6 +178,31 @@ overlay_pager_set_property (GObject      *object,
 
 /* PUBLIC FUNCTIONS */
 /**
+ * overlay_pager_move_resize:
+ * @overlay: a OverlayPager
+ * @mask: a GdkRectangle with the position and dimension of the OverlayPager
+ *
+ * moves and resizes the OverlayPager
+ *
+ **/
+void
+overlay_pager_move_resize (OverlayPager *overlay,
+                           GdkRectangle  mask)
+{
+  DEBUG
+  OverlayPagerPrivate *priv;
+
+  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+
+  if (priv->overlay_window == NULL)
+    overlay_pager_check_properties (overlay);
+
+  priv->mask = mask;
+
+  overlay_pager_mask (overlay);
+}
+
+/**
  * overlay_pager_new:
  * @window: the GdkWindow parent window
  * @width: the width of the pager
@@ -197,7 +223,7 @@ overlay_pager_new (GtkWidget *widget)
 }
 
 /**
- * overlay_pager_new:
+ * overlay_pager_size_allocate:
  * @overlay: a OverlayPager
  * @rectangle: a GdkRectangle
  *
@@ -225,6 +251,13 @@ overlay_pager_size_allocate (OverlayPager *overlay,
                           rectangle.height);
 }
 
+/**
+ * overlay_pager_show:
+ * @overlay: a OverlayPager
+ *
+ * show the OverlayPager
+ *
+ **/
 void
 overlay_pager_show (OverlayPager *overlay)
 {
@@ -238,36 +271,6 @@ overlay_pager_show (OverlayPager *overlay)
 
   gdk_window_raise (priv->overlay_window);
   gdk_window_show (priv->overlay_window);
-}
-
-/**
- * overlay_pager_move_resize:
- * @overlay: a OverlayPager
- * @mask: a GdkRectangle with the position and dimension of the OverayPager
- *
- * moves and resizes the OverlayPager
- *
- **/
-void
-overlay_pager_move_resize (OverlayPager *overlay,
-                           GdkRectangle  mask)
-{
-  DEBUG
-  OverlayPagerPrivate *priv;
-
-
-
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
-
-
-/*  printf ("print_mask: %i %i %i %i\n", mask->x, mask->y, mask->width, mask->height);*/
-
-  if (priv->overlay_window == NULL)
-    overlay_pager_draw (overlay);
-
-  priv->mask = mask;
-
-  overlay_pager_mask (overlay);
 }
 
 /* HELPER FUNCTIONS */
@@ -301,7 +304,6 @@ overlay_pager_create (OverlayPager *overlay)
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
 
-  /* overlay_window */
   attributes.width = priv->allocation.width;
   attributes.height = priv->allocation.height;
   attributes.wclass = GDK_INPUT_OUTPUT;
@@ -377,8 +379,7 @@ overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
   cairo_paint (cr_surface);
 
   cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
-/*  os_cairo_draw_rounded_rect (cr_surface, 1, 0, 1, height, 5);*/
-/*  cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);*/
+/*  os_cairo_draw_rounded_rect (cr_surface, mask.x, mask.y, mask.width, mask.height, 5);*/
   cairo_rectangle (cr_surface, mask.x, mask.y, mask.width, mask.height);
   cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
   cairo_fill (cr_surface);
@@ -408,11 +409,6 @@ overlay_pager_draw_pixmap (GdkPixmap *pixmap)
 
   cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
   cairo_paint (cr_surface);
-
-/*  cairo_set_line_width (cr_surface, 1.0);*/
-/*  os_cairo_draw_rounded_rect (cr_surface, 0.5, 0.5, width - 1, height - 1, 2);*/
-/*  cairo_set_source_rgba (cr_surface, 0.8, 0.4, 0.4, 1.0);*/
-/*  cairo_stroke (cr_surface);*/
 
   cairo_destroy (cr_surface);
 }

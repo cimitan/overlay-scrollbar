@@ -1303,9 +1303,9 @@ overlay_resize_window (OverlayScrollbar *scrollbar)
   gtk_widget_get_allocation (gtk_widget_get_parent (priv->range), &allocation);
   GdkRectangle rect;
   rect.x = allocation.x + allocation.width - 8;
-  rect.y = allocation.y;
+  rect.y = allocation.y + 1;
   rect.width = 3;
-  rect.height = allocation.height;
+  rect.height = allocation.height - 2;
 
   overlay_pager_size_allocate (priv->pager, rect);
 }
