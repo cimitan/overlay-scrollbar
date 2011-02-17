@@ -179,11 +179,11 @@ overlay_pager_set_property (GObject      *object,
 /* PUBLIC FUNCTIONS */
 /**
  * overlay_pager_move_resize:
- * @overlay: a OverlayPager
- * @mask: a GdkRectangle with the position and dimension of the OverlayPager
+ * @overlay: a #OverlayPager
+ * @mask: a #GdkRectangle with the position and dimension of the #OverlayPager
  *
- * moves and resizes the OverlayPager
- *
+ * moves and resizes the #OverlayPager
+ 
  **/
 void
 overlay_pager_move_resize (OverlayPager *overlay,
@@ -204,13 +204,13 @@ overlay_pager_move_resize (OverlayPager *overlay,
 
 /**
  * overlay_pager_new:
- * @window: the GdkWindow parent window
- * @width: the width of the pager
- * @height: the height of the pager
+ * @window: the #GdkWindow parent window
+ * @width: the width of the #OverlayPager
+ * @height: the height of the #OverlayPager
  *
- * Creates a new OverlayPager.
+ * Creates a new #OverlayPager.
  *
- * Returns: the new OverlayPager as a #GObject
+ * Returns: the new #OverlayPager as a #GObject
  */
 GObject*
 overlay_pager_new (GtkWidget *widget)
@@ -224,11 +224,10 @@ overlay_pager_new (GtkWidget *widget)
 
 /**
  * overlay_pager_size_allocate:
- * @overlay: a OverlayPager
- * @rectangle: a GdkRectangle
+ * @overlay: a #OverlayPager
+ * @rectangle: a #GdkRectangle
  *
  * sets the position and dimension of the whole area
- *
  **/
 void
 overlay_pager_size_allocate (OverlayPager *overlay,
@@ -253,10 +252,9 @@ overlay_pager_size_allocate (OverlayPager *overlay,
 
 /**
  * overlay_pager_show:
- * @overlay: a OverlayPager
+ * @overlay: a #OverlayPager
  *
- * show the OverlayPager
- *
+ * show the #OverlayPager
  **/
 void
 overlay_pager_show (OverlayPager *overlay)
@@ -275,7 +273,7 @@ overlay_pager_show (OverlayPager *overlay)
 
 /* HELPER FUNCTIONS */
 /**
- * overlay_pager_check:
+ * overlay_pager_check_properties:
  * check if all properties are set
  **/
 static void
@@ -379,7 +377,6 @@ overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
   cairo_paint (cr_surface);
 
   cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
-/*  os_cairo_draw_rounded_rect (cr_surface, mask.x, mask.y, mask.width, mask.height, 5);*/
   cairo_rectangle (cr_surface, mask.x, mask.y, mask.width, mask.height);
   cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
   cairo_fill (cr_surface);

@@ -50,7 +50,7 @@ main (int   argc,
       char *argv[])
 {
   GtkWidget *window;
-  GObject* pager;
+  GObject *pager;
   GdkRectangle mask, rect;
 
   gint attributes_mask;
@@ -77,10 +77,10 @@ main (int   argc,
 
   pager = overlay_pager_new (window);
 
-  overlay_pager_size_allocate (pager, rect);
-  overlay_pager_move_resize (pager, &mask);
+  overlay_pager_size_allocate (OVERLAY_PAGER (pager), rect);
+  overlay_pager_move_resize (OVERLAY_PAGER (pager), mask);
 
-  overlay_pager_show (pager);
+  overlay_pager_show (OVERLAY_PAGER (pager));
 
   gtk_main ();
 
