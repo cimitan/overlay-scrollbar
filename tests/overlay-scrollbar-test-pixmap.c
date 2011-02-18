@@ -251,8 +251,6 @@ main (int   argc,
 
   gtk_widget_show_all (window);
 
-
-
   gtk_widget_get_allocation (frame_window, &allocation);
 
   /* child_window */

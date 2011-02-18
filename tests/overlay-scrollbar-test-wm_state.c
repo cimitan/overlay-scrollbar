@@ -21,12 +21,10 @@
  */
 
 /* 
- * This test only creates an OverlayPager
+ * This test checks for the focused window
  */
 
 #include <gtk/gtk.h>
-
-#include "overlay-pager.h"
 
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
@@ -61,31 +59,13 @@ main (int   argc,
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_has_resize_grip (GTK_WINDOW (window), FALSE);
   gtk_window_set_default_size (GTK_WINDOW (window), 160, 160);
-  gtk_window_set_title (GTK_WINDOW (window), "Test OverayPager");
+  gtk_window_set_title (GTK_WINDOW (window), "Test PriorityNotify");
 
   gtk_widget_show_all (window);
 
   /* signals */
   g_signal_connect (G_OBJECT (window), "destroy",
                     G_CALLBACK (window_destroy_cb), NULL);
-
-  mask.x = 5;
-  mask.y = 5;
-  mask.width = 40;
-  mask.height = 40;
-
-  rect.x = 20;
-  rect.y = 60;
-  rect.width = 100;
-  rect.height = 100;
-
-  pager = overlay_pager_new (window);
-
-  overlay_pager_size_allocate (OVERLAY_PAGER (pager), rect);
-  overlay_pager_move_resize (OVERLAY_PAGER (pager), mask);
-
-  overlay_pager_show (OVERLAY_PAGER (pager));
-
   gtk_main ();
 
   return 0;
