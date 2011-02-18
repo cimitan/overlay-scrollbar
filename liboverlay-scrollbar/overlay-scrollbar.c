@@ -97,6 +97,8 @@ static void overlay_scrollbar_set_property (GObject      *object,
                                             const GValue *value,
                                             GParamSpec   *pspec);
 
+static void overlay_scrollbar_dispose (GObject * object);
+
 /*static void overlay_scrollbar_hide (GtkWidget *widget);*/
 
 static void overlay_scrollbar_show (GtkWidget *widget);
@@ -307,6 +309,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
 
   gobject_class->get_property = overlay_scrollbar_get_property;
   gobject_class->set_property = overlay_scrollbar_set_property;
+  gobject_class->dispose      = overlay_scrollbar_dispose;
 
   g_type_class_add_private (gobject_class, sizeof (OverlayScrollbarPrivate));
 
@@ -408,6 +411,20 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
                     G_CALLBACK (overlay_thumb_enter_notify_event_cb), scrollbar);
   g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
                     G_CALLBACK (overlay_thumb_leave_notify_event_cb), scrollbar);
+}
+
+/**
+	overlay_scrollbar_dispose:
+
+	Drop references that we are carrying.
+*/
+static void
+overlay_scrollbar_dispose (GObject * object)
+{
+
+
+	G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
+	return;
 }
 
 /**
