@@ -444,6 +444,11 @@ overlay_scrollbar_dispose (GObject * object)
 
 	swap_range(OVERLAY_SCROLLBAR(object), priv, NULL);
 
+	if (priv->pager != NULL) {
+		g_object_unref(G_OBJECT(priv->pager));
+		priv->pager = NULL;
+	}
+
 	G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
 	return;
 }
@@ -1078,7 +1083,13 @@ overlay_create_window (OverlayScrollbar *scrollbar)
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
+  if (priv->pager != NULL) {
+    g_object_unref(priv->pager);
+    priv->pager = NULL;
+  }
+
   priv->pager = overlay_pager_new (priv->range);
+  /* NOTE: since this inherits from GObject we've already got a ref here */
   overlay_resize_window (scrollbar);
   overlay_move (scrollbar);
 
@@ -1168,6 +1179,11 @@ range_expose_event_cb (GtkWidget      *widget,
 
 
       gtk_window_move (GTK_WINDOW (priv->thumb), x_pos + allocation.x - 4, y_pos + allocation.y);
+
+      if (priv->pager != NULL) {
+        g_object_unref(priv->pager);
+        priv->pager = NULL;
+      }
 
       priv->pager = overlay_pager_new (priv->range);
       overlay_pager_show (priv->pager);
