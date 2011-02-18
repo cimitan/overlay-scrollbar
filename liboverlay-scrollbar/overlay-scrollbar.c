@@ -151,6 +151,9 @@ static void overlay_move (OverlayScrollbar *scrollbar);
 static void overlay_resize_window (OverlayScrollbar *scrollbar);
 
 /* RANGE FUNCTIONS */
+static void swap_range (OverlayScrollbar * scrollbar,
+                        OverlayScrollbarPrivate * priv,
+                        GtkWidget * newrange);
 static gboolean range_expose_event_cb (GtkWidget      *widget,
                                        GdkEventExpose *event,
                                        gpointer        user_data);
@@ -422,7 +425,7 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 static void
 overlay_scrollbar_dispose (GObject * object)
 {
-	priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
+	OverlayScrollbarPrivate * priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
 
 	if (priv->thumb) {
 		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
@@ -440,6 +443,7 @@ overlay_scrollbar_dispose (GObject * object)
 		priv->thumb = NULL;
 	}
 
+	swap_range(OVERLAY_SCROLLBAR(object), priv, NULL);
 
 	G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
 	return;
@@ -639,6 +643,40 @@ overlay_thumb_motion_notify_event_cb (GtkWidget      *widget,
   return TRUE;
 }
 
+/* Take the range object and replace it with the one given.  If we already
+   had one we need to detach from it, and then attach to the new one if there
+   is one given */
+static void
+swap_range (OverlayScrollbar * scrollbar, OverlayScrollbarPrivate * priv, GtkWidget * newrange)
+{
+	if (priv->range != NULL) {
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
+		                                     G_CALLBACK (range_size_allocate_cb), scrollbar);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
+		                                     G_CALLBACK (range_expose_event_cb), scrollbar);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
+		                                     G_CALLBACK (range_value_changed_cb), scrollbar);
+
+		g_object_unref(priv->range);
+	}
+
+	priv->range = newrange;
+
+	if (priv->range != NULL) {
+		g_object_ref_sink(priv->range);
+		gtk_widget_set_size_request (priv->range, 0, -1);
+		gtk_widget_hide (priv->range);
+		g_signal_connect (G_OBJECT (priv->range), "size-allocate",
+		                  G_CALLBACK (range_size_allocate_cb), scrollbar);
+		g_signal_connect (G_OBJECT (priv->range), "expose-event",
+		                  G_CALLBACK (range_expose_event_cb), scrollbar);
+		g_signal_connect_after (G_OBJECT (priv->range), "value-changed",
+		                  G_CALLBACK (range_value_changed_cb), scrollbar);
+	}
+
+	return;
+}
+
 /**
  * overlay_scrollbar_set_property:
  * override class function
@@ -661,15 +699,7 @@ overlay_scrollbar_set_property (GObject      *object,
     {
       case PROP_RANGE:
         {
-          priv->range = g_value_get_object (value);
-          gtk_widget_set_size_request (priv->range, 0, -1);
-          gtk_widget_hide (priv->range);
-          g_signal_connect (G_OBJECT (priv->range), "size-allocate",
-                            G_CALLBACK (range_size_allocate_cb), scrollbar);
-          g_signal_connect (G_OBJECT (priv->range), "expose-event",
-                            G_CALLBACK (range_expose_event_cb), scrollbar);
-          g_signal_connect_after (G_OBJECT (priv->range), "value-changed",
-                            G_CALLBACK (range_value_changed_cb), scrollbar);
+          swap_range(scrollbar, priv, g_value_get_object (value));
           break;
         }
     }
@@ -710,7 +740,7 @@ overlay_scrollbar_set_range (GtkWidget *widget,
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (widget);
 
-  priv->range = range;
+  swap_range(OVERLAY_SCROLLBAR(widget), priv, range);
 }
 
 /* HELPER FUNCTIONS */
