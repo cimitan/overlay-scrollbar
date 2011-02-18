@@ -179,105 +179,6 @@ static gboolean toplevel_leave_notify_event_cb (GtkWidget        *widget,
  * override class function
  **/
 
-static gboolean
-overlay_thumb_button_press_event_cb (GtkWidget      *widget,
-                                     GdkEventButton *event,
-                                     gpointer        user_data)
-{
-  DEBUG
-  if (event->type == GDK_BUTTON_PRESS)
-    {
-      if (event->button == 1)
-        {
-          OverlayScrollbar *scrollbar;
-          OverlayScrollbarPrivate *priv;
-
-          scrollbar = OVERLAY_SCROLLBAR (user_data);
-          priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (scrollbar));
-
-/*          overlay_scrollbar_map (widget);*/
-          gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
-          os_present_gdk_window_with_timestamp (priv->range, event->time);
-
-          priv->button_press_event = TRUE;
-          priv->motion_notify_event = FALSE;
-
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-            {
-              priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
-              priv->slide_initial_coordinate = event->y_root;
-            }
-          else
-            {
-              priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
-              priv->slide_initial_coordinate = event->x_root;
-            }
-
-          priv->pointer_x = event->x;
-          priv->pointer_y = event->y;
-
-          gtk_widget_queue_draw (widget);
-        }
-    }
-
-  return FALSE;
-}
-
-/**
- * overlay_thumb_button_release_event_cb:
- * override class function
- **/
-static gboolean
-overlay_thumb_button_release_event_cb (GtkWidget      *widget,
-                                       GdkEventButton *event,
-                                       gpointer        user_data)
-{
-  DEBUG
-  if (event->type == GDK_BUTTON_RELEASE)
-    {
-      if (event->button == 1)
-        {
-          OverlayScrollbar *scrollbar;
-          OverlayScrollbarPrivate *priv;
-
-          scrollbar = OVERLAY_SCROLLBAR (user_data);
-          priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (scrollbar));
-
-          gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
-
-          if (!priv->motion_notify_event)
-            {
-              GtkAllocation allocation;
-
-              gtk_widget_get_allocation (widget, &allocation);
-
-              if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-                {
-                  if (priv->pointer_y < allocation.height / 2)
-                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
-                  else
-                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
-                }
-              else
-                {
-                  if (priv->pointer_x < allocation.width / 2)
-                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
-                  else
-                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
-                }
-
-              priv->value_changed_event = TRUE;
-            }
-
-          priv->button_press_event = FALSE;
-          priv->motion_notify_event = FALSE;
-
-          gtk_widget_queue_draw (widget);
-        }
-    }
-
-  return FALSE;
-}
 
 /**
  * overlay_scrollbar_class_init:
@@ -1000,6 +901,111 @@ overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar)
     }
 }
 
+/* THUMB FUNCTIONS */
+/**
+ * overlay_thumb_button_release_event_cb:
+ * connect to button-press-event
+ **/
+static gboolean
+overlay_thumb_button_press_event_cb (GtkWidget      *widget,
+                                     GdkEventButton *event,
+                                     gpointer        user_data)
+{
+  DEBUG
+  if (event->type == GDK_BUTTON_PRESS)
+    {
+      if (event->button == 1)
+        {
+          OverlayScrollbar *scrollbar;
+          OverlayScrollbarPrivate *priv;
+
+          scrollbar = OVERLAY_SCROLLBAR (user_data);
+          priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (scrollbar));
+
+/*          overlay_scrollbar_map (widget);*/
+          gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->range)));
+          os_present_gdk_window_with_timestamp (priv->range, event->time);
+
+          priv->button_press_event = TRUE;
+          priv->motion_notify_event = FALSE;
+
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
+              priv->slide_initial_coordinate = event->y_root;
+            }
+          else
+            {
+              priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
+              priv->slide_initial_coordinate = event->x_root;
+            }
+
+          priv->pointer_x = event->x;
+          priv->pointer_y = event->y;
+
+          gtk_widget_queue_draw (widget);
+        }
+    }
+
+  return FALSE;
+}
+
+/**
+ * overlay_thumb_button_release_event_cb:
+ * connect to button-release-event
+ **/
+static gboolean
+overlay_thumb_button_release_event_cb (GtkWidget      *widget,
+                                       GdkEventButton *event,
+                                       gpointer        user_data)
+{
+  DEBUG
+  if (event->type == GDK_BUTTON_RELEASE)
+    {
+      if (event->button == 1)
+        {
+          OverlayScrollbar *scrollbar;
+          OverlayScrollbarPrivate *priv;
+
+          scrollbar = OVERLAY_SCROLLBAR (user_data);
+          priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (scrollbar));
+
+          gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
+
+          if (!priv->motion_notify_event)
+            {
+              GtkAllocation allocation;
+
+              gtk_widget_get_allocation (widget, &allocation);
+
+              if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+                {
+                  if (priv->pointer_y < allocation.height / 2)
+                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
+                  else
+                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
+                }
+              else
+                {
+                  if (priv->pointer_x < allocation.width / 2)
+                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);
+                  else
+                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);
+                }
+
+              priv->value_changed_event = TRUE;
+            }
+
+          priv->button_press_event = FALSE;
+          priv->motion_notify_event = FALSE;
+
+          gtk_widget_queue_draw (widget);
+        }
+    }
+
+  return FALSE;
+}
+
 /* OVERLAY FUNCTIONS */
 /**
  * overlay_create_window:
@@ -1089,6 +1095,8 @@ range_expose_event_cb (GtkWidget      *widget,
   if (!priv->toplevel_connected)
     {
       gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+/*      g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "property-notify-event",*/
+/*                        G_CALLBACK (toplevel_property_notify_event_cb), scrollbar);*/
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "leave-notify-event",
@@ -1287,6 +1295,27 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           priv->can_hide = TRUE;
           overlay_scrollbar_hide (scrollbar);
         }
+    }
+
+  if (xevent->type == PropertyNotify)
+    {
+      GdkScreen *screen;
+      GdkWindow *active_window;
+      screen = gtk_widget_get_screen (priv->range);
+
+      active_window = gdk_screen_get_active_window (screen);
+
+      if (active_window != gtk_widget_get_window (priv->range))
+      {
+/*        printf ("inactive\n");*/
+        gtk_widget_hide (GTK_WIDGET (priv->thumb));
+        overlay_pager_set_active (OVERLAY_PAGER (priv->pager), FALSE);
+      }
+      else
+      {
+
+        overlay_pager_set_active (OVERLAY_PAGER (priv->pager), TRUE);
+      }
     }
 
   return GDK_FILTER_CONTINUE;

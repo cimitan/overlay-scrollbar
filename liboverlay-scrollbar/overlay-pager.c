@@ -44,6 +44,8 @@ struct _OverlayPagerPrivate
   GdkRectangle mask;
   GdkRectangle allocation;
 
+  gboolean active;
+
   gint width;
   gint height;
 };
@@ -75,7 +77,8 @@ static void overlay_pager_draw (OverlayPager *overlay);
 static void overlay_pager_draw_bitmap (GdkPixmap    *pixmap,
                                        GdkRectangle  mask);
 
-static void overlay_pager_draw_pixmap (GdkPixmap *pixmap);
+static void overlay_pager_draw_pixmap (GdkPixmap *pixmap,
+                                       gboolean   active);
 
 static void overlay_pager_mask (OverlayPager *overlay);
 
@@ -126,6 +129,8 @@ overlay_pager_init (OverlayPager *overlay)
   allocation.height = 1;
 
   priv->allocation = allocation;
+
+  priv->active = TRUE;
 }
 
 /* GOBJECT CLASS FUNCTIONS */
@@ -240,6 +245,51 @@ overlay_pager_new (GtkWidget *widget)
 }
 
 /**
+ * overlay_pager_show:
+ * @overlay: a #OverlayPager
+ * @active: whether is active or not
+ *
+ * changes the state of #OverlayPager
+ **/
+void
+overlay_pager_set_active (OverlayPager *overlay,
+                          gboolean      active)
+{
+  DEBUG
+  OverlayPagerPrivate *priv;
+
+  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+
+  if (priv->active != active)
+  {
+priv->active = active;
+    overlay_pager_draw (overlay);
+    }
+/*  priv->active = active;*/
+}
+
+/**
+ * overlay_pager_show:
+ * @overlay: a #OverlayPager
+ *
+ * show the #OverlayPager
+ **/
+void
+overlay_pager_show (OverlayPager *overlay)
+{
+  DEBUG
+  OverlayPagerPrivate *priv;
+
+  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+
+  if (priv->overlay_window == NULL)
+    overlay_pager_draw (overlay);
+
+  gdk_window_raise (priv->overlay_window);
+  gdk_window_show (priv->overlay_window);
+}
+
+/**
  * overlay_pager_size_allocate:
  * @overlay: a #OverlayPager
  * @rectangle: a #GdkRectangle
@@ -265,27 +315,6 @@ overlay_pager_size_allocate (OverlayPager *overlay,
                           rectangle.y,
                           rectangle.width,
                           rectangle.height);
-}
-
-/**
- * overlay_pager_show:
- * @overlay: a #OverlayPager
- *
- * show the #OverlayPager
- **/
-void
-overlay_pager_show (OverlayPager *overlay)
-{
-  DEBUG
-  OverlayPagerPrivate *priv;
-
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
-
-  if (priv->overlay_window == NULL)
-    overlay_pager_draw (overlay);
-
-  gdk_window_raise (priv->overlay_window);
-  gdk_window_show (priv->overlay_window);
 }
 
 /* HELPER FUNCTIONS */
@@ -341,12 +370,13 @@ overlay_pager_draw (OverlayPager *overlay)
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
 
   pixmap = gdk_pixmap_new (NULL, priv->allocation.width, priv->allocation.height, 24);
-  overlay_pager_draw_pixmap (pixmap);
+  overlay_pager_draw_pixmap (pixmap, priv->active);
 
   if (priv->overlay_window == NULL)
     overlay_pager_check_properties (overlay);
 
   gdk_window_set_back_pixmap (priv->overlay_window, pixmap, FALSE);
+  gdk_window_clear (priv->overlay_window);
 }
 
 /**
@@ -405,7 +435,8 @@ overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
  * draw on the pixmap of the overlay, the real drawing
  **/
 static void
-overlay_pager_draw_pixmap (GdkPixmap *pixmap)
+overlay_pager_draw_pixmap (GdkPixmap *pixmap,
+                           gboolean   active)
 {
   cairo_t *cr_surface;
   cairo_surface_t *surface;
@@ -420,7 +451,11 @@ overlay_pager_draw_pixmap (GdkPixmap *pixmap)
 
   cr_surface = cairo_create (surface);
 
-  cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
+  if (active)
+    cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
+  else
+    cairo_set_source_rgb (cr_surface, 0.8, 0.8, 0.8);
+
   cairo_paint (cr_surface);
 
   cairo_destroy (cr_surface);

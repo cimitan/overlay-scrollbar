@@ -61,6 +61,9 @@ void overlay_pager_size_allocate (OverlayPager *overlay,
 
 void overlay_pager_show (OverlayPager *overlay);
 
+void overlay_pager_set_active (OverlayPager *overlay,
+                               gboolean      active);
+
 G_END_DECLS
 
 #endif /* __OVERLAY_PAGER_H__ */

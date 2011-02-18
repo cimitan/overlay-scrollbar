@@ -26,10 +26,9 @@
 
 #include <gtk/gtk.h>
 
-static gboolean
-window_property_notify_event_cb (GtkWidget        *widget,
-                                 GdkEventProperty *event,
-                                 gpointer          user_data);
+static gboolean window_property_notify_event_cb (GtkWidget        *widget,
+                                                 GdkEventProperty *event,
+                                                 gpointer          user_data);
 
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
@@ -46,12 +45,21 @@ window_property_notify_event_cb (GtkWidget        *widget,
   GdkScreen *screen;
   GdkWindow *active_window;
   GtkWidget *label;
+  gchar *atom_name;
+
+  atom_name = gdk_atom_name (event->atom);
 
   label = GTK_WIDGET (user_data);
+
+  printf ("%s\n", atom_name);
 
   screen = gtk_widget_get_screen (widget);
 
   active_window = gdk_screen_get_active_window (screen);
+
+/*  printf ("%s\n", gdk_atom_name (event->atom));*/
+
+/*gtk_label_set_text (GTK_LABEL (label), atom_name);*/
 
   if (active_window == gtk_widget_get_window (widget))
     gtk_label_set_text (GTK_LABEL (label), "Window is focused");
