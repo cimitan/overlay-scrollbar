@@ -400,6 +400,7 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
   priv->can_rgba = FALSE;
 
   priv->thumb = overlay_thumb_new (priv->orientation);
+  g_object_ref_sink(priv->thumb);
 
   g_signal_connect (G_OBJECT (priv->thumb), "button-press-event",
                     G_CALLBACK (overlay_thumb_button_press_event_cb), scrollbar);
@@ -421,6 +422,23 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 static void
 overlay_scrollbar_dispose (GObject * object)
 {
+	priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
+
+	if (priv->thumb) {
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
+		                                     overlay_thumb_button_press_event_cb, object);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
+		                                     overlay_thumb_button_release_event_cb, object);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
+		                                     overlay_thumb_motion_notify_event_cb, object);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
+		                                     overlay_thumb_enter_notify_event_cb, object);
+		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
+		                                     overlay_thumb_leave_notify_event_cb, object);
+
+		g_object_unref(priv->thumb);
+		priv->thumb = NULL;
+	}
 
 
 	G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
