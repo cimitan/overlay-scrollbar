@@ -26,8 +26,40 @@
 
 #include <gtk/gtk.h>
 
+static gboolean
+window_property_notify_event_cb (GtkWidget        *widget,
+                                 GdkEventProperty *event,
+                                 gpointer          user_data);
+
 static void window_destroy_cb (GtkWidget *widget,
                                gpointer   user_data);
+
+/**
+ * window_property_notify_event_cb 
+ * property_notify_event callback for window
+ **/
+static gboolean
+window_property_notify_event_cb (GtkWidget        *widget,
+                                 GdkEventProperty *event,
+                                 gpointer          user_data)
+{
+  GdkScreen *screen;
+  GdkWindow *active_window;
+  GtkWidget *label;
+
+  label = GTK_WIDGET (user_data);
+
+  screen = gtk_widget_get_screen (widget);
+
+  active_window = gdk_screen_get_active_window (screen);
+
+  if (active_window == gtk_widget_get_window (widget))
+    gtk_label_set_text (GTK_LABEL (label), "Window is focused");
+  else
+    gtk_label_set_text (GTK_LABEL (label), "Window is unfocused");
+
+  return FALSE;
+}
 
 /**
  * window_destroy_cb:
@@ -39,6 +71,7 @@ window_destroy_cb (GtkWidget *widget,
 {
   gtk_main_quit ();
 }
+
 /**
  * main:
  * main routine
@@ -48,10 +81,7 @@ main (int   argc,
       char *argv[])
 {
   GtkWidget *window;
-  GObject *pager;
-  GdkRectangle mask, rect;
-
-  gint attributes_mask;
+  GtkWidget *label;
 
   gtk_init (&argc, &argv);
 
@@ -59,11 +89,19 @@ main (int   argc,
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_window_set_has_resize_grip (GTK_WINDOW (window), FALSE);
   gtk_window_set_default_size (GTK_WINDOW (window), 160, 160);
-  gtk_window_set_title (GTK_WINDOW (window), "Test PriorityNotify");
+  gtk_window_set_title (GTK_WINDOW (window), "Test PropertyNotify");
+  gtk_widget_add_events (window, GDK_PROPERTY_CHANGE_MASK);
+
+  /* label */
+  label = gtk_label_new ("Window State");
+
+  gtk_container_add (GTK_CONTAINER (window), label);
 
   gtk_widget_show_all (window);
 
   /* signals */
+  g_signal_connect (G_OBJECT (window), "property-notify-event",
+                    G_CALLBACK (window_property_notify_event_cb), label);
   g_signal_connect (G_OBJECT (window), "destroy",
                     G_CALLBACK (window_destroy_cb), NULL);
   gtk_main ();
