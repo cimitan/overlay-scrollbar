@@ -63,7 +63,6 @@ struct _OverlayScrollbarPrivate
   GtkAllocation range_all;
   GtkOrientation orientation;
   GtkWidget *range;
-  GdkWindow *overlay_window;
 
   gboolean button_press_event;
   gboolean enter_notify_event;
@@ -1089,7 +1088,7 @@ overlay_create_window (OverlayScrollbar *scrollbar)
 
 /**
  * overlay_move:
- * move the overlay_window to the right position
+ * move the overlay_pager to the right position
  **/
 static void
 overlay_move (OverlayScrollbar *scrollbar)
@@ -1268,27 +1267,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   overlay_resize_window (scrollbar);
   overlay_move (scrollbar);
-
-  return FALSE;
-}
-
-/**
- * toplevel_enter_notify_event_cb:
- * triggered when the mouse is in the toplevel window
- **/
-static gboolean
-toplevel_enter_notify_event_cb (GtkWidget        *widget,
-                                GdkEventCrossing *event,
-                                gpointer          user_data)
-{
-  DEBUG
-  OverlayScrollbar *scrollbar;
-  OverlayScrollbarPrivate *priv;
-
-  scrollbar = OVERLAY_SCROLLBAR (user_data);
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
-
-  gdk_window_show (priv->overlay_window);
 
   return FALSE;
 }
