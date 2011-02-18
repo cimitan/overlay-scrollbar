@@ -130,7 +130,7 @@ overlay_pager_init (OverlayPager *overlay)
 
   priv->allocation = allocation;
 
-  priv->active = TRUE;
+  priv->active = FALSE;
 }
 
 /* GOBJECT CLASS FUNCTIONS */
@@ -261,11 +261,10 @@ overlay_pager_set_active (OverlayPager *overlay,
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
 
   if (priv->active != active)
-  {
-priv->active = active;
-    overlay_pager_draw (overlay);
+    {
+      priv->active = active;
+      overlay_pager_draw (overlay);
     }
-/*  priv->active = active;*/
 }
 
 /**
@@ -454,7 +453,7 @@ overlay_pager_draw_pixmap (GdkPixmap *pixmap,
   if (active)
     cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
   else
-    cairo_set_source_rgb (cr_surface, 0.8, 0.8, 0.8);
+    cairo_set_source_rgb (cr_surface, 0.85, 0.85, 0.85);
 
   cairo_paint (cr_surface);
 

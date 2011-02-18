@@ -1306,16 +1306,12 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       active_window = gdk_screen_get_active_window (screen);
 
       if (active_window != gtk_widget_get_window (priv->range))
-      {
-/*        printf ("inactive\n");*/
-        gtk_widget_hide (GTK_WIDGET (priv->thumb));
-        overlay_pager_set_active (OVERLAY_PAGER (priv->pager), FALSE);
-      }
+        {
+          gtk_widget_hide (GTK_WIDGET (priv->thumb));
+          overlay_pager_set_active (OVERLAY_PAGER (priv->pager), FALSE);
+        }
       else
-      {
-
         overlay_pager_set_active (OVERLAY_PAGER (priv->pager), TRUE);
-      }
     }
 
   return GDK_FILTER_CONTINUE;
