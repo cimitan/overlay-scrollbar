@@ -1095,8 +1095,6 @@ range_expose_event_cb (GtkWidget      *widget,
   if (!priv->toplevel_connected)
     {
       gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
-/*      g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "property-notify-event",*/
-/*                        G_CALLBACK (toplevel_property_notify_event_cb), scrollbar);*/
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "leave-notify-event",
@@ -1109,7 +1107,6 @@ range_expose_event_cb (GtkWidget      *widget,
       gdk_window_get_position (gtk_widget_get_window (widget), &x_pos, &y_pos);
 
       overlay_scrollbar_calc_layout_range (scrollbar, gtk_range_get_value (GTK_RANGE (widget)));
-
 
       gtk_window_move (GTK_WINDOW (priv->thumb), x_pos + allocation.x - 4, y_pos + allocation.y);
 
@@ -1297,6 +1294,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
         }
     }
 
+  /* code to check if the window is active */
   if (xevent->type == PropertyNotify)
     {
       GdkScreen *screen;
