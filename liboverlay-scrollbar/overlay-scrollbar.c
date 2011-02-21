@@ -318,40 +318,41 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 }
 
 /**
-	overlay_scrollbar_dispose:
-
-	Drop references that we are carrying.
+  overlay_scrollbar_dispose:
+  Drop references that we are carrying.
 */
 static void
 overlay_scrollbar_dispose (GObject * object)
 {
-	OverlayScrollbarPrivate * priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
+  OverlayScrollbarPrivate *priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
 
-	if (priv->thumb) {
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
-		                                     overlay_thumb_button_press_event_cb, object);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
-		                                     overlay_thumb_button_release_event_cb, object);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
-		                                     overlay_thumb_motion_notify_event_cb, object);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
-		                                     overlay_thumb_enter_notify_event_cb, object);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->thumb),
-		                                     overlay_thumb_leave_notify_event_cb, object);
+  if (priv->thumb)
+    {
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_button_press_event_cb, object);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_button_release_event_cb, object);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_motion_notify_event_cb, object);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_enter_notify_event_cb, object);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_leave_notify_event_cb, object);
 
-		g_object_unref(priv->thumb);
-		priv->thumb = NULL;
-	}
+      g_object_unref (priv->thumb);
+      priv->thumb = NULL;
+    }
 
-	swap_range(OVERLAY_SCROLLBAR(object), priv, NULL);
+  swap_range (OVERLAY_SCROLLBAR (object), priv, NULL);
 
-	if (priv->pager != NULL) {
-		g_object_unref(G_OBJECT(priv->pager));
-		priv->pager = NULL;
-	}
+  if (priv->pager != NULL)
+    {
+      g_object_unref (G_OBJECT (priv->pager));
+      priv->pager = NULL;
+    }
 
-	G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
-	return;
+  G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
+  return;
 }
 
 /**
@@ -554,32 +555,34 @@ overlay_thumb_motion_notify_event_cb (GtkWidget      *widget,
 static void
 swap_range (OverlayScrollbar * scrollbar, OverlayScrollbarPrivate * priv, GtkWidget * newrange)
 {
-	if (priv->range != NULL) {
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
-		                                     G_CALLBACK (range_size_allocate_cb), scrollbar);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
-		                                     G_CALLBACK (range_expose_event_cb), scrollbar);
-		g_signal_handlers_disconnect_by_func(G_OBJECT(priv->range),
-		                                     G_CALLBACK (range_value_changed_cb), scrollbar);
+  if (priv->range != NULL)
+    {
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->range),
+                                            G_CALLBACK (range_size_allocate_cb), scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->range),
+                                            G_CALLBACK (range_expose_event_cb), scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->range),
+                                            G_CALLBACK (range_value_changed_cb), scrollbar);
 
-		g_object_unref(priv->range);
-	}
+      g_object_unref (priv->range);
+    }
 
-	priv->range = newrange;
+  priv->range = newrange;
 
-	if (priv->range != NULL) {
-		g_object_ref_sink(priv->range);
-		gtk_widget_set_size_request (priv->range, 0, -1);
-		gtk_widget_hide (priv->range);
-		g_signal_connect (G_OBJECT (priv->range), "size-allocate",
-		                  G_CALLBACK (range_size_allocate_cb), scrollbar);
-		g_signal_connect (G_OBJECT (priv->range), "expose-event",
-		                  G_CALLBACK (range_expose_event_cb), scrollbar);
-		g_signal_connect_after (G_OBJECT (priv->range), "value-changed",
-		                  G_CALLBACK (range_value_changed_cb), scrollbar);
-	}
+  if (priv->range != NULL)
+    {
+      g_object_ref_sink (priv->range);
+      gtk_widget_set_size_request (priv->range, 0, -1);
+      gtk_widget_hide (priv->range);
+      g_signal_connect (G_OBJECT (priv->range), "size-allocate",
+                        G_CALLBACK (range_size_allocate_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->range), "expose-event",
+                        G_CALLBACK (range_expose_event_cb), scrollbar);
+      g_signal_connect_after (G_OBJECT (priv->range), "value-changed",
+                        G_CALLBACK (range_value_changed_cb), scrollbar);
+    }
 
-	return;
+  return;
 }
 
 /**
@@ -604,7 +607,7 @@ overlay_scrollbar_set_property (GObject      *object,
     {
       case PROP_RANGE:
         {
-          swap_range(scrollbar, priv, g_value_get_object (value));
+          swap_range (scrollbar, priv, g_value_get_object (value));
           break;
         }
     }
@@ -623,7 +626,7 @@ GtkWidget*
 overlay_scrollbar_new (GtkWidget *widget)
 {
   DEBUG
-  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR , "range", widget, NULL);
+  return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR, "range", widget, NULL);
 }
 
 /**
@@ -645,7 +648,7 @@ overlay_scrollbar_set_range (GtkWidget *widget,
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (widget);
 
-  swap_range(OVERLAY_SCROLLBAR(widget), priv, range);
+  swap_range (OVERLAY_SCROLLBAR (widget), priv, range);
 }
 
 /* HELPER FUNCTIONS */
