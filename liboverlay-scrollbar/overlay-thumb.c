@@ -123,9 +123,17 @@ overlay_thumb_class_init (OverlayThumbClass *class)
   gobject_class->get_property = overlay_thumb_get_property;
   gobject_class->set_property = overlay_thumb_set_property;
 
-  g_object_class_override_property (gobject_class,
-                                    PROP_ORIENTATION,
-                                    "orientation");
+  g_object_class_install_property (gobject_class,
+                                   PROP_ORIENTATION,
+                                   g_param_spec_enum ("orientation",
+                                                      "Orientation",
+                                                      "GtkOrientation of the OverlayThumb",
+                                                      GTK_TYPE_ORIENTATION,
+                                                      GTK_ORIENTATION_VERTICAL,
+                                                      G_PARAM_READWRITE |
+                                                      G_PARAM_STATIC_NAME |
+                                                      G_PARAM_STATIC_NICK |
+                                                      G_PARAM_STATIC_BLURB));
 
   g_type_class_add_private (gobject_class, sizeof (OverlayThumbPrivate));
 }
@@ -502,7 +510,7 @@ overlay_thumb_constructor (GType                  type,
                                                                      construct_properties);
 
   g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
-printf ("here\n");
+
   return object;
 }
 
