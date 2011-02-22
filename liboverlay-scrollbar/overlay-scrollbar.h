@@ -39,7 +39,7 @@ typedef struct _OverlayScrollbarClass OverlayScrollbarClass;
 
 struct _OverlayScrollbar
 {
-  GtkWindow parent_object;
+  GtkWidget parent_object;
 };
 
 struct _OverlayScrollbarClass
@@ -47,18 +47,11 @@ struct _OverlayScrollbarClass
   GtkWindowClass parent_class;
 };
 
-
 GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
-GtkWidget* overlay_scrollbar_new (GtkWidget *widget);
 
-void os_create_overlay_scrollbar (GtkWidget *widget,
-                                  gint       x,
-                                  gint       y,
-                                  gint       width,
-                                  gint       height);
-
-void overlay_scrollbar_set_range (GtkWidget *widget,
-                                  GtkWidget *range);
+GtkWidget* overlay_scrollbar_new (GtkWidget      *parent,
+                                  GtkOrientation  orientation,
+                                  GtkAdjustment  *adjustment);
 
 G_END_DECLS
 

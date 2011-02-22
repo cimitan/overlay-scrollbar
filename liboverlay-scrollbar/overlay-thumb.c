@@ -150,7 +150,6 @@ overlay_thumb_init (OverlayThumb *thumb)
 
   priv = OVERLAY_THUMB_GET_PRIVATE (thumb);
 
-  priv->orientation = GTK_ORIENTATION_VERTICAL;
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 

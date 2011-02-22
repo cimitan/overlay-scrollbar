@@ -247,7 +247,7 @@ main (int   argc,
   GtkTreeModel *model;
   GtkTextBuffer *text_buffer0, *text_buffer1;
   GtkWidget *window;
-  GtkWidget *vscrollbar0, *vscrollbar1, *vscrollbar2;
+/*  GtkWidget *vscrollbar0, *vscrollbar1, *vscrollbar2;*/
   GtkWidget *overlay_scrollbar0, *overlay_scrollbar1, *overlay_scrollbar2;
 
   gtk_init (&argc, &argv);
@@ -276,8 +276,10 @@ main (int   argc,
   gtk_text_buffer_set_text (text_buffer0, text0, -1);
 
   /* overlar_scrollbar0 */
-  vscrollbar0 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text0));
-  overlay_scrollbar0 = overlay_scrollbar_new (vscrollbar0);
+/*  vscrollbar0 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text0));*/
+  overlay_scrollbar0 = overlay_scrollbar_new (scrolled_window_text0,
+                                              GTK_ORIENTATION_VERTICAL,
+                                              gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window_text0)));
 
   /* scrolled_window_text1 */
   scrolled_window_text1 = gtk_scrolled_window_new (NULL, NULL);
@@ -291,9 +293,11 @@ main (int   argc,
   text_buffer1 = gtk_text_view_get_buffer(GTK_TEXT_VIEW (text_view1));
   gtk_text_buffer_set_text (text_buffer1, text1, -1);
 
-  /* overlar_scrollbar0 */
-  vscrollbar1 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text1));
-  overlay_scrollbar1 = overlay_scrollbar_new (vscrollbar1);
+  /* overlar_scrollbar1 */
+/*  vscrollbar1 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_text1));*/
+  overlay_scrollbar1 = overlay_scrollbar_new (scrolled_window_text1,
+                                              GTK_ORIENTATION_VERTICAL,
+                                              gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window_text1)));
 
   /* model */
   model = model_create ();
@@ -317,8 +321,10 @@ main (int   argc,
   gtk_container_add (GTK_CONTAINER (scrolled_window_tree_view), tree_view);
 
   /* overlar_scrollbar2 */
-  vscrollbar2 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_tree_view));
-  overlay_scrollbar2 = overlay_scrollbar_new (vscrollbar2);
+/*  vscrollbar2 = gtk_scrolled_window_get_vscrollbar (GTK_SCROLLED_WINDOW (scrolled_window_tree_view));*/
+  overlay_scrollbar2 = overlay_scrollbar_new (scrolled_window_tree_view,
+                                              GTK_ORIENTATION_VERTICAL,
+                                              gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (scrolled_window_tree_view)));
 
   /* containers */
   gtk_container_set_border_width (GTK_CONTAINER (window), 2);
