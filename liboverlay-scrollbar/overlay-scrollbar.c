@@ -39,7 +39,6 @@
 
 enum {
   PROP_0,
-  PROP_PARENT,
   PROP_ADJUSTMENT,
   PROP_ORIENTATION,
   LAST_ARG
@@ -90,6 +89,9 @@ struct _OverlayScrollbarPrivate
 static void overlay_scrollbar_map (GtkWidget *widget);
 
 /*static void overlay_scrollbar_hide (GtkWidget *widget);*/
+
+static void overlay_scrollbar_parent_set (GtkWidget *widget,
+                                          GtkWidget *old_parent);
 
 static void overlay_scrollbar_show (GtkWidget *widget);
 
@@ -194,22 +196,12 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
 
-  widget_class->show = overlay_scrollbar_show;
+  widget_class->parent_set = overlay_scrollbar_parent_set;
+  widget_class->show       = overlay_scrollbar_show;
 
   gobject_class->dispose      = overlay_scrollbar_dispose;
   gobject_class->get_property = overlay_scrollbar_get_property;
   gobject_class->set_property = overlay_scrollbar_set_property;
-
-  g_object_class_install_property (gobject_class,
-                                   PROP_PARENT,
-                                   g_param_spec_object ("parent",
-                                                        "Parent",
-                                                        "Reference to the parent GtkWidget",
-                                                        GTK_TYPE_WIDGET,
-                                                        G_PARAM_READWRITE |
-                                                        G_PARAM_STATIC_NAME |
-                                                        G_PARAM_STATIC_NICK |
-                                                        G_PARAM_STATIC_BLURB));
 
   g_object_class_install_property (gobject_class,
                                    PROP_ADJUSTMENT,
@@ -345,6 +337,14 @@ overlay_scrollbar_map (GtkWidget *widget)
 /*  gtk_widget_hide (GTK_WIDGET (priv->thumb));*/
 /*}*/
 
+static void
+overlay_scrollbar_parent_set (GtkWidget *widget,
+                              GtkWidget *old_parent)
+{
+  DEBUG
+  overlay_scrollbar_swap_parent (OVERLAY_SCROLLBAR (widget), gtk_widget_get_parent (widget));
+}
+
 /**
  * overlay_scrollbar_show:
  * override class function
@@ -420,9 +420,6 @@ overlay_scrollbar_get_property (GObject    *object,
 
   switch (prop_id)
     {
-      case PROP_PARENT:
-        g_value_set_object (value, priv->parent);
-        break;
       case PROP_ADJUSTMENT:
         g_value_set_object (value, priv->adjustment);
         break;
@@ -452,11 +449,6 @@ overlay_scrollbar_set_property (GObject      *object,
 
   switch (prop_id)
     {
-      case PROP_PARENT:
-        {
-          overlay_scrollbar_swap_parent (scrollbar, g_value_get_object (value));
-          break;
-        }
       case PROP_ADJUSTMENT:
         {
           overlay_scrollbar_swap_adjustment (scrollbar, g_value_get_object (value));
@@ -471,7 +463,6 @@ overlay_scrollbar_set_property (GObject      *object,
 /* PUBLIC FUNCTIONS*/
 /**
  * overlay_scrollbar_new:
- * @parent: a #GtkWidget
  * @orientation: the #GtkOrientation
  * @adjustment: the pointer to the #GtkAdjustment to connect
  *
@@ -480,13 +471,11 @@ overlay_scrollbar_set_property (GObject      *object,
  * Returns: the new overlay scrollbar as a #GtkWidget
  */
 GtkWidget*
-overlay_scrollbar_new (GtkWidget      *parent,
-                       GtkOrientation  orientation,
+overlay_scrollbar_new (GtkOrientation  orientation,
                        GtkAdjustment  *adjustment)
 {
   DEBUG
   return g_object_new (OS_TYPE_OVERLAY_SCROLLBAR,
-                       "parent", parent,
                        "orientation", orientation,
                        "adjustment",  adjustment,
                        NULL);

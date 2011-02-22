@@ -49,8 +49,7 @@ struct _OverlayScrollbarClass
 
 GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
 
-GtkWidget* overlay_scrollbar_new (GtkWidget      *parent,
-                                  GtkOrientation  orientation,
+GtkWidget* overlay_scrollbar_new (GtkOrientation  orientation,
                                   GtkAdjustment  *adjustment);
 
 G_END_DECLS
