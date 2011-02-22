@@ -44,7 +44,7 @@ struct _OverlayScrollbar
 
 struct _OverlayScrollbarClass
 {
-  GtkWindowClass parent_class;
+  GtkWidgetClass parent_class;
 };
 
 GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;
