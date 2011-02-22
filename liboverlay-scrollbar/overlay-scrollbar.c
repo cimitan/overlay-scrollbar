@@ -759,7 +759,8 @@ overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar)
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
+  if (GDK_IS_WINDOW (gtk_widget_get_window (priv->parent)))
+    gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
