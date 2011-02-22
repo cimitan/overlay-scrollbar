@@ -987,7 +987,7 @@ overlay_thumb_leave_notify_event_cb (GtkWidget        *widget,
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
 
-/*  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, widget);*/
+  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
 
   return TRUE;
 }
@@ -1299,7 +1299,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       /* XXX missing horizontal */
       /* proximity area */
       if ((priv->thumb_all.x - xevent->xmotion.x < PROXIMITY_WIDTH &&
-           priv->thumb_all.x + priv->thumb_all.width - xevent->xmotion.x > 0) &&
+           priv->thumb_all.x + priv->slider.width - xevent->xmotion.x > 0) &&
           (xevent->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
            xevent->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
         {
