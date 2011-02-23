@@ -191,6 +191,8 @@ void
 overlay_pager_hide (OverlayPager *overlay)
 {
   DEBUG
+  g_return_if_fail (OVERLAY_PAGER (overlay));
+
   OverlayPagerPrivate *priv;
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
@@ -213,6 +215,8 @@ overlay_pager_move_resize (OverlayPager *overlay,
                            GdkRectangle  mask)
 {
   DEBUG
+  g_return_if_fail (OVERLAY_PAGER (overlay));
+
   OverlayPagerPrivate *priv;
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
@@ -256,6 +260,8 @@ overlay_pager_set_active (OverlayPager *overlay,
                           gboolean      active)
 {
   DEBUG
+  g_return_if_fail (OVERLAY_PAGER (overlay));
+
   OverlayPagerPrivate *priv;
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
@@ -277,6 +283,8 @@ void
 overlay_pager_show (OverlayPager *overlay)
 {
   DEBUG
+  g_return_if_fail (OVERLAY_PAGER (overlay));
+
   OverlayPagerPrivate *priv;
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
@@ -286,6 +294,7 @@ overlay_pager_show (OverlayPager *overlay)
 
   gdk_window_raise (priv->overlay_window);
   gdk_window_show (priv->overlay_window);
+  gdk_window_raise (priv->overlay_window);
 }
 
 /**
@@ -300,6 +309,8 @@ overlay_pager_size_allocate (OverlayPager *overlay,
                              GdkRectangle  rectangle)
 {
   DEBUG
+  g_return_if_fail (OVERLAY_PAGER (overlay));
+
   OverlayPagerPrivate *priv;
 
   priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
@@ -405,6 +416,7 @@ static void
 overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
                            GdkRectangle  mask)
 {
+  DEBUG
   cairo_t *cr_surface;
   cairo_surface_t *surface;
   gint width, height;
@@ -437,6 +449,7 @@ static void
 overlay_pager_draw_pixmap (GdkPixmap *pixmap,
                            gboolean   active)
 {
+  DEBUG
   cairo_t *cr_surface;
   cairo_surface_t *surface;
   gint width, height;

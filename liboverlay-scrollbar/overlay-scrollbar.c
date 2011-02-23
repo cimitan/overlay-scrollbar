@@ -319,6 +319,7 @@ overlay_scrollbar_show (GtkWidget *widget)
   OverlayScrollbarPrivate *priv;
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (widget));
+
   gtk_widget_show (GTK_WIDGET (priv->thumb));
 }
 
@@ -1208,6 +1209,8 @@ parent_expose_event_cb (GtkWidget      *widget,
 
       priv->pager = overlay_pager_new (widget);
       overlay_pager_show (OVERLAY_PAGER (priv->pager));
+
+/*      GTK_WIDGET_SET_FLAGS (GTK_WIDGET (scrollbar), GTK_VISIBLE);*/
 
       overlay_scrollbar_store_window_position (scrollbar);
     }

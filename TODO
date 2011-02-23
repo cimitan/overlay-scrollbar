@@ -1,5 +1,4 @@
 - fix child-visible child-not-visible (not called in gnome-appearance-applet and maybe more)
-- nautilus crashes at start
 - horizontal thing missing
 - hide the overlay when adjustment is at full height
 - sibling of the parent toplevel window
