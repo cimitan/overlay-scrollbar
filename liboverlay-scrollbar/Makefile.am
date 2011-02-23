@@ -10,7 +10,7 @@ lib_LTLIBRARIES = liboverlay-scrollbar.la
 liboverlay_scrollbar_headers = \
 	overlay-scrollbar.h \
 	overlay-thumb.h \
-  overlay-pager.h
+	overlay-pager.h
 
 liboverlay_scrollbarinclude_HEADERS = \
 	$(liboverlay_scrollbar_headers)

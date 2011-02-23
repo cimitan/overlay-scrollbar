@@ -39,12 +39,12 @@ typedef struct _OverlayScrollbarClass OverlayScrollbarClass;
 
 struct _OverlayScrollbar
 {
-  GtkWidget parent_object;
+  GtkScrollbar parent_object;
 };
 
 struct _OverlayScrollbarClass
 {
-  GtkWidgetClass parent_class;
+  GtkScrollbarClass parent_class;
 };
 
 GType      overlay_scrollbar_get_type (void) G_GNUC_CONST;

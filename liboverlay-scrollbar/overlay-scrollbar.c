@@ -37,15 +37,6 @@
 #define PROXIMITY_WIDTH 40 /* width/height of the proximity effect, in pixels */
 #define TIMEOUT_HIDE 1000 /* timeout before hiding, in milliseconds */
 
-enum {
-  PROP_0,
-  PROP_ADJUSTMENT,
-  PROP_ORIENTATION,
-  LAST_ARG
-};
-
-G_DEFINE_TYPE (OverlayScrollbar, overlay_scrollbar, GTK_TYPE_WIDGET);
-
 #define OVERLAY_SCROLLBAR_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_SCROLLBAR, OverlayScrollbarPrivate))
 
 typedef struct _OverlayScrollbarPrivate OverlayScrollbarPrivate;
@@ -85,6 +76,8 @@ struct _OverlayScrollbarPrivate
   gint pointer_y;
 };
 
+G_DEFINE_TYPE (OverlayScrollbar, overlay_scrollbar, GTK_TYPE_SCROLLBAR);
+
 /* SUBCLASS FUNCTIONS */
 static void overlay_scrollbar_map (GtkWidget *widget);
 
@@ -97,16 +90,6 @@ static void overlay_scrollbar_show (GtkWidget *widget);
 
 /* GOBJECT CLASS FUNCTIONS */
 static void overlay_scrollbar_dispose (GObject *object);
-
-static void overlay_scrollbar_get_property (GObject    *object,
-                                            guint       prop_id,
-                                            GValue     *value,
-                                            GParamSpec *pspec);
-
-static void overlay_scrollbar_set_property (GObject      *object,
-                                            guint         prop_id,
-                                            const GValue *value,
-                                            GParamSpec   *pspec);
 
 /* HELPER FUNCTIONS */
 static void overlay_scrollbar_calc_layout_pager (OverlayScrollbar *scrollbar,
@@ -121,6 +104,12 @@ static void overlay_scrollbar_move (OverlayScrollbar *scrollbar,
                                     gint              mouse_x,
                                     gint              mouse_y);
 
+static void overlay_scrollbar_notify_adjustment_cb (GObject *object,
+                                                    gpointer user_data);
+
+static void overlay_scrollbar_notify_orientation_cb (GObject *object,
+                                                     gpointer user_data);
+
 static void overlay_scrollbar_store_window_position (OverlayScrollbar *scrollbar);
 
 static void overlay_scrollbar_swap_adjustment (OverlayScrollbar *scrollbar,
@@ -128,6 +117,9 @@ static void overlay_scrollbar_swap_adjustment (OverlayScrollbar *scrollbar,
 
 static void overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
                                            GtkWidget        *parent);
+
+static void overlay_scrollbar_swap_thumb (OverlayScrollbar *scrollbar,
+                                          GtkWidget        *thumb);
 
 /* THUMB FUNCTIONS */
 static gboolean overlay_thumb_button_press_event_cb (GtkWidget      *widget,
@@ -199,32 +191,7 @@ overlay_scrollbar_class_init (OverlayScrollbarClass *class)
   widget_class->parent_set = overlay_scrollbar_parent_set;
   widget_class->show       = overlay_scrollbar_show;
 
-  gobject_class->dispose      = overlay_scrollbar_dispose;
-  gobject_class->get_property = overlay_scrollbar_get_property;
-  gobject_class->set_property = overlay_scrollbar_set_property;
-
-  g_object_class_install_property (gobject_class,
-                                   PROP_ADJUSTMENT,
-                                   g_param_spec_object ("adjustment",
-                                                        "Adjustment",
-                                                        "GtkAdjustment of the OverlayScrollbar",
-                                                        GTK_TYPE_ADJUSTMENT,
-                                                        G_PARAM_READWRITE |
-                                                        G_PARAM_STATIC_NAME |
-                                                        G_PARAM_STATIC_NICK |
-                                                        G_PARAM_STATIC_BLURB));
-
-  g_object_class_install_property (gobject_class,
-                                   PROP_ORIENTATION,
-                                   g_param_spec_enum ("orientation",
-                                                      "Orientation",
-                                                      "GtkOrientation of the OverlayScrollbar",
-                                                      GTK_TYPE_ORIENTATION,
-                                                      GTK_ORIENTATION_VERTICAL,
-                                                      G_PARAM_READWRITE |
-                                                      G_PARAM_STATIC_NAME |
-                                                      G_PARAM_STATIC_NICK |
-                                                      G_PARAM_STATIC_BLURB));
+  gobject_class->dispose = overlay_scrollbar_dispose;
 
   g_type_class_add_private (gobject_class, sizeof (OverlayScrollbarPrivate));
 }
@@ -241,24 +208,14 @@ overlay_scrollbar_init (OverlayScrollbar *scrollbar)
 
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  priv->orientation = GTK_ORIENTATION_VERTICAL;
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 
-  priv->thumb = overlay_thumb_new (priv->orientation);
-  g_object_ref_sink (priv->thumb);
+  g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
+                    G_CALLBACK (overlay_scrollbar_notify_adjustment_cb), NULL);
 
-  /* thumb callbacks */
-  g_signal_connect (G_OBJECT (priv->thumb), "button-press-event",
-                    G_CALLBACK (overlay_thumb_button_press_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (priv->thumb), "button-release-event",
-                    G_CALLBACK (overlay_thumb_button_release_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
-                    G_CALLBACK (overlay_thumb_motion_notify_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (priv->thumb), "enter-notify-event",
-                    G_CALLBACK (overlay_thumb_enter_notify_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
-                    G_CALLBACK (overlay_thumb_leave_notify_event_cb), scrollbar);
+  g_signal_connect (G_OBJECT (scrollbar), "notify::orientation",
+                    G_CALLBACK (overlay_scrollbar_notify_orientation_cb), NULL);
 }
 
 /**
@@ -370,25 +327,9 @@ overlay_scrollbar_dispose (GObject *object)
   DEBUG
   OverlayScrollbarPrivate *priv = OVERLAY_SCROLLBAR_GET_PRIVATE (object);
 
-  if (priv->thumb)
-    {
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            overlay_thumb_button_press_event_cb, object);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            overlay_thumb_button_release_event_cb, object);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            overlay_thumb_motion_notify_event_cb, object);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            overlay_thumb_enter_notify_event_cb, object);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            overlay_thumb_leave_notify_event_cb, object);
-
-      g_object_unref (priv->thumb);
-      priv->thumb = NULL;
-    }
-
   overlay_scrollbar_swap_adjustment (OVERLAY_SCROLLBAR (object), NULL);
   overlay_scrollbar_swap_parent (OVERLAY_SCROLLBAR (object), NULL);
+  overlay_scrollbar_swap_thumb (OVERLAY_SCROLLBAR (object), NULL);
 
   if (priv->pager != NULL)
     {
@@ -397,67 +338,6 @@ overlay_scrollbar_dispose (GObject *object)
     }
 
   G_OBJECT_CLASS (overlay_scrollbar_parent_class)->dispose (object);
-  return;
-}
-
-/**
- * overlay_scrollbar_get_property:
- * override class function
- **/
-static void
-overlay_scrollbar_get_property (GObject    *object,
-                                guint       prop_id,
-                                GValue     *value,
-                                GParamSpec *pspec)
-{
-  DEBUG
-  OverlayScrollbar *scrollbar;
-  OverlayScrollbarPrivate *priv;
-
-  scrollbar = OVERLAY_SCROLLBAR (object);
-
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
-
-  switch (prop_id)
-    {
-      case PROP_ADJUSTMENT:
-        g_value_set_object (value, priv->adjustment);
-        break;
-      case PROP_ORIENTATION:
-        g_value_set_enum (value, priv->orientation);
-        break;
-    }
-}
-
-/**
- * overlay_scrollbar_set_property:
- * override class function
- **/
-static void
-overlay_scrollbar_set_property (GObject      *object,
-                                guint         prop_id,
-                                const GValue *value,
-                                GParamSpec   *pspec)
-{
-  DEBUG
-  OverlayScrollbar *scrollbar;
-  OverlayScrollbarPrivate *priv;
-
-  scrollbar = OVERLAY_SCROLLBAR (object);
-
-  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
-
-  switch (prop_id)
-    {
-      case PROP_ADJUSTMENT:
-        {
-          overlay_scrollbar_swap_adjustment (scrollbar, g_value_get_object (value));
-          break;
-        }
-      case PROP_ORIENTATION:
-        priv->orientation = g_value_get_enum (value);
-        break;
-    }
 }
 
 /* PUBLIC FUNCTIONS*/
@@ -736,6 +616,42 @@ overlay_scrollbar_move (OverlayScrollbar *scrollbar,
 }
 
 /**
+ * overlay_scrollbar_notify_adjustment_cb:
+ * callback to the adjustment notification for the gobject
+ */
+static void
+overlay_scrollbar_notify_adjustment_cb (GObject *object,
+                                        gpointer user_data)
+{
+  DEBUG
+  OverlayScrollbarPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (object));
+
+  overlay_scrollbar_swap_adjustment (OVERLAY_SCROLLBAR (object), gtk_range_get_adjustment (GTK_RANGE (object)));
+}
+
+/**
+ * overlay_scrollbar_notify_orientation_cb:
+ * callback to the orientation notification for the gobject
+ */
+static void
+overlay_scrollbar_notify_orientation_cb (GObject *object,
+                                         gpointer user_data)
+{
+  DEBUG
+  OverlayScrollbar *scrollbar;
+  OverlayScrollbarPrivate *priv;
+
+  scrollbar = OVERLAY_SCROLLBAR (object);
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (object));
+
+  priv->orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (object));
+
+  overlay_scrollbar_swap_thumb (OVERLAY_SCROLLBAR (object), overlay_thumb_new (priv->orientation));
+}
+
+/**
  * overlay_scrollbar_store_window_position:
  * store scrollbar window position
  **/
@@ -791,8 +707,6 @@ overlay_scrollbar_swap_adjustment (OverlayScrollbar *scrollbar,
       g_signal_connect (G_OBJECT (priv->adjustment), "value-changed",
                         G_CALLBACK (adjustment_value_changed_cb), scrollbar);
     }
-
-  return;
 }
 
 /**
@@ -827,8 +741,53 @@ overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
       g_signal_connect (G_OBJECT (priv->parent), "size-allocate",
                         G_CALLBACK (parent_size_allocate_cb), scrollbar);
     }
+}
 
-  return;
+/**
+ * overlay_scrollbar_swap_thumb:
+ * swap the thumb pointer
+ */
+static void
+overlay_scrollbar_swap_thumb (OverlayScrollbar *scrollbar,
+                              GtkWidget        *thumb)
+{
+  DEBUG
+  OverlayScrollbarPrivate *priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  if (priv->thumb != NULL)
+    {
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_button_press_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_button_release_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_motion_notify_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_enter_notify_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            overlay_thumb_leave_notify_event_cb, scrollbar);
+
+      g_object_unref (priv->thumb);
+    }
+
+  priv->thumb = thumb;
+
+  if (priv->thumb != NULL)
+    {
+      g_object_ref_sink (priv->thumb);
+
+      /* thumb callbacks */
+      g_signal_connect (G_OBJECT (priv->thumb), "button-press-event",
+                        G_CALLBACK (overlay_thumb_button_press_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "button-release-event",
+                        G_CALLBACK (overlay_thumb_button_release_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
+                        G_CALLBACK (overlay_thumb_motion_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "enter-notify-event",
+                        G_CALLBACK (overlay_thumb_enter_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
+                        G_CALLBACK (overlay_thumb_leave_notify_event_cb), scrollbar);
+    }
 }
 
 /* THUMB FUNCTIONS */
@@ -1217,8 +1176,8 @@ parent_size_allocate_cb (GtkWidget     *widget,
   priv->overlay_all = *allocation;
   priv->thumb_all = *allocation;
 
-  priv->overlay_all.x = allocation->x + allocation->width - 8;
-  priv->thumb_all.x = allocation->x + allocation->width - 5;
+  priv->overlay_all.x = allocation->x + allocation->width - 3;
+  priv->thumb_all.x = allocation->x + allocation->width;
 
   if (priv->adjustment != NULL)
     overlay_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
