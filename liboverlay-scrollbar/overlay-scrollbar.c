@@ -98,7 +98,7 @@ static void overlay_scrollbar_calc_layout_pager (OverlayScrollbar *scrollbar,
 static gdouble overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
                                                  gint              coord);
 
-static gboolean overlay_scrollbar_hide (gpointer user_data);
+static gboolean overlay_scrollbar_hide_thumb (gpointer user_data);
 
 static void overlay_scrollbar_move (OverlayScrollbar *scrollbar,
                                     gint              mouse_x,
@@ -152,6 +152,12 @@ static void adjustment_value_changed_cb (GtkAdjustment *adjustment,
                                          gpointer       user_data);
 
 /* PARENT FUNCTIONS */
+static void parent_child_not_visible_cb (GtkWidget *widget,
+                                         gpointer   user_data);
+
+static void parent_child_visible_cb (GtkWidget *widget,
+                                     gpointer   user_data);
+
 static gboolean parent_expose_event_cb (GtkWidget      *widget,
                                         GdkEventExpose *event,
                                         gpointer        user_data);
@@ -563,11 +569,11 @@ overlay_scrollbar_coord_to_value (OverlayScrollbar *scrollbar,
 }
 
 /**
- * overlay_scrollbar_hide:
+ * overlay_scrollbar_hide_thumb:
  * hide if it's ok to hide
  **/
 static gboolean
-overlay_scrollbar_hide (gpointer user_data)
+overlay_scrollbar_hide_thumb (gpointer user_data)
 {
   DEBUG
   OverlayScrollbar *scrollbar;
@@ -722,6 +728,10 @@ overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
 
   if (priv->parent != NULL)
     {
+/*      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),*/
+/*                                            G_CALLBACK (parent_child_visible_cb), scrollbar);*/
+/*      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),*/
+/*                                            G_CALLBACK (parent_child_not_visible_cb), scrollbar);*/
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
                                             G_CALLBACK (parent_expose_event_cb), scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
@@ -736,6 +746,10 @@ overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
     {
       g_object_ref_sink (priv->parent);
 
+/*      g_signal_connect (G_OBJECT (priv->parent), "child-visible",*/
+/*                        G_CALLBACK (parent_child_visible_cb), scrollbar);*/
+/*      g_signal_connect (G_OBJECT (priv->parent), "child-not-visible",*/
+/*                        G_CALLBACK (parent_child_not_visible_cb), scrollbar);*/
       g_signal_connect (G_OBJECT (priv->parent), "expose-event",
                         G_CALLBACK (parent_expose_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->parent), "size-allocate",
@@ -776,7 +790,6 @@ overlay_scrollbar_swap_thumb (OverlayScrollbar *scrollbar,
     {
       g_object_ref_sink (priv->thumb);
 
-      /* thumb callbacks */
       g_signal_connect (G_OBJECT (priv->thumb), "button-press-event",
                         G_CALLBACK (overlay_thumb_button_press_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "button-release-event",
@@ -936,7 +949,7 @@ overlay_thumb_leave_notify_event_cb (GtkWidget        *widget,
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
 
-  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
+  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide_thumb, scrollbar);
 
   return TRUE;
 }
@@ -1047,7 +1060,6 @@ overlay_move (OverlayScrollbar *scrollbar)
   mask.width = 3;
   mask.height = priv->overlay.height;
 
-/*   XXX missing horizontal and - 8 is hardcoded */
   overlay_pager_move_resize (OVERLAY_PAGER (priv->pager), mask);
 }
 
@@ -1098,6 +1110,60 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
 }
 
 /* PARENT FUNCTIONS */
+/**
+ * parent_child_not_visible_cb:
+ * called when the parent receives the child-not-visible signal
+ **/
+static void
+parent_child_not_visible_cb (GtkWidget *widget,
+                             gpointer   user_data)
+{
+  printf("%s()\n", __func__);
+  OverlayScrollbarPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (user_data));
+
+  if (GDK_IS_WINDOW (gtk_widget_get_window (widget)))
+    {
+      printf ("-> gdk_window_remove_filter\n");
+      gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, user_data);
+    }
+
+  if (priv->pager != NULL)
+    {
+      printf ("-> overlay_pager_hide\n");
+      overlay_pager_hide (OVERLAY_PAGER (priv->pager));
+    }
+}
+
+/**
+ * parent_child_visible_cb:
+ * called when the parent receives the child-not-visible signal
+ **/
+static void
+parent_child_visible_cb (GtkWidget *widget,
+                         gpointer   user_data)
+{
+  printf("%s()\n", __func__);
+  OverlayScrollbarPrivate *priv;
+
+  priv = OVERLAY_SCROLLBAR_GET_PRIVATE (OVERLAY_SCROLLBAR (user_data));
+
+  if (GDK_IS_WINDOW (gtk_widget_get_parent_window (widget)))
+    {
+      printf ("-> gdk_window_remove_filter\n");
+      gdk_window_remove_filter (gtk_widget_get_parent_window (widget), toplevel_filter_func, user_data);
+      printf ("-> gdk_window_add_filter\n");
+      gdk_window_add_filter (gtk_widget_get_parent_window (widget), toplevel_filter_func, user_data);
+    }
+
+  if (priv->pager != NULL)
+    {
+      printf ("-> overlay_pager_show\n");
+      overlay_pager_show (OVERLAY_PAGER (priv->pager));
+    }
+}
+
 /*
  * parent_expose_event_cb:
  * react to "expose-event", to connect other callbacks and useful things
@@ -1278,7 +1344,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       else
         {
           priv->can_hide = TRUE;
-          overlay_scrollbar_hide (scrollbar);
+          overlay_scrollbar_hide_thumb (scrollbar);
         }
     }
 
@@ -1320,7 +1386,7 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OVERLAY_SCROLLBAR (user_data);
   priv = OVERLAY_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide, scrollbar);
+  g_timeout_add (TIMEOUT_HIDE, overlay_scrollbar_hide_thumb, scrollbar);
 
   return FALSE;
 }

@@ -130,7 +130,7 @@ overlay_pager_init (OverlayPager *overlay)
 
   priv->allocation = allocation;
 
-  priv->active = FALSE;
+  priv->active = TRUE;
 }
 
 /* GOBJECT CLASS FUNCTIONS */
@@ -286,6 +286,7 @@ overlay_pager_show (OverlayPager *overlay)
 
   gdk_window_raise (priv->overlay_window);
   gdk_window_show (priv->overlay_window);
+    gdk_window_raise (priv->overlay_window);
 }
 
 /**
