@@ -23,7 +23,8 @@ liboverlay_scrollbar_la_SOURCES = \
 	overlay-scrollbar-support.c \
 	overlay-thumb.c \
 	overlay-pager.c \
-	overlay-scrollbar.c
+	overlay-scrollbar.c \
+	gtkscrolledwindow.c
 
 liboverlay_scrollbar_la_CFLAGS = \
 	$(GTK_CFLAGS) \
