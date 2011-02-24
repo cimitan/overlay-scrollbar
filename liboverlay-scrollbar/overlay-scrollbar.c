@@ -727,10 +727,10 @@ overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
 
   if (priv->parent != NULL)
     {
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
-                                            G_CALLBACK (parent_child_visible_cb), scrollbar);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
-                                            G_CALLBACK (parent_child_not_visible_cb), scrollbar);
+/*      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),*/
+/*                                            G_CALLBACK (parent_child_visible_cb), scrollbar);*/
+/*      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),*/
+/*                                            G_CALLBACK (parent_child_not_visible_cb), scrollbar);*/
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
                                             G_CALLBACK (parent_expose_event_cb), scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
@@ -745,10 +745,10 @@ overlay_scrollbar_swap_parent (OverlayScrollbar *scrollbar,
     {
       g_object_ref_sink (priv->parent);
 
-      g_signal_connect (G_OBJECT (priv->parent), "child-visible",
-                        G_CALLBACK (parent_child_visible_cb), scrollbar);
-      g_signal_connect (G_OBJECT (priv->parent), "child-not-visible",
-                        G_CALLBACK (parent_child_not_visible_cb), scrollbar);
+/*      g_signal_connect (G_OBJECT (priv->parent), "child-visible",*/
+/*                        G_CALLBACK (parent_child_visible_cb), scrollbar);*/
+/*      g_signal_connect (G_OBJECT (priv->parent), "child-not-visible",*/
+/*                        G_CALLBACK (parent_child_not_visible_cb), scrollbar);*/
       g_signal_connect (G_OBJECT (priv->parent), "expose-event",
                         G_CALLBACK (parent_expose_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->parent), "size-allocate",
