@@ -396,15 +396,13 @@ overlay_scrollbar_calc_layout_pager (OverlayScrollbar *scrollbar,
        * total_adjustment_range) times the trough height in pixels
        */
 
-/*      if (priv->adjustment->upper - priv->adjustment->lower != 0)*/
-      height = ((bottom - top) * (priv->adjustment->page_size /
+      if (priv->adjustment->upper - priv->adjustment->lower != 0)
+        height = ((bottom - top) * (priv->adjustment->page_size /
                                  (priv->adjustment->upper - priv->adjustment->lower)));
-/*      else*/
-/*        height = range->min_slider_size;*/
+      else
+        height = gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
 
-/*      if (height < range->min_slider_size ||*/
-/*          range->slider_size_fixed)*/
-/*        height = range->min_slider_size;*/
+      height = MAX (height, gtk_range_get_min_slider_size (GTK_RANGE (scrollbar)));
 
       height = MIN (height, priv->trough.height);
 

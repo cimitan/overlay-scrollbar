@@ -227,6 +227,7 @@ overlay_pager_move_resize (OverlayPager *overlay,
   priv->mask = mask;
 
   overlay_pager_mask (overlay);
+  gdk_window_raise (priv->overlay_window);
 }
 
 /**
@@ -292,7 +293,6 @@ overlay_pager_show (OverlayPager *overlay)
   if (priv->overlay_window == NULL)
     overlay_pager_draw (overlay);
 
-  gdk_window_raise (priv->overlay_window);
   gdk_window_show (priv->overlay_window);
   gdk_window_raise (priv->overlay_window);
 }
@@ -387,6 +387,7 @@ overlay_pager_draw (OverlayPager *overlay)
 
   gdk_window_set_back_pixmap (priv->overlay_window, pixmap, FALSE);
   gdk_window_clear (priv->overlay_window);
+  gdk_window_raise (priv->overlay_window);
 }
 
 /**
