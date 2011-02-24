@@ -620,7 +620,7 @@ gtk_tweaked_scrolled_window_set_vadjustment (GtkTweakedScrolledWindow *scrolled_
   if (!scrolled_window->vscrollbar)
     {
       gtk_widget_push_composite_child ();
-      scrolled_window->vscrollbar = gtk_vscrollbar_new (vadjustment);
+      scrolled_window->vscrollbar = overlay_scrollbar_new (GTK_ORIENTATION_VERTICAL, vadjustment);
       gtk_widget_set_composite_name (scrolled_window->vscrollbar, "vscrollbar");
       gtk_widget_pop_composite_child ();
 
@@ -1473,7 +1473,7 @@ gtk_tweaked_scrolled_window_relative_allocation (GtkWidget     *widget,
   allocation->width = MAX (1, (gint)widget->allocation.width - allocation->x * 2);
   allocation->height = MAX (1, (gint)widget->allocation.height - allocation->y * 2);
 
-  if (scrolled_window->vscrollbar_visible)
+  if (scrolled_window->vscrollbar_visible && gtk_widget_get_visible (scrolled_window->vscrollbar))
     {
       GtkRequisition vscrollbar_requisition;
       gboolean is_rtl;
@@ -1636,7 +1636,7 @@ gtk_tweaked_scrolled_window_size_allocate (GtkWidget     *widget,
   else if (gtk_widget_get_visible (scrolled_window->hscrollbar))
     gtk_widget_hide (scrolled_window->hscrollbar);
 
-  if (scrolled_window->vscrollbar_visible)
+  if (scrolled_window->vscrollbar_visible && gtk_widget_get_visible (scrolled_window->vscrollbar))
     {
       GtkRequisition vscrollbar_requisition;
       if (!gtk_widget_get_visible (scrolled_window->vscrollbar))
