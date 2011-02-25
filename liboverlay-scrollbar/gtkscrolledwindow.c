@@ -1473,7 +1473,7 @@ gtk_tweaked_scrolled_window_relative_allocation (GtkWidget     *widget,
   allocation->width = MAX (1, (gint)widget->allocation.width - allocation->x * 2);
   allocation->height = MAX (1, (gint)widget->allocation.height - allocation->y * 2);
 
-  if (scrolled_window->vscrollbar_visible && gtk_widget_get_visible (scrolled_window->vscrollbar))
+  if (scrolled_window->vscrollbar_visible)
     {
       GtkRequisition vscrollbar_requisition;
       gboolean is_rtl;
@@ -1490,7 +1490,7 @@ gtk_tweaked_scrolled_window_relative_allocation (GtkWidget     *widget,
             priv->real_window_placement == GTK_CORNER_BOTTOM_LEFT)))
         allocation->x += (vscrollbar_requisition.width +  scrollbar_spacing);
 
-      allocation->width = MAX (1, allocation->width - (vscrollbar_requisition.width + scrollbar_spacing));
+      allocation->width = MAX (1, allocation->width); //- (vscrollbar_requisition.width + scrollbar_spacing));
     }
   if (scrolled_window->hscrollbar_visible)
     {
@@ -1636,7 +1636,7 @@ gtk_tweaked_scrolled_window_size_allocate (GtkWidget     *widget,
   else if (gtk_widget_get_visible (scrolled_window->hscrollbar))
     gtk_widget_hide (scrolled_window->hscrollbar);
 
-  if (scrolled_window->vscrollbar_visible && gtk_widget_get_visible (scrolled_window->vscrollbar))
+  if (scrolled_window->vscrollbar_visible)
     {
       GtkRequisition vscrollbar_requisition;
       if (!gtk_widget_get_visible (scrolled_window->vscrollbar))
