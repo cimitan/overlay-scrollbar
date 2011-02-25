@@ -1,8 +1,17 @@
-- fix child-visible child-not-visible (not called in gnome-appearance-applet and maybe more)
-- horizontal thing missing
-- hide the overlay when adjustment is at full height
+BLOCKER
+- fix map/unmap
+- in some apps, like gtk-demo, the pager is hidden until you do a configure event
+
+HARD
 - sibling of the parent toplevel window
 - transient the window with the toplevel
+
+MEDIUM
 - implement pageup/down with the new code
-- in some apps, like gtk-demo, the pager is hidden until you do a configure event
+
+EASY
+- horizontal thing missing
+- hide the overlay when adjustment is at full height and remove proximity
+
+
 - much much more
