@@ -1,42 +1,50 @@
-INCLUDES = $(GTK_CFLAGS)
+# liboverlay-scrollbar
+
+source_h = \
+	os.h \
+	os-scrollbar.h
+
+source_c = \
+	$(srcdir)/os-scrollbar.c
+
+osincludedir = $(includedir)/overlay-scrollbar-@OS_MAJORMINOR@/os
+osinclude_HEADERS = $(source_h)
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES = $(source_c)
+
+lib_LTLIBRARIES = liboverlay-scrollbar-@OS_MAJORMINOR@.la
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS = $(OS_CFLAGS)
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_LIBADD = $(OS_LIBADD)
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_LDFLAGS = $(OS_LDFLAGS)
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_includedir = \
+	$(includedir)/overlay-scrollbar-@OS_MAJORMINOR@/os
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS = \
+	$(source_h) \
+	os-version.h
 
 EXTRA_DIST = \
-	overlay-scrollbar.pc.in
+	os-version.h.in
 
-liboverlay_scrollbarincludedir = $(includedir)/liboverlay-scrollbar
+DISTCLEANFILES = \
+	os-version.h
 
-lib_LTLIBRARIES = liboverlay-scrollbar.la
+# pkg-config
 
-liboverlay_scrollbar_headers = \
-	overlay-scrollbar.h \
-	overlay-thumb.h \
-	overlay-pager.h
+pcfiles = overlay-scrollbar-@OS_MAJORMINOR@.pc
 
-liboverlay_scrollbarinclude_HEADERS = \
-	$(liboverlay_scrollbar_headers)
+all-local: $(pcfiles)
 
-liboverlay_scrollbar_la_SOURCES = \
-	$(liboverlay_scrollbar_headers) \
-	overlay-scrollbar-cairo-support.h \
-	overlay-scrollbar-cairo-support.c \
-	overlay-scrollbar-support.h \
-	overlay-scrollbar-support.c \
-	overlay-thumb.c \
-	overlay-pager.c \
-	overlay-scrollbar.c \
-	gtkscrolledwindow.c
+%-@OS_MAJORMINOR@.pc: %.pc
+	cp $< $@
 
-liboverlay_scrollbar_la_CFLAGS = \
-	$(GTK_CFLAGS) \
-	-DG_LOG_DOMAIN=\"liboverlay-scrollbar\" \
-	-Wall
-
-liboverlay_scrollbar_la_LDFLAGS = \
-	-version-info 1:0:0 \
-	-no-undefined \
-	-export-symbols-regex "^[^_].*"
-
-liboverlay_scrollbar_la_LIBADD = $(GTK_LIBS)
-
-pkgconfig_DATA = overlay-scrollbar.pc
 pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = $(pcfiles)
+
+EXTRA_DIST = overlay-scrollbar.pc.in
+
+CLEANFILES = $(pcfiles)
