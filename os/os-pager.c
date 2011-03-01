@@ -89,6 +89,9 @@ os_pager_create (OsPager *pager)
 
   priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                        &attributes, 0);
+
+  gdk_window_set_transient_for (priv->overlay_window,
+                                gtk_widget_get_window (priv->parent));
 }
 
 /* Draw on the pager. */
@@ -109,7 +112,6 @@ os_pager_draw (OsPager *pager)
 
   gdk_window_set_back_pixmap (priv->pager_window, pixmap, FALSE);
   gdk_window_clear (priv->pager_window);
-  gdk_window_raise (priv->pager_window);
 }
 
 /* Mask the pager. */
@@ -326,7 +328,6 @@ os_pager_move_resize (OsPager      *pager,
   priv->mask = mask;
 
   os_pager_mask (pager);
-  gdk_window_raise (priv->pager_window);
 }
 
 /**
@@ -372,7 +373,6 @@ os_pager_show (OsPager *pager)
     os_pager_draw (pager);
 
   gdk_window_show (priv->pager_window);
-  gdk_window_raise (priv->pager_window);
 }
 
 /**
