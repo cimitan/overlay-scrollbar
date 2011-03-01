@@ -1,5 +1,6 @@
-/* liboverlay-scrollbar
- * Copyright (C) 2011 Canonical Ltd
+/* overlay-scrollbar
+ *
+ * Copyright © 2011 Canonical Ltd
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -17,17 +18,14 @@
  * Boston, MA 02111-1307, USA.
  *
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
- *
  */
 
-/* 
+/*
  * This test only creates an overlay scrollbar, subclass of GtkWindow,
  * to test g_object creation.
  */
 
-#include <gtk/gtk.h>
-
-#include "overlay-scrollbar.h"
+#include <os/os.h>
 
 static char text0[] = "Ubuntu is gonna rock!\n\
 Ubuntu is gonna rock!\nUbuntu is gonna rock!\nUbuntu is gonna rock!\n\
@@ -131,6 +129,7 @@ static GtkTreeModel*
 model_create (void)
 {
   gint i = 0;
+  gint length;
   GtkListStore *store;
   GtkTreeIter iter;
 
@@ -141,7 +140,8 @@ model_create (void)
                               G_TYPE_BOOLEAN);
 
   /* add data to the list store */
-  for (i = 0; i < G_N_ELEMENTS (data); i++)
+  length = (gint) G_N_ELEMENTS (data);
+  for (i = 0; i < length; i++)
     {
       gtk_list_store_append (store, &iter);
       gtk_list_store_set (store, &iter,
@@ -248,7 +248,7 @@ main (int   argc,
   GtkTextBuffer *text_buffer0, *text_buffer1;
   GtkWidget *window;
 /*  GtkWidget *vscrollbar0, *vscrollbar1, *vscrollbar2;*/
-  GtkWidget *overlay_scrollbar0, *overlay_scrollbar1, *overlay_scrollbar2;
+  /* GtkWidget *overlay_scrollbar0, *overlay_scrollbar1, *overlay_scrollbar2; */
 
   gtk_init (&argc, &argv);
 
