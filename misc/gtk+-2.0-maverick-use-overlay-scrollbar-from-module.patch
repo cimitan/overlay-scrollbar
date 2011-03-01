@@ -1,0 +1,78 @@
+=== modified file 'gtk/gtkscrolledwindow.c'
+--- gtk/gtkscrolledwindow.c	2010-05-18 12:35:39 +0000
++++ gtk/gtkscrolledwindow.c	2011-03-01 05:48:58 +0000
+@@ -144,6 +144,9 @@
+ 
+ static guint signals[LAST_SIGNAL] = {0};
+ 
++static GtkWidget* (*os_scrollbar_new) (GtkOrientation, GtkAdjustment*) = NULL;
++static gboolean use_overlay_scrollbar = FALSE;
++
+ G_DEFINE_TYPE (GtkScrolledWindow, gtk_scrolled_window, GTK_TYPE_BIN)
+ 
+ static void
+@@ -394,8 +397,35 @@
+ gtk_scrolled_window_new (GtkAdjustment *hadjustment,
+ 			 GtkAdjustment *vadjustment)
+ {
++  static gboolean init_once = FALSE;
+   GtkWidget *scrolled_window;
+ 
++  if (G_UNLIKELY (init_once == FALSE))
++    {
++      if (g_getenv ("LIBOVERLAY_SCROLLBAR") != NULL)
++        {
++          GModule *module = NULL;
++          gpointer symbol = NULL;
++          gchar *custom_path;
++
++          custom_path= (gchar*) g_getenv ("LIBOVERLAY_SCROLLBAR_PATH");
++          if (custom_path == NULL)
++            custom_path = "/usr/lib/liboverlay-scrollbar-0.0.so";
++
++          module = g_module_open (custom_path, G_MODULE_BIND_LOCAL);
++          if (module != NULL)
++            {
++              if (g_module_symbol (module, "os_scrollbar_new", &symbol))
++                {
++                  os_scrollbar_new = symbol;
++                  use_overlay_scrollbar = TRUE;
++                }
++            }
++        }
++
++      init_once = TRUE;
++    }
++
+   if (hadjustment)
+     g_return_val_if_fail (GTK_IS_ADJUSTMENT (hadjustment), NULL);
+ 
+@@ -434,7 +464,12 @@
+   if (!scrolled_window->hscrollbar)
+     {
+       gtk_widget_push_composite_child ();
+-      scrolled_window->hscrollbar = gtk_hscrollbar_new (hadjustment);
++
++      if (use_overlay_scrollbar == FALSE)
++        scrolled_window->hscrollbar = gtk_hscrollbar_new (hadjustment);
++      else
++        scrolled_window->hscrollbar = os_scrollbar_new (GTK_ORIENTATION_HORIZONTAL, hadjustment);
++
+       gtk_widget_set_composite_name (scrolled_window->hscrollbar, "hscrollbar");
+       gtk_widget_pop_composite_child ();
+ 
+@@ -495,7 +530,12 @@
+   if (!scrolled_window->vscrollbar)
+     {
+       gtk_widget_push_composite_child ();
+-      scrolled_window->vscrollbar = gtk_vscrollbar_new (vadjustment);
++
++      if (use_overlay_scrollbar == FALSE)
++        scrolled_window->vscrollbar = gtk_vscrollbar_new (vadjustment);
++      else
++        scrolled_window->vscrollbar = os_scrollbar_new (GTK_ORIENTATION_VERTICAL, vadjustment);
++
+       gtk_widget_set_composite_name (scrolled_window->vscrollbar, "vscrollbar");
+       gtk_widget_pop_composite_child ();
+ 
+
