@@ -10,7 +10,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2 check-news])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-# Version (ABI)
+# ABI versionning
 
 # CURRENT, REVISION, AGE
 # - library source changed -> increment REVISION
@@ -25,7 +25,7 @@ OS_LT_LDFLAGS="-version-info $OS_LT_VERSION"
 AC_SUBST(PGM_LT_VERSION)
 AC_SUBST(PGM_LT_LDFLAGS)
 
-# Version (API)
+# API versionning
 
 PACKAGE_VERSION_MAJOR=`echo AC_PACKAGE_VERSION | cut -d'.' -f1`
 PACKAGE_VERSION_MINOR=`echo AC_PACKAGE_VERSION | cut -d'.' -f2`
@@ -67,7 +67,7 @@ AC_SUBST(glib_req, 2.26.0)
 AC_SUBST(gtk_req, 2.22.0)
 AC_SUBST(cairo_req, 1.10)
 
-PKG_CHECK_MODULES(GLIB, glib-2.0 >= $gtk_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req)
+PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req)
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
 
@@ -136,12 +136,13 @@ AC_SUBST(OS_LDFLAGS)
 
 AC_CONFIG_FILES([
   Makefile
+  pkgconfig/Makefile
+  pkgconfig/overlay-scrollbar.pc
   os/Makefile
   os/os-version.h
-  os/overlay-scrollbar.pc
+  tests/Makefile
 ])
 AC_OUTPUT
-#  tests/Makefile
 
 # Summary
 
