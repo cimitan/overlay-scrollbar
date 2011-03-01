@@ -138,9 +138,6 @@ os_thumb_init (OsThumb *thumb)
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 
-  gtk_window_set_default_size (GTK_WINDOW (thumb),
-                               DEFAULT_THUMB_WIDTH,
-                               DEFAULT_THUMB_HEIGHT);
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
   /* gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE); */
@@ -272,7 +269,12 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
   os_cairo_draw_rounded_rect (cr, x, y, width, height, radius);
-  pat = cairo_pattern_create_linear (x, y, width + x, y);
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    pat = cairo_pattern_create_linear (x, y, width + x, y);
+  else
+    pat = cairo_pattern_create_linear (x, y, x, height + y);
+
   cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.95, 0.95, 0.95, 1.0);
   cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 1.0);
   cairo_set_source (cr, pat);
@@ -280,10 +282,16 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_fill (cr);
 
   os_cairo_draw_rounded_rect (cr, x, y, width, height, radius);
-  pat = cairo_pattern_create_linear (x, y, x, height + y);
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    pat = cairo_pattern_create_linear (x, y, x, height + y);
+  else
+    pat = cairo_pattern_create_linear (x, y, width + x, y);
+
   if (priv->button_press_event && !priv->motion_notify_event)
     {
-      if (priv->pointer_y < height / 2)
+      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
+          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
         {
           state_type_up = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.8, 0.8, 0.8, 0.8);
@@ -323,6 +331,18 @@ os_thumb_expose (GtkWidget      *widget,
       os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
+    }
+  else
+    {
+      cairo_stroke (cr);
+
+      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
+      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      cairo_stroke (cr);
+    }
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
       cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
       cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
       cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
@@ -335,51 +355,79 @@ os_thumb_expose (GtkWidget      *widget,
     }
   else
     {
-      cairo_stroke (cr);
-
-      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
-      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
-      cairo_stroke (cr);
-      cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
-      cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
+      cairo_move_to (cr, x - 1 + width / 2, y + 0.5);
+      cairo_line_to (cr, x - 1 + width / 2, height - 0.5);
       cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, x + 0.5, y + height / 2);
-      cairo_line_to (cr, width - 0.5, y + height / 2);
+      cairo_move_to (cr, x + width / 2, y + 0.5);
+      cairo_line_to (cr, x + width / 2, height - 0.5);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
 
   cairo_restore (cr);
 
-  gtk_paint_arrow (gtk_widget_get_style (widget),
-                   gtk_widget_get_window (widget),
-                   state_type_up,
-                   GTK_SHADOW_IN,
-                   NULL,
-                   widget,
-                   "arrow",
-                   GTK_ARROW_UP,
-                   FALSE,
-                   4,
-                   4,
-                   width - 8,
-                   width - 8);
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      gtk_paint_arrow (gtk_widget_get_style (widget),
+                       gtk_widget_get_window (widget),
+                       state_type_up,
+                       GTK_SHADOW_IN,
+                       NULL,
+                       widget,
+                       "arrow",
+                       GTK_ARROW_UP,
+                       FALSE,
+                       4,
+                       4,
+                       width - 8,
+                       width - 8);
 
-  gtk_paint_arrow (gtk_widget_get_style (widget),
-                   gtk_widget_get_window (widget),
-                   state_type_down,
-                   GTK_SHADOW_NONE,
-                   NULL,
-                   widget,
-                   "arrow",
-                   GTK_ARROW_DOWN,
-                   FALSE,
-                   4,
-                   height - (width - 8) - 4,
-                   width - 8,
-                   width - 8);
+      gtk_paint_arrow (gtk_widget_get_style (widget),
+                       gtk_widget_get_window (widget),
+                       state_type_down,
+                       GTK_SHADOW_NONE,
+                       NULL,
+                       widget,
+                       "arrow",
+                       GTK_ARROW_DOWN,
+                       FALSE,
+                       4,
+                       height - (width - 8) - 4,
+                       width - 8,
+                       width - 8);
+    }
+  else
+    {
+      gtk_paint_arrow (gtk_widget_get_style (widget),
+                       gtk_widget_get_window (widget),
+                       state_type_up,
+                       GTK_SHADOW_IN,
+                       NULL,
+                       widget,
+                       "arrow",
+                       GTK_ARROW_LEFT,
+                       FALSE,
+                       4,
+                       4,
+                       height - 8,
+                       height - 8);
+   
+      gtk_paint_arrow (gtk_widget_get_style (widget),
+                       gtk_widget_get_window (widget),
+                       state_type_down,
+                       GTK_SHADOW_NONE,
+                       NULL,
+                       widget,
+                       "arrow",
+                       GTK_ARROW_RIGHT,
+                       FALSE,
+                       width - (height - 8) - 4,
+                       4,
+                       height - 8,
+                       height - 8);
+    }
 
   cairo_destroy (cr);
 
@@ -483,9 +531,20 @@ os_thumb_set_property (GObject      *object,
 
   switch (prop_id)
     {
-      case PROP_ORIENTATION:
+      case PROP_ORIENTATION: {
         priv->orientation = g_value_get_enum (value);
+        if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+          {
+            gtk_window_resize (GTK_WINDOW (object), DEFAULT_THUMB_WIDTH,
+                               DEFAULT_THUMB_HEIGHT);
+          }
+        else
+          {
+            gtk_window_resize (GTK_WINDOW (object), DEFAULT_THUMB_HEIGHT,
+                               DEFAULT_THUMB_WIDTH);
+          }
         break;
+      }
 
       default:
         break;
