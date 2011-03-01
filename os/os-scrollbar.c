@@ -386,8 +386,11 @@ os_scrollbar_move (OsScrollbar *scrollbar,
 
   new_value = os_scrollbar_coord_to_value (scrollbar, c);
 
-  gtk_adjustment_set_value (priv->adjustment, new_value);
-  gtk_adjustment_value_changed (priv->adjustment);
+  if (priv->adjustment->value != new_value)
+    {
+      gtk_adjustment_set_value (priv->adjustment, new_value);
+      gtk_adjustment_value_changed (priv->adjustment);
+    }
 }
 
 static void
