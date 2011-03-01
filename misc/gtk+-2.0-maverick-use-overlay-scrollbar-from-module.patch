@@ -1,6 +1,6 @@
 === modified file 'gtk/gtkscrolledwindow.c'
 --- gtk/gtkscrolledwindow.c	2010-05-18 12:35:39 +0000
-+++ gtk/gtkscrolledwindow.c	2011-03-01 05:48:58 +0000
++++ gtk/gtkscrolledwindow.c	2011-03-01 10:48:00 +0000
 @@ -144,6 +144,9 @@
  
  static guint signals[LAST_SIGNAL] = {0};
@@ -11,7 +11,7 @@
  G_DEFINE_TYPE (GtkScrolledWindow, gtk_scrolled_window, GTK_TYPE_BIN)
  
  static void
-@@ -394,8 +397,35 @@
+@@ -394,8 +397,42 @@
  gtk_scrolled_window_new (GtkAdjustment *hadjustment,
  			 GtkAdjustment *vadjustment)
  {
@@ -33,10 +33,17 @@
 +          module = g_module_open (custom_path, G_MODULE_BIND_LOCAL);
 +          if (module != NULL)
 +            {
-+              if (g_module_symbol (module, "os_scrollbar_new", &symbol))
++              if (g_module_symbol (module, "os_utils_is_blacklisted", &symbol))
 +                {
-+                  os_scrollbar_new = symbol;
-+                  use_overlay_scrollbar = TRUE;
++                  gboolean (*os_utils_is_blacklisted) (const gchar*) = symbol;
++                  if (os_utils_is_blacklisted (g_get_prgname ()) == FALSE)
++                    {
++                      if (g_module_symbol (module, "os_scrollbar_new", &symbol))
++                        {
++                          os_scrollbar_new = symbol;
++                          use_overlay_scrollbar = TRUE;
++                        }
++                    }
 +                }
 +            }
 +        }
@@ -47,7 +54,7 @@
    if (hadjustment)
      g_return_val_if_fail (GTK_IS_ADJUSTMENT (hadjustment), NULL);
  
-@@ -434,7 +464,12 @@
+@@ -434,7 +471,12 @@
    if (!scrolled_window->hscrollbar)
      {
        gtk_widget_push_composite_child ();
@@ -61,7 +68,7 @@
        gtk_widget_set_composite_name (scrolled_window->hscrollbar, "hscrollbar");
        gtk_widget_pop_composite_child ();
  
-@@ -495,7 +530,12 @@
+@@ -495,7 +537,12 @@
    if (!scrolled_window->vscrollbar)
      {
        gtk_widget_push_composite_child ();

@@ -1,4 +1,4 @@
-/* liboverlay-scrollbar
+/* overlay-scrollbar
  *
  * Copyright © 2011 Canonical Ltd
  *
@@ -20,14 +20,27 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#ifndef __HAVE_OS_H__
-#define __HAVE_OS_H__
-
-#define __OS_H_INSIDE__
+#ifndef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
 
 #include "os-utils.h"
-#include "os-scrollbar.h"
 
-#undef __OS_H_INSIDE__
+/* Public functions. */
 
-#endif /* __HAVE_OS_H__ */
+gboolean
+os_utils_is_blacklisted (const gchar* program)
+{
+  /* Black-list of program names retrieved with g_get_prgname(). */
+  static const gchar *const blacklist[] = {
+    "Fill me with blacklisted programs"
+  };
+
+  gint32 i;
+  const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+  for (i = 0; i < nr_programs; i++)
+    if (g_strcmp0 (blacklist[i], program) == 0)
+      return TRUE;
+
+  return FALSE;
+}

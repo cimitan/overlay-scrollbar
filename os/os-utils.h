@@ -1,4 +1,4 @@
-/* liboverlay-scrollbar
+/* overlay-scrollbar
  *
  * Copyright © 2011 Canonical Ltd
  *
@@ -20,14 +20,15 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#ifndef __HAVE_OS_H__
-#define __HAVE_OS_H__
+#ifndef __OS_UTILS_H__
+#define __OS_UTILS_H__
 
-#define __OS_H_INSIDE__
+#include <glib.h>
 
-#include "os-utils.h"
-#include "os-scrollbar.h"
+G_BEGIN_DECLS
 
-#undef __OS_H_INSIDE__
+gboolean os_utils_is_blacklisted (const gchar* program);
 
-#endif /* __HAVE_OS_H__ */
+G_END_DECLS
+
+#endif /* __OS_UTILS_H__ */
