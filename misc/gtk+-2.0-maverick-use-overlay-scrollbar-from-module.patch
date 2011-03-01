@@ -12,7 +12,7 @@
 
 === modified file 'gtk/gtkscrolledwindow.c'
 --- gtk/gtkscrolledwindow.c	2010-05-18 12:35:39 +0000
-+++ gtk/gtkscrolledwindow.c	2011-03-01 17:16:55 +0000
++++ gtk/gtkscrolledwindow.c	2011-03-01 18:29:11 +0000
 @@ -144,6 +144,9 @@
  
  static guint signals[LAST_SIGNAL] = {0};
@@ -59,7 +59,7 @@
 +      if (use_overlay_scrollbar == FALSE)
 +        allocation->width = MAX (1, allocation->width - (vscrollbar_requisition.width + scrollbar_spacing));
 +      else
-+        allocation->width = MAX (1, widget->allocation.width);
++        allocation->width = MAX (1, allocation->width);
      }
    if (scrolled_window->hscrollbar_visible)
      {
@@ -71,7 +71,7 @@
 +      if (use_overlay_scrollbar == FALSE)
 +        allocation->height = MAX (1, allocation->height - (hscrollbar_requisition.height + scrollbar_spacing));
 +      else
-+        allocation->height = MAX (1, widget->allocation.height);
++        allocation->height = MAX (1, allocation->height);
      }
  }
  
