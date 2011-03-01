@@ -353,7 +353,7 @@ os_scrollbar_hide_thumb (gpointer user_data)
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = user_data;
+  scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   if (priv->can_hide)
@@ -820,12 +820,14 @@ pager_move (OsScrollbar *scrollbar)
       mask.width = 3;
       mask.height = priv->overlay.height;
 
-      if (priv->overlay.height >= priv->overlay_all.height - 2)
+      if (priv->proximity == TRUE
+          && priv->overlay.height >= priv->overlay_all.height - 2)
         {
           priv->proximity = FALSE;
           os_pager_hide (OS_PAGER (priv->pager));
         }
-      else if (priv->proximity)
+      else if (priv->proximity == FALSE
+               && priv->overlay.height < priv->overlay_all.height - 2)
         {
           priv->proximity = TRUE;
           os_pager_show (OS_PAGER (priv->pager));
@@ -838,12 +840,14 @@ pager_move (OsScrollbar *scrollbar)
       mask.width = priv->overlay.width;
       mask.height = 3;
 
-      if (priv->overlay.width >= priv->overlay_all.width - 2)
+      if (priv->proximity == TRUE
+          && priv->overlay.width >= priv->overlay_all.width - 2)
         {
           priv->proximity = FALSE;
           os_pager_hide (OS_PAGER (priv->pager));
         }
-      else if (priv->proximity)
+      else if (priv->proximity == FALSE
+               && priv->overlay.width < priv->overlay_all.width - 2)
         {
           priv->proximity = TRUE;
           os_pager_show (OS_PAGER (priv->pager));
@@ -998,21 +1002,25 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   OsScrollbarPrivate *priv;
   XEvent *xevent;
 
+  g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
+
   scrollbar = OS_SCROLLBAR (user_data);
+
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
   xevent = gdkxevent;
 
+  g_return_val_if_fail (priv->parent != NULL, GDK_FILTER_CONTINUE);
   g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
   g_return_val_if_fail (priv->thumb != NULL, GDK_FILTER_CONTINUE);
-
-  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
-  os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
 
   if (priv->proximity)
     {
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
+          os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+          os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+
           /* XXX missing horizontal */
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
@@ -1209,10 +1217,10 @@ os_scrollbar_map (GtkWidget *widget)
 
   GTK_WIDGET_CLASS (os_scrollbar_parent_class)->map (widget);
 
-  os_scrollbar_calc_layout_pager (OS_SCROLLBAR (widget),
-                                  priv->adjustment->value);
-  os_scrollbar_calc_layout_slider (OS_SCROLLBAR (widget),
-                                   priv->adjustment->value);
+  /* os_scrollbar_calc_layout_pager (OS_SCROLLBAR (widget), */
+  /*                                 priv->adjustment->value); */
+  /* os_scrollbar_calc_layout_slider (OS_SCROLLBAR (widget), */
+  /*                                  priv->adjustment->value); */
   priv->proximity = TRUE;
 
   if (priv->pager != NULL)
