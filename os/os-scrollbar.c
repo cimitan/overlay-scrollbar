@@ -507,11 +507,11 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_button_release_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            thumb_motion_notify_event_cb, scrollbar);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_enter_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_leave_notify_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            thumb_motion_notify_event_cb, scrollbar);
 
       g_object_unref (priv->thumb);
     }
@@ -526,12 +526,12 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                         G_CALLBACK (thumb_button_press_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "button-release-event",
                         G_CALLBACK (thumb_button_release_event_cb), scrollbar);
-      g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
-                        G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "enter-notify-event",
                         G_CALLBACK (thumb_enter_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
                         G_CALLBACK (thumb_leave_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
+                        G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
     }
 }
 
