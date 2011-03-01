@@ -2,12 +2,12 @@ AC_PREREQ(2.63)
 
 # Package
 
-AC_INIT([liboverlay-scrollbar],[0.0.0.1],[https://bugs.launchpad.net/aarti],[libscrollbar-overlay])
+AC_INIT([overlay-scrollbar],[0.0.0.1],[https://bugs.launchpad.net/aarti],[overlay-scrollbar])
 AC_CONFIG_SRCDIR([os/os-scrollbar.h])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2 check-news])
+AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # ABI versionning
