@@ -92,11 +92,11 @@ static void os_scrollbar_swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment 
 static void os_scrollbar_swap_parent (OsScrollbar *scrollbar, GtkWidget *parent);
 static void os_scrollbar_swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
 static void os_scrollbar_toplevel_connect (OsScrollbar *scrollbar);
-static gboolean os_thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-static gboolean os_thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
-static gboolean os_thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
-static gboolean os_thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
-static gboolean os_thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
+static gboolean thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
+static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
+static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
+static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_allocation (OsScrollbar *scrollbar);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
@@ -503,15 +503,15 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
   if (priv->thumb != NULL)
     {
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            os_thumb_button_press_event_cb, scrollbar);
+                                            thumb_button_press_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            os_thumb_button_release_event_cb, scrollbar);
+                                            thumb_button_release_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            os_thumb_motion_notify_event_cb, scrollbar);
+                                            thumb_motion_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            os_thumb_enter_notify_event_cb, scrollbar);
+                                            thumb_enter_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
-                                            os_thumb_leave_notify_event_cb, scrollbar);
+                                            thumb_leave_notify_event_cb, scrollbar);
 
       g_object_unref (priv->thumb);
     }
@@ -523,15 +523,15 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
       g_object_ref_sink (priv->thumb);
 
       g_signal_connect (G_OBJECT (priv->thumb), "button-press-event",
-                        G_CALLBACK (os_thumb_button_press_event_cb), scrollbar);
+                        G_CALLBACK (thumb_button_press_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "button-release-event",
-                        G_CALLBACK (os_thumb_button_release_event_cb), scrollbar);
+                        G_CALLBACK (thumb_button_release_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
-                        G_CALLBACK (os_thumb_motion_notify_event_cb), scrollbar);
+                        G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "enter-notify-event",
-                        G_CALLBACK (os_thumb_enter_notify_event_cb), scrollbar);
+                        G_CALLBACK (thumb_enter_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
-                        G_CALLBACK (os_thumb_leave_notify_event_cb), scrollbar);
+                        G_CALLBACK (thumb_leave_notify_event_cb), scrollbar);
     }
 }
 
@@ -574,9 +574,9 @@ os_scrollbar_toplevel_connect (OsScrollbar *scrollbar)
 }
 
 static gboolean
-os_thumb_button_press_event_cb (GtkWidget      *widget,
-                                GdkEventButton *event,
-                                gpointer        user_data)
+thumb_button_press_event_cb (GtkWidget      *widget,
+                             GdkEventButton *event,
+                             gpointer        user_data)
 {
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -617,9 +617,9 @@ os_thumb_button_press_event_cb (GtkWidget      *widget,
 }
 
 static gboolean
-os_thumb_button_release_event_cb (GtkWidget      *widget,
-                                  GdkEventButton *event,
-                                  gpointer        user_data)
+thumb_button_release_event_cb (GtkWidget      *widget,
+                               GdkEventButton *event,
+                               gpointer        user_data)
 {
   if (event->type == GDK_BUTTON_RELEASE)
     {
@@ -668,9 +668,9 @@ os_thumb_button_release_event_cb (GtkWidget      *widget,
 }
 
 static gboolean
-os_thumb_enter_notify_event_cb (GtkWidget        *widget,
-                                     GdkEventCrossing *event,
-                                     gpointer          user_data)
+thumb_enter_notify_event_cb (GtkWidget        *widget,
+                             GdkEventCrossing *event,
+                             gpointer          user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
@@ -685,9 +685,9 @@ os_thumb_enter_notify_event_cb (GtkWidget        *widget,
 }
 
 static gboolean
-os_thumb_leave_notify_event_cb (GtkWidget        *widget,
-                                     GdkEventCrossing *event,
-                                     gpointer          user_data)
+thumb_leave_notify_event_cb (GtkWidget        *widget,
+                             GdkEventCrossing *event,
+                             gpointer          user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
@@ -704,9 +704,9 @@ os_thumb_leave_notify_event_cb (GtkWidget        *widget,
 }
 
 static gboolean
-os_thumb_motion_notify_event_cb (GtkWidget      *widget,
-                                 GdkEventMotion *event,
-                                 gpointer        user_data)
+thumb_motion_notify_event_cb (GtkWidget      *widget,
+                              GdkEventMotion *event,
+                              gpointer        user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
