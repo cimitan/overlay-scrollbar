@@ -1,5 +1,4 @@
 BLOCKER
-- fix map/unmap
 - in some apps, like gtk-demo, the pager is hidden until you do a configure event
 
 HARD
@@ -8,10 +7,19 @@ HARD
 
 MEDIUM
 - implement pageup/down with the new code
+- move thumb internally if it could be outside the screen
 
 EASY
-- horizontal thing missing
-- hide the overlay when adjustment is at full height and remove proximity
 
+DON'T KNOW
+- maximization is breaking map/unmap I guess, it's not like a resize
 
-- much much more
+BROKEN APPS
+- evince
+- save/open file dialog
+- gedit when switching pages
+- epiphany when no notebook is present
+
+SLOW-AS-HELL APPS
+- evolution left sidebar (folder list)
+- gedit
