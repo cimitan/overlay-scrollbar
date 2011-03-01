@@ -1,5 +1,6 @@
-/* liboverlay-scrollbar
- * Copyright (C) 2011 Canonical Ltd
+/* overlay-scrollbar
+ *
+ * Copyright © 2011 Canonical Ltd
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -17,27 +18,25 @@
  * Boston, MA 02111-1307, USA.
  *
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
- *
  */
+
+#ifndef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
 
 #include <cairo.h>
 #include <cairo-xlib.h>
-#include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include "os-private.h"
 
-#include "overlay-pager.h"
-#include "overlay-scrollbar-cairo-support.h"
-#include "overlay-scrollbar-support.h"
+#define OS_PAGER_GET_PRIVATE(obj) \
+  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_PAGER, OsPagerPrivate))
 
-#define OVERLAY_PAGER_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_PAGER, OverlayPagerPrivate))
+G_DEFINE_TYPE (OsPager, os_pager, G_TYPE_OBJECT);
 
-G_DEFINE_TYPE (OverlayPager, overlay_pager, G_TYPE_OBJECT);
+typedef struct _OsPagerPrivate OsPagerPrivate;
 
-typedef struct _OverlayPagerPrivate OverlayPagerPrivate;
-
-struct _OverlayPagerPrivate
-{
-/*  GdkDrawable *overlay_drawable;*/
+struct _OsPagerPrivate {
   GdkWindow *overlay_window;
   GtkWidget *parent;
 
@@ -57,44 +56,43 @@ enum {
 };
 
 /* GOBJECT CLASS FUNCTIONS */
-static void overlay_pager_get_property (GObject    *object,
+static void os_pager_get_property (GObject    *object,
                                         guint       prop_id,
                                         GValue     *value,
                                         GParamSpec *pspec);
 
-static void overlay_pager_set_property (GObject      *object,
+static void os_pager_set_property (GObject      *object,
                                         guint         prop_id,
                                         const GValue *value,
                                         GParamSpec   *pspec);
 
 /* HELPER FUNCTIONS */
-static void overlay_pager_check_properties (OverlayPager *overlay);
+static void os_pager_check_properties (OsPager *overlay);
 
-static void overlay_pager_create (OverlayPager *overlay);
+static void os_pager_create (OsPager *overlay);
 
-static void overlay_pager_draw (OverlayPager *overlay);
+static void os_pager_draw (OsPager *overlay);
 
-static void overlay_pager_draw_bitmap (GdkPixmap    *pixmap,
+static void os_pager_draw_bitmap (GdkPixmap    *pixmap,
                                        GdkRectangle  mask);
 
-static void overlay_pager_draw_pixmap (GdkPixmap *pixmap,
+static void os_pager_draw_pixmap (GdkPixmap *pixmap,
                                        gboolean   active);
 
-static void overlay_pager_mask (OverlayPager *overlay);
+static void os_pager_mask (OsPager *overlay);
 
 /* CLASS FUNCTIONS */
 /**
- * overlay_pager_class_init:
+ * os_pager_class_init:
  * override class function
  **/
 static void
-overlay_pager_class_init (OverlayPagerClass *class)
+os_pager_class_init (OsPagerClass *class)
 {
-  DEBUG
   GObjectClass *gobject_class = G_OBJECT_CLASS (class);
 
-  gobject_class->get_property = overlay_pager_get_property;
-  gobject_class->set_property = overlay_pager_set_property;
+  gobject_class->get_property = os_pager_get_property;
+  gobject_class->set_property = os_pager_set_property;
 
   g_object_class_install_property (gobject_class,
                                    PROP_PARENT,
@@ -107,21 +105,20 @@ overlay_pager_class_init (OverlayPagerClass *class)
                                                         G_PARAM_STATIC_NICK |
                                                         G_PARAM_STATIC_BLURB));
 
-  g_type_class_add_private (gobject_class, sizeof (OverlayPagerPrivate));
+  g_type_class_add_private (gobject_class, sizeof (OsPagerPrivate));
 }
 
 /**
- * overlay_pager_init:
+ * os_pager_init:
  * override class function
  **/
 static void
-overlay_pager_init (OverlayPager *overlay)
+os_pager_init (OsPager *overlay)
 {
-  DEBUG
   GdkRectangle allocation;
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   allocation.x = 0;
   allocation.y = 0;
@@ -135,67 +132,68 @@ overlay_pager_init (OverlayPager *overlay)
 
 /* GOBJECT CLASS FUNCTIONS */
 /**
- * overlay_pager_get_property:
+ * os_pager_get_property:
  * override class function
  **/
 static void
-overlay_pager_get_property (GObject    *object,
+os_pager_get_property (GObject    *object,
                             guint       prop_id,
                             GValue     *value,
                             GParamSpec *pspec)
 {
-  DEBUG
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (OVERLAY_PAGER (object));
+  priv = OS_PAGER_GET_PRIVATE (OS_PAGER (object));
 
   switch (prop_id)
     {
       case PROP_PARENT:
         g_value_set_object (value, priv->parent);
         break;
+      default:
+        break;
     }
 }
 
 /**
- * overlay_pager_set_property:
+ * os_pager_set_property:
  * override class function
  **/
 static void
-overlay_pager_set_property (GObject      *object,
+os_pager_set_property (GObject      *object,
                             guint         prop_id,
                             const GValue *value,
                             GParamSpec   *pspec)
 {
-  DEBUG
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (OVERLAY_PAGER (object));
+  priv = OS_PAGER_GET_PRIVATE (OS_PAGER (object));
 
   switch (prop_id)
     {
       case PROP_PARENT:
         priv->parent = g_value_get_object (value);
         break;
+      default:
+        break;
     }
 }
 
 /* PUBLIC FUNCTIONS */
 /**
- * overlay_pager_hide:
- * @overlay: a #OverlayPager
+ * os_pager_hide:
+ * @overlay: a #OsPager
  *
- * Hides the #OverlayPager
+ * Hides the #OsPager
  **/
 void
-overlay_pager_hide (OverlayPager *overlay)
+os_pager_hide (OsPager *overlay)
 {
-  DEBUG
-  g_return_if_fail (OVERLAY_PAGER (overlay));
+  OsPagerPrivate *priv;
 
-  OverlayPagerPrivate *priv;
+  g_return_if_fail (OS_PAGER (overlay));
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   if (priv->overlay_window == NULL)
     return;
@@ -204,121 +202,114 @@ overlay_pager_hide (OverlayPager *overlay)
 }
 
 /**
- * overlay_pager_move_resize:
- * @overlay: a #OverlayPager
- * @mask: a #GdkRectangle with the position and dimension of the #OverlayPager
+ * os_pager_move_resize:
+ * @overlay: a #OsPager
+ * @mask: a #GdkRectangle with the position and dimension of the #OsPager
  *
- * moves and resizes the #OverlayPager
+ * moves and resizes the #OsPager
  **/
 void
-overlay_pager_move_resize (OverlayPager *overlay,
+os_pager_move_resize (OsPager *overlay,
                            GdkRectangle  mask)
 {
-  DEBUG
-  g_return_if_fail (OVERLAY_PAGER (overlay));
+  OsPagerPrivate *priv;
 
-  OverlayPagerPrivate *priv;
+  g_return_if_fail (OS_PAGER (overlay));
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   if (priv->overlay_window == NULL)
-    overlay_pager_check_properties (overlay);
+    os_pager_check_properties (overlay);
 
   priv->mask = mask;
 
-  overlay_pager_mask (overlay);
+  os_pager_mask (overlay);
   gdk_window_raise (priv->overlay_window);
 }
 
 /**
- * overlay_pager_new:
+ * os_pager_new:
  * @window: the #GdkWindow parent window
- * @width: the width of the #OverlayPager
- * @height: the height of the #OverlayPager
+ * @width: the width of the #OsPager
+ * @height: the height of the #OsPager
  *
- * Creates a new #OverlayPager.
+ * Creates a new #OsPager.
  *
- * Returns: the new #OverlayPager as a #GObject
+ * Returns: the new #OsPager as a #GObject
  */
 GObject*
-overlay_pager_new (GtkWidget *widget)
+os_pager_new (GtkWidget *widget)
 {
-  DEBUG
-  return g_object_new (OS_TYPE_OVERLAY_PAGER,
-                       "parent", widget,
-                       NULL);
+  return g_object_new (OS_TYPE_PAGER, "parent", widget, NULL);
 }
 
 /**
- * overlay_pager_show:
- * @overlay: a #OverlayPager
+ * os_pager_show:
+ * @overlay: a #OsPager
  * @active: whether is active or not
  *
- * changes the state of #OverlayPager
+ * changes the state of #OsPager
  **/
 void
-overlay_pager_set_active (OverlayPager *overlay,
+os_pager_set_active (OsPager *overlay,
                           gboolean      active)
 {
-  DEBUG
-  g_return_if_fail (OVERLAY_PAGER (overlay));
+  OsPagerPrivate *priv;
 
-  OverlayPagerPrivate *priv;
+  g_return_if_fail (OS_PAGER (overlay));
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   if (priv->active != active)
     {
       priv->active = active;
-      overlay_pager_draw (overlay);
+      os_pager_draw (overlay);
     }
 }
 
 /**
- * overlay_pager_show:
- * @overlay: a #OverlayPager
+ * os_pager_show:
+ * @overlay: a #OsPager
  *
- * show the #OverlayPager
+ * show the #OsPager
  **/
 void
-overlay_pager_show (OverlayPager *overlay)
+os_pager_show (OsPager *overlay)
 {
-  DEBUG
-  g_return_if_fail (OVERLAY_PAGER (overlay));
+  OsPagerPrivate *priv;
 
-  OverlayPagerPrivate *priv;
+  g_return_if_fail (OS_PAGER (overlay));
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   if (priv->overlay_window == NULL)
-    overlay_pager_draw (overlay);
+    os_pager_draw (overlay);
 
   gdk_window_show (priv->overlay_window);
   gdk_window_raise (priv->overlay_window);
 }
 
 /**
- * overlay_pager_size_allocate:
- * @overlay: a #OverlayPager
+ * os_pager_size_allocate:
+ * @overlay: a #OsPager
  * @rectangle: a #GdkRectangle
  *
  * Sets the position and dimension of the whole area
  **/
 void
-overlay_pager_size_allocate (OverlayPager *overlay,
+os_pager_size_allocate (OsPager *overlay,
                              GdkRectangle  rectangle)
 {
-  DEBUG
-  g_return_if_fail (OVERLAY_PAGER (overlay));
+  OsPagerPrivate *priv;
 
-  OverlayPagerPrivate *priv;
+  g_return_if_fail (OS_PAGER (overlay));
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   priv->allocation = rectangle;
 
   if (priv->overlay_window == NULL)
-    overlay_pager_draw (overlay);
+    os_pager_draw (overlay);
 
   gdk_window_move_resize (priv->overlay_window,
                           rectangle.x,
@@ -329,34 +320,32 @@ overlay_pager_size_allocate (OverlayPager *overlay,
 
 /* HELPER FUNCTIONS */
 /**
- * overlay_pager_check_properties:
+ * os_pager_check_properties:
  * check if all properties are set
  **/
 static void
-overlay_pager_check_properties (OverlayPager *overlay)
+os_pager_check_properties (OsPager *overlay)
 {
-  DEBUG
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   g_return_if_fail (GTK_WIDGET (priv->parent));
 
-  overlay_pager_create (overlay);
+  os_pager_create (overlay);
 }
 
 /**
- * overlay_pager_create:
- * create the OverlayPager
+ * os_pager_create:
+ * create the OsPager
  **/
 static void
-overlay_pager_create (OverlayPager *overlay)
+os_pager_create (OsPager *overlay)
 {
-  DEBUG
   GdkWindowAttr attributes;
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   attributes.width = priv->allocation.width;
   attributes.height = priv->allocation.height;
@@ -367,23 +356,22 @@ overlay_pager_create (OverlayPager *overlay)
 }
 
 /**
- * overlay_pager_draw:
+ * os_pager_draw:
  * draw on the overlay
  **/
 static void
-overlay_pager_draw (OverlayPager *overlay)
+os_pager_draw (OsPager *overlay)
 {
-  DEBUG
   GdkPixmap *pixmap;
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   pixmap = gdk_pixmap_new (NULL, priv->allocation.width, priv->allocation.height, 24);
-  overlay_pager_draw_pixmap (pixmap, priv->active);
+  os_pager_draw_pixmap (pixmap, priv->active);
 
   if (priv->overlay_window == NULL)
-    overlay_pager_check_properties (overlay);
+    os_pager_check_properties (overlay);
 
   gdk_window_set_back_pixmap (priv->overlay_window, pixmap, FALSE);
   gdk_window_clear (priv->overlay_window);
@@ -391,33 +379,31 @@ overlay_pager_draw (OverlayPager *overlay)
 }
 
 /**
- * overlay_pager_mask:
+ * os_pager_mask:
  * mask on the overlay
  **/
 static void
-overlay_pager_mask (OverlayPager *overlay)
+os_pager_mask (OsPager *overlay)
 {
-  DEBUG
   GdkBitmap *bitmap;
-  OverlayPagerPrivate *priv;
+  OsPagerPrivate *priv;
 
-  priv = OVERLAY_PAGER_GET_PRIVATE (overlay);
+  priv = OS_PAGER_GET_PRIVATE (overlay);
 
   bitmap = gdk_pixmap_new (NULL, priv->allocation.width, priv->allocation.height, 1);
-  overlay_pager_draw_bitmap (bitmap, priv->mask);
+  os_pager_draw_bitmap (bitmap, priv->mask);
 
   gdk_window_shape_combine_mask (priv->overlay_window, bitmap, 0, 0);
 }
 
 /**
- * overlay_pager_draw_bitmap:
+ * os_pager_draw_bitmap:
  * draw on the bitmap of the overlay, to get a mask
  **/
 static void
-overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
+os_pager_draw_bitmap (GdkBitmap    *bitmap,
                            GdkRectangle  mask)
 {
-  DEBUG
   cairo_t *cr_surface;
   cairo_surface_t *surface;
   gint width, height;
@@ -443,14 +429,13 @@ overlay_pager_draw_bitmap (GdkBitmap    *bitmap,
 }
 
 /**
- * overlay_pager_draw_pixmap:
+ * os_pager_draw_pixmap:
  * draw on the pixmap of the overlay, the real drawing
  **/
 static void
-overlay_pager_draw_pixmap (GdkPixmap *pixmap,
+os_pager_draw_pixmap (GdkPixmap *pixmap,
                            gboolean   active)
 {
-  DEBUG
   cairo_t *cr_surface;
   cairo_surface_t *surface;
   gint width, height;

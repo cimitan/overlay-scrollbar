@@ -1,5 +1,6 @@
-/* liboverlay-scrollbar
- * Copyright (C) 2011 Canonical Ltd
+/* overlay-scrollbar
+ *
+ * Copyright © 2011 Canonical Ltd
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -17,26 +18,26 @@
  * Boston, MA 02111-1307, USA.
  *
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
- *
  */
 
-#include <gtk/gtk.h>
+#ifndef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
 
-#include "overlay-thumb.h"
-#include "overlay-scrollbar-cairo-support.h"
-#include "overlay-scrollbar-support.h"
+#include "os-private.h"
 
-#define OVERLAY_THUMB_WIDTH 15 /* width/height of the OverlayThumb, in pixels */
-#define OVERLAY_THUMB_HEIGHT 80 /* height/width of the OverlayThumb, in pixels */
+/* Default size of the thumb in pixels. */
+#define DEFAULT_THUMB_WIDTH  15
+#define DEFAULT_THUMB_HEIGHT 80
 
-#define OVERLAY_THUMB_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_OVERLAY_THUMB, OverlayThumbPrivate))
+#define OS_THUMB_GET_PRIVATE(obj) \
+  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_THUMB, OsThumbPrivate))
 
-G_DEFINE_TYPE (OverlayThumb, overlay_thumb, GTK_TYPE_WINDOW);
+G_DEFINE_TYPE (OsThumb, os_thumb, GTK_TYPE_WINDOW);
 
-typedef struct _OverlayThumbPrivate OverlayThumbPrivate;
+typedef struct _OsThumbPrivate OsThumbPrivate;
 
-struct _OverlayThumbPrivate
-{
+struct _OsThumbPrivate {
   GtkOrientation orientation;
 
   gboolean button_press_event;
@@ -57,77 +58,105 @@ enum {
 };
 
 /* WIDGET CLASS FUNCTIONS */
-static gboolean overlay_thumb_button_press_event (GtkWidget      *widget,
-                                                  GdkEventButton *event);
+static gboolean os_thumb_button_press_event (GtkWidget      *widget,
+                                             GdkEventButton *event);
 
-static gboolean overlay_thumb_button_release_event (GtkWidget      *widget,
-                                                    GdkEventButton *event);
+static gboolean os_thumb_button_release_event (GtkWidget      *widget,
+                                               GdkEventButton *event);
 
-static void overlay_thumb_composited_changed (GtkWidget *widget);
+static void os_thumb_composited_changed (GtkWidget *widget);
 
-static gboolean overlay_thumb_enter_notify_event (GtkWidget        *widget,
-                                                  GdkEventCrossing *event);
+static gboolean os_thumb_enter_notify_event (GtkWidget        *widget,
+                                             GdkEventCrossing *event);
 
-static gboolean overlay_thumb_expose (GtkWidget      *widget,
-                                      GdkEventExpose *event);
+static gboolean os_thumb_expose (GtkWidget      *widget,
+                                 GdkEventExpose *event);
 
-static gboolean overlay_thumb_leave_notify_event (GtkWidget        *widget,
-                                                  GdkEventCrossing *event);
+static gboolean os_thumb_leave_notify_event (GtkWidget        *widget,
+                                             GdkEventCrossing *event);
 
-static gboolean overlay_thumb_motion_notify_event (GtkWidget      *widget,
-                                                   GdkEventMotion *event);
+static gboolean os_thumb_motion_notify_event (GtkWidget      *widget,
+                                              GdkEventMotion *event);
 
-static void overlay_thumb_screen_changed (GtkWidget *widget,
-                                          GdkScreen *old_screen);
+static void os_thumb_screen_changed (GtkWidget *widget,
+                                     GdkScreen *old_screen);
 
 /* GOBJECT CLASS FUNCTIONS */
-static GObject* overlay_thumb_constructor (GType                  type,
-                                           guint                  n_construct_properties,
-                                           GObjectConstructParam *construct_properties);
+static GObject* os_thumb_constructor (GType                  type,
+                                      guint                  n_construct_properties,
+                                      GObjectConstructParam *construct_properties);
 
-static void overlay_thumb_get_property (GObject    *object,
-                                        guint       prop_id,
-                                        GValue     *value,
-                                        GParamSpec *pspec);
+static void os_thumb_get_property (GObject    *object,
+                                   guint       prop_id,
+                                   GValue     *value,
+                                   GParamSpec *pspec);
 
-static void overlay_thumb_set_property (GObject      *object,
-                                        guint         prop_id,
-                                        const GValue *value,
-                                        GParamSpec   *pspec);
+static void os_thumb_set_property (GObject      *object,
+                                   guint         prop_id,
+                                   const GValue *value,
+                                   GParamSpec   *pspec);
+
+/**
+ * os_cairo_draw_rounded_rect:
+ * draw a rounded rectangle
+ **/
+static void
+os_cairo_draw_rounded_rect (cairo_t *cr,
+                            gdouble  x,
+                            gdouble  y,
+                            gdouble  width,
+                            gdouble  height,
+                            gdouble  radius)
+{
+  if (radius < 1)
+    {
+      cairo_rectangle (cr, x, y, width, height);
+      return;
+    }
+
+  radius = MIN (radius, MIN (width / 2.0, height / 2.0));
+
+  cairo_move_to (cr, x + radius, y);
+
+  cairo_arc (cr, x + width - radius, y + radius, radius, G_PI * 1.5, G_PI * 2);
+  cairo_arc (cr, x + width - radius, y + height - radius, radius, 0, G_PI * 0.5);
+  cairo_arc (cr, x + radius, y + height - radius, radius, G_PI * 0.5, G_PI);
+  cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
+}
+
 
 /* CLASS FUNCTIONS */
 /**
- * overlay_thumb_class_init:
+ * os_thumb_class_init:
  * class init function
  **/
 static void
-overlay_thumb_class_init (OverlayThumbClass *class)
+os_thumb_class_init (OsThumbClass *class)
 {
-  DEBUG
   GObjectClass *gobject_class;
   GtkWidgetClass *widget_class;
 
   gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
 
-  widget_class->button_press_event   = overlay_thumb_button_press_event;
-  widget_class->button_release_event = overlay_thumb_button_release_event;
-  widget_class->composited_changed   = overlay_thumb_composited_changed;
-  widget_class->enter_notify_event   = overlay_thumb_enter_notify_event;
-  widget_class->expose_event         = overlay_thumb_expose;
-  widget_class->leave_notify_event   = overlay_thumb_leave_notify_event;
-  widget_class->motion_notify_event  = overlay_thumb_motion_notify_event;
-  widget_class->screen_changed       = overlay_thumb_screen_changed;
+  widget_class->button_press_event   = os_thumb_button_press_event;
+  widget_class->button_release_event = os_thumb_button_release_event;
+  widget_class->composited_changed   = os_thumb_composited_changed;
+  widget_class->enter_notify_event   = os_thumb_enter_notify_event;
+  widget_class->expose_event         = os_thumb_expose;
+  widget_class->leave_notify_event   = os_thumb_leave_notify_event;
+  widget_class->motion_notify_event  = os_thumb_motion_notify_event;
+  widget_class->screen_changed       = os_thumb_screen_changed;
 
-  gobject_class->constructor  = overlay_thumb_constructor;
-  gobject_class->get_property = overlay_thumb_get_property;
-  gobject_class->set_property = overlay_thumb_set_property;
+  gobject_class->constructor  = os_thumb_constructor;
+  gobject_class->get_property = os_thumb_get_property;
+  gobject_class->set_property = os_thumb_set_property;
 
   g_object_class_install_property (gobject_class,
                                    PROP_ORIENTATION,
                                    g_param_spec_enum ("orientation",
                                                       "Orientation",
-                                                      "GtkOrientation of the OverlayThumb",
+                                                      "GtkOrientation of the OsThumb",
                                                       GTK_TYPE_ORIENTATION,
                                                       GTK_ORIENTATION_VERTICAL,
                                                       G_PARAM_READWRITE |
@@ -135,30 +164,29 @@ overlay_thumb_class_init (OverlayThumbClass *class)
                                                       G_PARAM_STATIC_NICK |
                                                       G_PARAM_STATIC_BLURB));
 
-  g_type_class_add_private (gobject_class, sizeof (OverlayThumbPrivate));
+  g_type_class_add_private (gobject_class, sizeof (OsThumbPrivate));
 }
 
 /**
- * overlay_thumb_init:
+ * os_thumb_init:
  * init function
  **/
 static void
-overlay_thumb_init (OverlayThumb *thumb)
+os_thumb_init (OsThumb *thumb)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (thumb);
+  priv = OS_THUMB_GET_PRIVATE (thumb);
 
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 
   gtk_window_set_default_size (GTK_WINDOW (thumb),
-                               OVERLAY_THUMB_WIDTH,
-                               OVERLAY_THUMB_HEIGHT);
+                               DEFAULT_THUMB_WIDTH,
+                               DEFAULT_THUMB_HEIGHT);
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
-  gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE);
+  /* gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE); */
   gtk_window_set_decorated (GTK_WINDOW (thumb), FALSE);
   gtk_window_set_focus_on_map (GTK_WINDOW (thumb), FALSE);
   gtk_window_set_accept_focus (GTK_WINDOW (thumb), FALSE);
@@ -167,27 +195,26 @@ overlay_thumb_init (OverlayThumb *thumb)
                                              GDK_BUTTON_RELEASE_MASK |
                                              GDK_POINTER_MOTION_MASK);
 
-  overlay_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
-  overlay_thumb_composited_changed (GTK_WIDGET (thumb));
+  os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
+  os_thumb_composited_changed (GTK_WIDGET (thumb));
 }
 
 /* WIDGET CLASS FUNCTIONS */
 /**
- * overlay_thumb_button_press_event:
+ * os_thumb_button_press_event:
  * override class function
  **/
 static gboolean
-overlay_thumb_button_press_event (GtkWidget      *widget,
+os_thumb_button_press_event (GtkWidget      *widget,
                                   GdkEventButton *event)
 {
-  DEBUG
   if (event->type == GDK_BUTTON_PRESS)
     {
       if (event->button == 1)
         {
-          OverlayThumbPrivate *priv;
+          OsThumbPrivate *priv;
 
-          priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+          priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
@@ -201,21 +228,20 @@ overlay_thumb_button_press_event (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_button_release_event:
+ * os_thumb_button_release_event:
  * override class function
  **/
 static gboolean
-overlay_thumb_button_release_event (GtkWidget      *widget,
+os_thumb_button_release_event (GtkWidget      *widget,
                                     GdkEventButton *event)
 {
-  DEBUG
   if (event->type == GDK_BUTTON_RELEASE)
     {
       if (event->button == 1)
         {
-          OverlayThumbPrivate *priv;
+          OsThumbPrivate *priv;
 
-          priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+          priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
@@ -226,22 +252,21 @@ overlay_thumb_button_release_event (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_composited_changed:
+ * os_thumb_composited_changed:
  * override class function
  **/
 static void
-overlay_thumb_composited_changed (GtkWidget *widget)
+os_thumb_composited_changed (GtkWidget *widget)
 {
-  DEBUG
   GdkScreen *screen;
 
   screen = gtk_widget_get_screen (widget);
 
   if (gdk_screen_is_composited (screen))
     {
-      OverlayThumbPrivate *priv;
+      OsThumbPrivate *priv;
 
-      priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+      priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
       priv->can_rgba = TRUE;
     }
@@ -250,17 +275,16 @@ overlay_thumb_composited_changed (GtkWidget *widget)
 }
 
 /**
- * overlay_thumb_enter_notify_event:
+ * os_thumb_enter_notify_event:
  * override class function
  **/
 static gboolean
-overlay_thumb_enter_notify_event (GtkWidget        *widget,
+os_thumb_enter_notify_event (GtkWidget        *widget,
                                   GdkEventCrossing *event)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
   priv->enter_notify_event = TRUE;
   priv->can_hide = FALSE;
@@ -269,23 +293,22 @@ overlay_thumb_enter_notify_event (GtkWidget        *widget,
 }
 
 /**
- * overlay_thumb_expose:
+ * os_thumb_expose:
  * override class function
  **/
 static gboolean
-overlay_thumb_expose (GtkWidget      *widget,
+os_thumb_expose (GtkWidget      *widget,
                       GdkEventExpose *event)
 {
-  DEBUG
   GtkAllocation allocation;
   GtkStateType state_type_down, state_type_up;
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
   cairo_pattern_t *pat;
   cairo_t *cr;
   gint x, y, width, height;
   gint radius;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
   state_type_down = GTK_STATE_NORMAL;
   state_type_up = GTK_STATE_NORMAL;
@@ -428,38 +451,36 @@ overlay_thumb_expose (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_leave_notify_event:
+ * os_thumb_leave_notify_event:
  * override class function
  **/
 static gboolean
-overlay_thumb_leave_notify_event (GtkWidget        *widget,
-                                  GdkEventCrossing *event)
+os_thumb_leave_notify_event (GtkWidget        *widget,
+                             GdkEventCrossing *event)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
 
-/*  g_timeout_add (TIMEOUT_HIDE, overlay_thumb_hide, widget);*/
+/*  g_timeout_add (TIMEOUT_HIDE, os_thumb_hide, widget);*/
 
   return TRUE;
 }
 
 /**
- * overlay_thumb_motion_notify_event:
+ * os_thumb_motion_notify_event:
  * override class function
  **/
 static gboolean
-overlay_thumb_motion_notify_event (GtkWidget      *widget,
+os_thumb_motion_notify_event (GtkWidget      *widget,
                                    GdkEventMotion *event)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (widget));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
 
   if (priv->button_press_event)
     {
@@ -473,14 +494,13 @@ overlay_thumb_motion_notify_event (GtkWidget      *widget,
 }
 
 /**
- * overlay_thumb_screen_changed:
+ * os_thumb_screen_changed:
  * override class function
  **/
 static void
-overlay_thumb_screen_changed (GtkWidget *widget,
+os_thumb_screen_changed (GtkWidget *widget,
                               GdkScreen *old_screen)
 {
-  DEBUG
   GdkScreen *screen;
   GdkColormap *colormap;
 
@@ -493,18 +513,17 @@ overlay_thumb_screen_changed (GtkWidget *widget,
 
 /* GOBJECT CLASS FUNCTIONS */
 /**
- * overlay_thumb_constructor:
+ * os_thumb_constructor:
  * override class function
  **/
 static GObject*
-overlay_thumb_constructor (GType                  type,
+os_thumb_constructor (GType                  type,
                            guint                  n_construct_properties,
                            GObjectConstructParam *construct_properties)
 {
-  DEBUG
   GObject *object;
 
-  object = G_OBJECT_CLASS (overlay_thumb_parent_class)->constructor (type,
+  object = G_OBJECT_CLASS (os_thumb_parent_class)->constructor (type,
                                                                      n_construct_properties,
                                                                      construct_properties);
 
@@ -514,62 +533,63 @@ overlay_thumb_constructor (GType                  type,
 }
 
 /**
- * overlay_thumb_get_property:
+ * os_thumb_get_property:
  * override class function
  **/
 static void
-overlay_thumb_get_property (GObject    *object,
+os_thumb_get_property (GObject    *object,
                             guint       prop_id,
                             GValue     *value,
                             GParamSpec *pspec)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (object));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (object));
 
   switch (prop_id)
     {
       case PROP_ORIENTATION:
         g_value_set_enum (value, priv->orientation);
         break;
+      default:
+        break;
     }
 }
 
 /**
- * overlay_thumb_set_property:
+ * os_thumb_set_property:
  * override class function
  **/
 static void
-overlay_thumb_set_property (GObject      *object,
+os_thumb_set_property (GObject      *object,
                             guint         prop_id,
                             const GValue *value,
                             GParamSpec   *pspec)
 {
-  DEBUG
-  OverlayThumbPrivate *priv;
+  OsThumbPrivate *priv;
 
-  priv = OVERLAY_THUMB_GET_PRIVATE (OVERLAY_THUMB (object));
+  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (object));
 
   switch (prop_id)
     {
       case PROP_ORIENTATION:
         priv->orientation = g_value_get_enum (value);
         break;
+      default:
+        break;
     }
 }
 
 /* PUBLIC FUNCTIONS */
 /**
- * overlay_thumb_new:
+ * os_thumb_new:
  *
- * Creates a new OverlayThumb.
+ * Creates a new OsThumb.
  *
- * Returns: the new OverlayThumb as a #GtkWidget
+ * Returns: the new OsThumb as a #GtkWidget
  */
 GtkWidget*
-overlay_thumb_new (GtkOrientation orientation)
+os_thumb_new (GtkOrientation orientation)
 {
-  DEBUG
-  return g_object_new (OS_TYPE_OVERLAY_THUMB, "orientation", orientation, NULL);
+  return g_object_new (OS_TYPE_THUMB, "orientation", orientation, NULL);
 }

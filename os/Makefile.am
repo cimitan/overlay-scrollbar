@@ -1,10 +1,13 @@
-# liboverlay-scrollbar
+noinst_HEADERS = \
+	os-private.h
 
 source_h = \
 	os.h \
 	os-scrollbar.h
 
 source_c = \
+	$(srcdir)/os-pager.c \
+	$(srcdir)/os-thumb.c \
 	$(srcdir)/os-scrollbar.c
 
 osincludedir = $(includedir)/overlay-scrollbar-@OS_MAJORMINOR@/os
@@ -32,19 +35,3 @@ EXTRA_DIST = \
 
 DISTCLEANFILES = \
 	os-version.h
-
-# pkg-config
-
-pcfiles = overlay-scrollbar-@OS_MAJORMINOR@.pc
-
-all-local: $(pcfiles)
-
-%-@OS_MAJORMINOR@.pc: %.pc
-	cp $< $@
-
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(pcfiles)
-
-EXTRA_DIST = overlay-scrollbar.pc.in
-
-CLEANFILES = $(pcfiles)
