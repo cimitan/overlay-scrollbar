@@ -1,6 +1,6 @@
 === modified file 'gtk/gtkscrolledwindow.c'
 --- gtk/gtkscrolledwindow.c	2010-05-18 12:35:39 +0000
-+++ gtk/gtkscrolledwindow.c	2011-03-01 10:48:00 +0000
++++ gtk/gtkscrolledwindow.c	2011-03-01 15:13:13 +0000
 @@ -144,6 +144,9 @@
  
  static guint signals[LAST_SIGNAL] = {0};
@@ -81,5 +81,29 @@
 +
        gtk_widget_set_composite_name (scrolled_window->vscrollbar, "vscrollbar");
        gtk_widget_pop_composite_child ();
+ 
+@@ -1366,7 +1413,10 @@
+ 	    priv->real_window_placement == GTK_CORNER_BOTTOM_LEFT)))
+ 	allocation->x += (vscrollbar_requisition.width +  scrollbar_spacing);
+ 
+-      allocation->width = MAX (1, allocation->width - (vscrollbar_requisition.width + scrollbar_spacing));
++      if (use_overlay_scrollbar == FALSE)
++        allocation->width = MAX (1, allocation->width - (vscrollbar_requisition.width + scrollbar_spacing));
++      else
++        allocation->width = MAX (1, widget->allocation.width);
+     }
+   if (scrolled_window->hscrollbar_visible)
+     {
+@@ -1378,7 +1428,10 @@
+ 	  priv->real_window_placement == GTK_CORNER_BOTTOM_RIGHT)
+ 	allocation->y += (hscrollbar_requisition.height + scrollbar_spacing);
+ 
+-      allocation->height = MAX (1, allocation->height - (hscrollbar_requisition.height + scrollbar_spacing));
++      if (use_overlay_scrollbar == FALSE)
++        allocation->height = MAX (1, allocation->height - (hscrollbar_requisition.height + scrollbar_spacing));
++      else
++        allocation->height = MAX (1, widget->allocation.height);
+     }
+ }
  
 
