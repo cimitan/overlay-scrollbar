@@ -20,6 +20,10 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
+#if !defined (__OS_H_INSIDE__) && !defined (OS_COMPILATION)
+#error "Only <os/os.h> can be included directly."
+#endif
+
 #ifndef __OS_SCROLLBAR_H__
 #define __OS_SCROLLBAR_H__
 
