@@ -33,20 +33,15 @@
 #define OS_THUMB_GET_PRIVATE(obj) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_THUMB, OsThumbPrivate))
 
-G_DEFINE_TYPE (OsThumb, os_thumb, GTK_TYPE_WINDOW);
-
 typedef struct _OsThumbPrivate OsThumbPrivate;
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
-
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
-
   gboolean can_hide;
   gboolean can_rgba;
-
   gint pointer_x;
   gint pointer_y;
 };
@@ -57,49 +52,21 @@ enum {
   LAST_ARG
 };
 
-/* WIDGET CLASS FUNCTIONS */
-static gboolean os_thumb_button_press_event (GtkWidget      *widget,
-                                             GdkEventButton *event);
-
-static gboolean os_thumb_button_release_event (GtkWidget      *widget,
-                                               GdkEventButton *event);
-
+static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
+static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
+static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing *event);
+static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
+static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
+static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
+static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
+static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
+static void os_thumb_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
+static void os_thumb_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
-static gboolean os_thumb_enter_notify_event (GtkWidget        *widget,
-                                             GdkEventCrossing *event);
+/* Private functions. */
 
-static gboolean os_thumb_expose (GtkWidget      *widget,
-                                 GdkEventExpose *event);
-
-static gboolean os_thumb_leave_notify_event (GtkWidget        *widget,
-                                             GdkEventCrossing *event);
-
-static gboolean os_thumb_motion_notify_event (GtkWidget      *widget,
-                                              GdkEventMotion *event);
-
-static void os_thumb_screen_changed (GtkWidget *widget,
-                                     GdkScreen *old_screen);
-
-/* GOBJECT CLASS FUNCTIONS */
-static GObject* os_thumb_constructor (GType                  type,
-                                      guint                  n_construct_properties,
-                                      GObjectConstructParam *construct_properties);
-
-static void os_thumb_get_property (GObject    *object,
-                                   guint       prop_id,
-                                   GValue     *value,
-                                   GParamSpec *pspec);
-
-static void os_thumb_set_property (GObject      *object,
-                                   guint         prop_id,
-                                   const GValue *value,
-                                   GParamSpec   *pspec);
-
-/**
- * os_cairo_draw_rounded_rect:
- * draw a rounded rectangle
- **/
+/* Draw a rounded rectangle. */
 static void
 os_cairo_draw_rounded_rect (cairo_t *cr,
                             gdouble  x,
@@ -124,12 +91,10 @@ os_cairo_draw_rounded_rect (cairo_t *cr,
   cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
 }
 
+/* Type definition. */
 
-/* CLASS FUNCTIONS */
-/**
- * os_thumb_class_init:
- * class init function
- **/
+G_DEFINE_TYPE (OsThumb, os_thumb, GTK_TYPE_WINDOW);
+
 static void
 os_thumb_class_init (OsThumbClass *class)
 {
@@ -152,25 +117,17 @@ os_thumb_class_init (OsThumbClass *class)
   gobject_class->get_property = os_thumb_get_property;
   gobject_class->set_property = os_thumb_set_property;
 
-  g_object_class_install_property (gobject_class,
-                                   PROP_ORIENTATION,
-                                   g_param_spec_enum ("orientation",
-                                                      "Orientation",
-                                                      "GtkOrientation of the OsThumb",
-                                                      GTK_TYPE_ORIENTATION,
-                                                      GTK_ORIENTATION_VERTICAL,
-                                                      G_PARAM_READWRITE |
-                                                      G_PARAM_STATIC_NAME |
-                                                      G_PARAM_STATIC_NICK |
-                                                      G_PARAM_STATIC_BLURB));
+  g_object_class_install_property
+      (gobject_class, PROP_ORIENTATION,
+       g_param_spec_enum ("orientation", "Orientation",
+                          "GtkOrientation of the OsThumb",
+                          GTK_TYPE_ORIENTATION, GTK_ORIENTATION_VERTICAL,
+                          G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
+                          G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
   g_type_class_add_private (gobject_class, sizeof (OsThumbPrivate));
 }
 
-/**
- * os_thumb_init:
- * init function
- **/
 static void
 os_thumb_init (OsThumb *thumb)
 {
@@ -199,14 +156,9 @@ os_thumb_init (OsThumb *thumb)
   os_thumb_composited_changed (GTK_WIDGET (thumb));
 }
 
-/* WIDGET CLASS FUNCTIONS */
-/**
- * os_thumb_button_press_event:
- * override class function
- **/
 static gboolean
 os_thumb_button_press_event (GtkWidget      *widget,
-                                  GdkEventButton *event)
+                             GdkEventButton *event)
 {
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -227,13 +179,9 @@ os_thumb_button_press_event (GtkWidget      *widget,
   return FALSE;
 }
 
-/**
- * os_thumb_button_release_event:
- * override class function
- **/
 static gboolean
 os_thumb_button_release_event (GtkWidget      *widget,
-                                    GdkEventButton *event)
+                               GdkEventButton *event)
 {
   if (event->type == GDK_BUTTON_RELEASE)
     {
@@ -251,10 +199,6 @@ os_thumb_button_release_event (GtkWidget      *widget,
   return FALSE;
 }
 
-/**
- * os_thumb_composited_changed:
- * override class function
- **/
 static void
 os_thumb_composited_changed (GtkWidget *widget)
 {
@@ -274,13 +218,9 @@ os_thumb_composited_changed (GtkWidget *widget)
   gtk_widget_queue_draw (widget);
 }
 
-/**
- * os_thumb_enter_notify_event:
- * override class function
- **/
 static gboolean
 os_thumb_enter_notify_event (GtkWidget        *widget,
-                                  GdkEventCrossing *event)
+                             GdkEventCrossing *event)
 {
   OsThumbPrivate *priv;
 
@@ -292,13 +232,9 @@ os_thumb_enter_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
-/**
- * os_thumb_expose:
- * override class function
- **/
 static gboolean
 os_thumb_expose (GtkWidget      *widget,
-                      GdkEventExpose *event)
+                 GdkEventExpose *event)
 {
   GtkAllocation allocation;
   GtkStateType state_type_down, state_type_up;
@@ -450,10 +386,6 @@ os_thumb_expose (GtkWidget      *widget,
   return FALSE;
 }
 
-/**
- * os_thumb_leave_notify_event:
- * override class function
- **/
 static gboolean
 os_thumb_leave_notify_event (GtkWidget        *widget,
                              GdkEventCrossing *event)
@@ -470,13 +402,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
-/**
- * os_thumb_motion_notify_event:
- * override class function
- **/
 static gboolean
 os_thumb_motion_notify_event (GtkWidget      *widget,
-                                   GdkEventMotion *event)
+                              GdkEventMotion *event)
 {
   OsThumbPrivate *priv;
 
@@ -493,13 +421,9 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   return TRUE;
 }
 
-/**
- * os_thumb_screen_changed:
- * override class function
- **/
 static void
 os_thumb_screen_changed (GtkWidget *widget,
-                              GdkScreen *old_screen)
+                         GdkScreen *old_screen)
 {
   GdkScreen *screen;
   GdkColormap *colormap;
@@ -511,36 +435,26 @@ os_thumb_screen_changed (GtkWidget *widget,
     gtk_widget_set_colormap (widget, colormap);
 }
 
-/* GOBJECT CLASS FUNCTIONS */
-/**
- * os_thumb_constructor:
- * override class function
- **/
 static GObject*
 os_thumb_constructor (GType                  type,
-                           guint                  n_construct_properties,
-                           GObjectConstructParam *construct_properties)
+                      guint                  n_construct_properties,
+                      GObjectConstructParam *construct_properties)
 {
   GObject *object;
 
-  object = G_OBJECT_CLASS (os_thumb_parent_class)->constructor (type,
-                                                                     n_construct_properties,
-                                                                     construct_properties);
+  object = G_OBJECT_CLASS (os_thumb_parent_class)->constructor
+      (type, n_construct_properties, construct_properties);
 
   g_object_set (object, "type", GTK_WINDOW_POPUP, NULL);
 
   return object;
 }
 
-/**
- * os_thumb_get_property:
- * override class function
- **/
 static void
 os_thumb_get_property (GObject    *object,
-                            guint       prop_id,
-                            GValue     *value,
-                            GParamSpec *pspec)
+                       guint       prop_id,
+                       GValue     *value,
+                       GParamSpec *pspec)
 {
   OsThumbPrivate *priv;
 
@@ -551,20 +465,17 @@ os_thumb_get_property (GObject    *object,
       case PROP_ORIENTATION:
         g_value_set_enum (value, priv->orientation);
         break;
+
       default:
         break;
     }
 }
 
-/**
- * os_thumb_set_property:
- * override class function
- **/
 static void
 os_thumb_set_property (GObject      *object,
-                            guint         prop_id,
-                            const GValue *value,
-                            GParamSpec   *pspec)
+                       guint         prop_id,
+                       const GValue *value,
+                       GParamSpec   *pspec)
 {
   OsThumbPrivate *priv;
 
@@ -575,18 +486,20 @@ os_thumb_set_property (GObject      *object,
       case PROP_ORIENTATION:
         priv->orientation = g_value_get_enum (value);
         break;
+
       default:
         break;
     }
 }
 
-/* PUBLIC FUNCTIONS */
+/* Public functions. */
+
 /**
  * os_thumb_new:
  *
- * Creates a new OsThumb.
+ * Creates a new OsThumb instance.
  *
- * Returns: the new OsThumb as a #GtkWidget
+ * Returns: a new OsThumb instance.
  */
 GtkWidget*
 os_thumb_new (GtkOrientation orientation)
