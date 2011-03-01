@@ -97,8 +97,8 @@ static gboolean os_thumb_button_release_event_cb (GtkWidget *widget, GdkEventBut
 static gboolean os_thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean os_thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean os_thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
-static void overlay_move (OsScrollbar *scrollbar);
-static void overlay_resize_window (OsScrollbar *scrollbar);
+static void pager_move (OsScrollbar *scrollbar);
+static void pager_set_allocation (OsScrollbar *scrollbar);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static gboolean parent_expose_event_cb (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
 static void parent_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation, gpointer user_data);
@@ -206,7 +206,7 @@ os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar,
 
       if (tmp_height != height)
         if (priv->pager != NULL)
-          overlay_move (scrollbar);
+          pager_move (scrollbar);
     }
   else
     {
@@ -245,7 +245,7 @@ os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar,
 
       if (tmp_width != width)
         if (priv->pager != NULL)
-          overlay_move (scrollbar);
+          pager_move (scrollbar);
     }
 }
 
@@ -806,7 +806,7 @@ os_thumb_motion_notify_event_cb (GtkWidget      *widget,
 
 /* Move the pager to the right position. */
 static void
-overlay_move (OsScrollbar *scrollbar)
+pager_move (OsScrollbar *scrollbar)
 {
   GdkRectangle mask;
   OsScrollbarPrivate *priv;
@@ -855,7 +855,7 @@ overlay_move (OsScrollbar *scrollbar)
 
 /* Resize the overlay window. */
 static void
-overlay_resize_window (OsScrollbar *scrollbar)
+pager_set_allocation (OsScrollbar *scrollbar)
 {
   GdkRectangle rect;
   OsScrollbarPrivate *priv;
@@ -896,54 +896,8 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
 
-  overlay_move (scrollbar);
+  pager_move (scrollbar);
 }
-
-/*static void*/
-/*parent_child_not_visible_cb (GtkWidget *widget,*/
-/*                             gpointer   user_data)*/
-/*{*/
-/*  printf("%s()\n", __func__);*/
-/*  OsScrollbarPrivate *priv;*/
-
-/*  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (user_data));*/
-
-/*  if (GDK_IS_WINDOW (gtk_widget_get_window (widget)))*/
-/*    {*/
-/*      printf ("-> gdk_window_remove_filter\n");*/
-/*      gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, user_data);*/
-/*    }*/
-
-/*  if (priv->pager != NULL)*/
-/*    {*/
-/*      printf ("-> os_pager_hide\n");*/
-/*      os_pager_hide (OS_PAGER (priv->pager));*/
-/*    }*/
-/*}*/
-
-/*static void*/
-/*parent_child_visible_cb (GtkWidget *widget,*/
-/*                         gpointer   user_data)*/
-/*{*/
-/*  printf("%s()\n", __func__);*/
-/*  OsScrollbarPrivate *priv;*/
-
-/*  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (user_data));*/
-
-/*  if (GDK_IS_WINDOW (gtk_widget_get_parent_window (widget)))*/
-/*    {*/
-/*      printf ("-> gdk_window_remove_filter\n");*/
-/*      gdk_window_remove_filter (gtk_widget_get_parent_window (widget), toplevel_filter_func, user_data);*/
-/*      printf ("-> gdk_window_add_filter\n");*/
-/*      gdk_window_add_filter (gtk_widget_get_parent_window (widget), toplevel_filter_func, user_data);*/
-/*    }*/
-
-/*  if (priv->pager != NULL)*/
-/*    {*/
-/*      printf ("-> os_pager_show\n");*/
-/*      os_pager_show (OS_PAGER (priv->pager));*/
-/*    }*/
-/*}*/
 
 static gboolean
 parent_expose_event_cb (GtkWidget      *widget,
@@ -1002,7 +956,7 @@ parent_size_allocate_cb (GtkWidget     *widget,
     os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
   if (priv->pager != NULL)
-    overlay_resize_window (scrollbar);
+    pager_set_allocation (scrollbar);
 
   os_scrollbar_store_window_position (scrollbar);
 }
@@ -1028,8 +982,8 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   os_scrollbar_store_window_position (scrollbar);
 
-  overlay_resize_window (scrollbar);
-  overlay_move (scrollbar);
+  pager_set_allocation (scrollbar);
+  pager_move (scrollbar);
 
   return FALSE;
 }
