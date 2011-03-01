@@ -136,6 +136,7 @@ AC_SUBST(OS_LDFLAGS)
 
 AC_CONFIG_FILES([
   Makefile
+  build/Makefile
   pkgconfig/Makefile
   pkgconfig/overlay-scrollbar.pc
   os/Makefile

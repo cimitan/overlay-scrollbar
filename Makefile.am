@@ -1,4 +1,8 @@
-SUBDIRS = pkgconfig os tests
+SUBDIRS = \
+	build \
+	pkgconfig \
+	os \
+	tests
 
 ACLOCAL_AMFLAGS = -I build
 
