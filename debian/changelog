@@ -1,0 +1,5 @@
+overlay-scrollbar (0.0.0-0ubuntu1) natty; urgency=low
+
+  * Initial packaging
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 01 Mar 2011 14:20:24 +0100
