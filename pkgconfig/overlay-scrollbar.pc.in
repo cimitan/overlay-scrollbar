@@ -8,4 +8,4 @@ Description: Overlay scrollbar widget for GTK+
 Version: @VERSION@
 Libs: -L${libdir} -loverlay-scrollbar-@OS_MAJORMINOR@
 Cflags: -I${includedir}
-Requires: gtk+-2.0 >= 2.22
+Requires: glib-2.0 >= 2.26 gtk+-2.0 >= 2.22 cairo >= 1.10
