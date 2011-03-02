@@ -1,4 +1,5 @@
 SUBDIRS = \
+	misc \
 	build \
 	pkgconfig \
 	os \

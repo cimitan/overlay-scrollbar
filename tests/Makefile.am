@@ -1,3 +1,9 @@
+EXTRA_DIST = \
+	test-os-pager.c \
+	test-os-pixmap.c \
+	test-os-treeview.c \
+	test-os-wm-state.c
+
 noinst_PROGRAMS = \
 	test-os
 
