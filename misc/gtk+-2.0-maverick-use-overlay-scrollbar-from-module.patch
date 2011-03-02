@@ -107,7 +107,7 @@
 +
 +          custom_path= (gchar*) g_getenv ("LIBOVERLAY_SCROLLBAR_PATH");
 +          if (custom_path == NULL)
-+            custom_path = "/usr/lib/liboverlay-scrollbar-0.0.so";
++            custom_path = "/usr/lib/liboverlay-scrollbar-0.1.so";
 +
 +          module = g_module_open (custom_path, G_MODULE_BIND_LOCAL);
 +          if (module != NULL)

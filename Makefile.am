@@ -1,4 +1,5 @@
 SUBDIRS = \
+	misc \
 	build \
 	pkgconfig \
 	os \
@@ -6,7 +7,7 @@ SUBDIRS = \
 
 ACLOCAL_AMFLAGS = -I build
 
-EXTRA_DIST = COPYING RELEASE
+EXTRA_DIST = autogen.sh COPYING RELEASE
 
 DISTCHECK_CONFIGURE_FLAGS = --disable-scrollkeeper
 

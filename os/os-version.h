@@ -20,27 +20,30 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#ifndef HAVE_CONFIG_H
-#include "config.h"
-#endif /* HAVE_CONFIG_H */
+#if !defined (__OS_H_INSIDE__) && !defined (OS_COMPILATION)
+#error "Only <os/os.h> can be included directly."
+#endif
 
-#include "os-utils.h"
+#ifndef __OS_VERSION_H__
+#define __OS_VERSION_H__
 
-/* Public functions. */
+#include <glib.h>
 
-gboolean
-os_utils_is_blacklisted (const gchar* program)
-{
-  /* Black-list of program names retrieved with g_get_prgname(). */
-  static const gchar *const blacklist[] = {
-    "Fill me with blacklisted programs"
-  };
+G_BEGIN_DECLS
 
-  gint32 i;
-  const gint32 nr_programs = G_N_ELEMENTS (blacklist);
-  for (i = 0; i < nr_programs; i++)
-    if (g_strcmp0 (blacklist[i], program) == 0)
-      return TRUE;
+/* The major version of scrollbar-overlay at compile time. */
+#define OS_VERSION_MAJOR (0)
 
-  return FALSE;
-}
+/* The minor version of scrollbar-overlay at compile time. */
+#define OS_VERSION_MINOR (1)
+
+/* The micro version of scrollbar-overlay at compile time. */
+#define OS_VERSION_MICRO (0)
+
+/* The nano version of scrollbar-overlay at compile time, actual releases have
+ * 0, Bazaar trunk check-outs have 1, pre-release versions have [2-n]. */
+#define OS_VERSION_NANO (0)
+
+G_END_DECLS
+
+#endif /* __OS_VERSION_H__ */
