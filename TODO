@@ -6,7 +6,6 @@ HARD
 - transient the window with the toplevel
 
 MEDIUM
-- implement pageup/down with the new code
 - move thumb internally if it could be outside the screen
 
 EASY
