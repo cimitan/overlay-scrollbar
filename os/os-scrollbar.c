@@ -635,24 +635,20 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           if (!priv->motion_notify_event)
             {
-/*              GtkAllocation allocation;*/
-
-/*              gtk_widget_get_allocation (widget, &allocation);*/
-
-/*              if (priv->orientation == GTK_ORIENTATION_VERTICAL)*/
-/*                {*/
-/*                  if (priv->pointer_y < allocation.height / 2)*/
-/*                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);*/
-/*                  else*/
-/*                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);*/
-/*                }*/
-/*              else*/
-/*                {*/
-/*                  if (priv->pointer_x < allocation.width / 2)*/
-/*                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_UP);*/
-/*                  else*/
-/*                    g_signal_emit_by_name (priv->range, "move-slider", GTK_SCROLL_PAGE_DOWN);*/
-/*                }*/
+              if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+                {
+                  if (priv->pointer_y < priv->slider.height / 2)
+                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_UP);
+                  else
+                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_DOWN);
+                }
+              else
+                {
+                  if (priv->pointer_x < priv->slider.width / 2)
+                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_UP);
+                  else
+                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_DOWN);
+                }
 
               priv->value_changed_event = TRUE;
             }
