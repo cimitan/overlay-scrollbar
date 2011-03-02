@@ -1,5 +1,5 @@
-overlay-scrollbar (0.1.0-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.1.0-0ubuntu1) natty; urgency=low
 
   * Initial packaging
 
- -- Didier Roche <didrocks@ubuntu.com>  Tue, 01 Mar 2011 14:20:24 +0100
+ -- Didier Roche <didrocks@ubuntu.com>  Wed, 02 Mar 2011 19:50:47 +0100
