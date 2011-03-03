@@ -1181,6 +1181,24 @@ os_scrollbar_init (OsScrollbar *scrollbar)
                     G_CALLBACK (os_scrollbar_notify_orientation_cb), NULL);
 }
 
+static void
+os_scrollbar_dispose (GObject *object)
+{
+  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (object);
+
+  os_scrollbar_swap_adjustment (OS_SCROLLBAR (object), NULL);
+  os_scrollbar_swap_parent (OS_SCROLLBAR (object), NULL);
+  os_scrollbar_swap_thumb (OS_SCROLLBAR (object), NULL);
+
+  if (priv->pager != NULL)
+    {
+      g_object_unref (priv->pager);
+      priv->pager = NULL;
+    }
+
+  G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
+}
+
 static gboolean
 os_scrollbar_expose_event (GtkWidget      *widget,
                            GdkEventExpose *event)
@@ -1318,24 +1336,6 @@ static void
 os_scrollbar_unrealize (GtkWidget *widget)
 {
   GTK_WIDGET_CLASS (os_scrollbar_parent_class)->unrealize (widget);
-}
-
-static void
-os_scrollbar_dispose (GObject *object)
-{
-  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (object);
-
-  os_scrollbar_swap_adjustment (OS_SCROLLBAR (object), NULL);
-  os_scrollbar_swap_parent (OS_SCROLLBAR (object), NULL);
-  os_scrollbar_swap_thumb (OS_SCROLLBAR (object), NULL);
-
-  if (priv->pager != NULL)
-    {
-      g_object_unref (priv->pager);
-      priv->pager = NULL;
-    }
-
-  G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
 }
 
 /* Public functions. */
