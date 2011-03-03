@@ -61,6 +61,8 @@ static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
 static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
+static void os_thumb_dispose (GObject *object);
+static void os_thumb_finalize (GObject *object);
 static void os_thumb_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void os_thumb_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
@@ -116,6 +118,9 @@ os_thumb_class_init (OsThumbClass *class)
   gobject_class->constructor  = os_thumb_constructor;
   gobject_class->get_property = os_thumb_get_property;
   gobject_class->set_property = os_thumb_set_property;
+  gobject_class->set_property = os_thumb_set_property;
+  gobject_class->dispose = os_thumb_dispose;
+  gobject_class->finalize = os_thumb_finalize;
 
   g_object_class_install_property
       (gobject_class, PROP_ORIENTATION,
@@ -152,6 +157,19 @@ os_thumb_init (OsThumb *thumb)
   os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
   os_thumb_composited_changed (GTK_WIDGET (thumb));
 }
+
+static void
+os_thumb_dispose (GObject *object)
+{
+  G_OBJECT_CLASS (os_thumb_parent_class)->dispose (object);
+}
+
+static void
+os_thumb_finalize (GObject *object)
+{
+  G_OBJECT_CLASS (os_thumb_parent_class)->finalize (object);
+}
+
 
 static gboolean
 os_thumb_button_press_event (GtkWidget      *widget,

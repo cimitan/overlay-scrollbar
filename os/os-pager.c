@@ -51,6 +51,8 @@ enum {
 
 static void os_pager_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void os_pager_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
+static void os_pager_dispose (GObject *object);
+static void os_pager_finalize (GObject *object);
 static void os_pager_check_properties (OsPager *pager);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
@@ -196,6 +198,8 @@ os_pager_class_init (OsPagerClass *class)
 
   gobject_class->get_property = os_pager_get_property;
   gobject_class->set_property = os_pager_set_property;
+  gobject_class->dispose = os_pager_dispose;
+  gobject_class->finalize = os_pager_finalize;
 
   g_object_class_install_property
       (gobject_class, PROP_PARENT,
@@ -224,6 +228,18 @@ os_pager_init (OsPager *pager)
   priv->allocation = allocation;
 
   priv->active = FALSE;
+}
+
+static void
+os_pager_dispose (GObject *object)
+{
+  G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
+}
+
+static void
+os_pager_finalize (GObject *object)
+{
+  G_OBJECT_CLASS (os_pager_parent_class)->finalize (object);
 }
 
 static void
