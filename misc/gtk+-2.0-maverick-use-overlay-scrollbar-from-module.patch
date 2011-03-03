@@ -12,7 +12,7 @@
 
 === modified file 'gtk/gtkscrolledwindow.c'
 --- old/gtk/gtkscrolledwindow.c	2010-05-18 12:35:39 +0000
-+++ new/gtk/gtkscrolledwindow.c	2011-03-03 10:50:14 +0000
++++ new/gtk/gtkscrolledwindow.c	2011-03-03 10:53:04 +0000
 @@ -144,6 +144,9 @@
  
  static guint signals[LAST_SIGNAL] = {0};
@@ -107,7 +107,7 @@
 +
 +          path = (gchar*) g_getenv ("LIBOVERLAY_SCROLLBAR_PATH");
 +          if (path == NULL)
-+            path = "/usr/lib/liboverlay-scrollbar-0.1.so";
++            path = "/usr/lib/liboverlay-scrollbar-0.1.so.0";
 +
 +          module = g_module_open (path, G_MODULE_BIND_LOCAL);
 +          if (module != NULL)
