@@ -118,7 +118,6 @@ os_thumb_class_init (OsThumbClass *class)
   gobject_class->constructor  = os_thumb_constructor;
   gobject_class->get_property = os_thumb_get_property;
   gobject_class->set_property = os_thumb_set_property;
-  gobject_class->set_property = os_thumb_set_property;
   gobject_class->dispose = os_thumb_dispose;
   gobject_class->finalize = os_thumb_finalize;
 
