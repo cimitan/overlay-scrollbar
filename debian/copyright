@@ -1,8 +1,7 @@
-Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
-Name: nux
-Maintainer: Andrea Cimitan <andrea.cimitan@canonical.com>
-            Loïc Molinari <loic.molinari@canonical.com>
-
+Format: http://dep.debian.net/deps/dep5/
+Upstream-Name: overlay-scrollbar
+Upstream-Contact: Andrea Cimitan <andrea.cimitan@canonical.com>
+                  Loïc Molinari <loic.molinari@canonical.com>
 Source: http://launchpad.net/overlay-scrollbar
 
 Files: *
