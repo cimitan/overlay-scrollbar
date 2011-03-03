@@ -83,7 +83,8 @@ static void os_scrollbar_dispose (GObject *object);
 static void os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar, gdouble adjustment_value);
 static void os_scrollbar_calc_layout_slider (OsScrollbar *scrollbar, gdouble adjustment_value);
 static gdouble os_scrollbar_coord_to_value (OsScrollbar *scrollbar, gint coord);
-static gboolean os_scrollbar_hide_thumb (gpointer user_data);
+static void os_scrollbar_hide_thumb (OsScrollbar *scrollbar);
+static gboolean os_scrollbar_hide_thumb_cb (gpointer user_data);
 static void os_scrollbar_move (OsScrollbar *scrollbar, gint mouse_x, gint mouse_y);
 static void os_scrollbar_notify_adjustment_cb (GObject *object, gpointer user_data);
 static void os_scrollbar_notify_orientation_cb (GObject *object, gpointer user_data);
@@ -347,13 +348,11 @@ os_scrollbar_coord_to_value (OsScrollbar *scrollbar,
 }
 
 /* Hide if it's ok to hide. */
-static gboolean
-os_scrollbar_hide_thumb (gpointer user_data)
+static void
+os_scrollbar_hide_thumb (OsScrollbar *scrollbar)
 {
-  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   if (priv->can_hide)
@@ -361,6 +360,15 @@ os_scrollbar_hide_thumb (gpointer user_data)
       priv->value_changed_event = FALSE;
       gtk_widget_hide (GTK_WIDGET (priv->thumb));
     }
+}
+
+static gboolean
+os_scrollbar_hide_thumb_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
+
+  os_scrollbar_hide_thumb (scrollbar);
+  g_object_unref (scrollbar);
 
   return FALSE;
 }
@@ -694,7 +702,8 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
 
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb, scrollbar);
+  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
+                 g_object_ref (scrollbar));
 
   return TRUE;
 }
@@ -1131,7 +1140,8 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb, scrollbar);
+  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
+                 g_object_ref (scrollbar));
 
   return FALSE;
 }
