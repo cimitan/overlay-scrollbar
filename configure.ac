@@ -86,10 +86,10 @@ AS_CASE([$enable_debug],
         [yes],
         [
           test "$cflags_set" = set || CFLAGS="$CFLAGS -g"
-          DEBUG_CFLAGS=""
+          DEBUG_CFLAGS="-D_DEBUG"
         ],
         [no],
-        [DEBUG_CFLAGS="-DG_DISABLE_CAST_CHECKS -DG_DISABLE_CHECKS -DG_DISABLE_ASSERT"],
+        [DEBUG_CFLAGS="-DNDEBUG -DG_DISABLE_CAST_CHECKS -DG_DISABLE_CHECKS -DG_DISABLE_ASSERT"],
         [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
 AC_SUBST(DEBUG_CFLAGS)

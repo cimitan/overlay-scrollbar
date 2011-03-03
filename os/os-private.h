@@ -32,6 +32,63 @@
 
 G_BEGIN_DECLS
 
+/* os-log.c */
+
+/* Severity levels. */
+typedef enum {
+  OS_INFO,  /* Informative message (white colored). */
+  OS_WARN,  /* Warning message (yellow colored). */
+  OS_ERROR  /* Error message (red colored). */
+} OsLogLevel;
+
+/* Logging level threshold, message logged with a lower level are discarded.
+ * Initialized to OS_INFO for debug builds and OS_WARN for release builds. */
+extern OsLogLevel threshold;
+
+/* Log a message to stderr at the given level following the printf() syntax. */
+void
+G_GNUC_NO_INSTRUMENT
+G_GNUC_PRINTF (5, 6)
+os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
+                gint32 line, const gchar* format, ...);
+
+/* Macro logging a message to stderr using the given level. */
+#define OS_LOG(level,...)                                                  \
+  G_STMT_START {                                                           \
+    if (level >= threshold)                                                \
+      os_log_message ((level), __func__, __FILE__, __LINE__, __VA_ARGS__); \
+  } G_STMT_END
+
+/* Macro conditionally logging a message to stderr using the given level. */
+#define OS_LOG_IF(level,cond,...)                                          \
+  G_STMT_START {                                                           \
+    if (level >= threshold) && (cond == true)) {                           \
+      os_log_message ((level), __func__, __FILE__, __LINE__, __VA_ARGS__); \
+    }                                                                      \
+  } G_STMT_END
+
+/* Macro loggging an error message to stderr and breaking the program execution
+ * if the assertion fails. */
+#define OS_CHECK(cond)                                            \
+  G_STMT_START {                                                  \
+    if (G_UNLIKELY((cond) == false)) {                            \
+      os_log_message (OS_LOG_ERROR, __func__, __FILE__, __LINE__, \
+                      "assertion `"#cond"' failed");              \
+      G_BREAKPOINT ();                                            \
+    }                                                             \
+  } G_STMT_END
+
+/* Debug mode logging macros, compiled away to nothing for release builds. */
+#if !defined(NDEBUG)
+#define OS_DLOG(level,...) OS_LOG((level), __VA_ARGS__)
+#define OS_DLOG_IF(level,cond,...) OS_LOG_IF((level), (cond), __VA_ARGS__)
+#define OS_DCHECK(cond) OS_CHECK((cond))
+#else
+#define OS_DLOG(level,...)
+#define OS_DLOG_IF(level,cond,...)
+#define OS_DCHECK(cond)
+#endif
+
 /* os-thumb.c */
 
 #define OS_TYPE_THUMB (os_thumb_get_type ())
