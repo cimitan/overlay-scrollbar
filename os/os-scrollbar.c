@@ -1291,16 +1291,7 @@ os_scrollbar_expose_event (GtkWidget      *widget,
 static void
 os_scrollbar_hide (GtkWidget *widget)
 {
-  OsScrollbarPrivate *priv;
-
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (widget));
-
   GTK_WIDGET_CLASS (os_scrollbar_parent_class)->hide (widget);
-
-  priv->proximity = FALSE;
-
-  if (priv->pager != NULL)
-    os_pager_hide (OS_PAGER (priv->pager));
 }
 
 static void
@@ -1387,16 +1378,7 @@ os_scrollbar_realize (GtkWidget *widget)
 static void
 os_scrollbar_show (GtkWidget *widget)
 {
-  OsScrollbarPrivate *priv;
-
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (widget));
-
   GTK_WIDGET_CLASS (os_scrollbar_parent_class)->show (widget);
-
-  priv->proximity = TRUE;
-
-  if (priv->pager != NULL)
-    os_pager_show (OS_PAGER (priv->pager));
 }
 
 static void
