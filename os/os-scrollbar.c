@@ -83,6 +83,7 @@ static void os_scrollbar_show (GtkWidget *widget);
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
+static void os_scrollbar_finalize (GObject *object);
 static void os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar, gdouble adjustment_value);
 static void os_scrollbar_calc_layout_slider (OsScrollbar *scrollbar, gdouble adjustment_value);
 static gdouble os_scrollbar_coord_to_value (OsScrollbar *scrollbar, gint coord);
@@ -1233,6 +1234,7 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class->unrealize    = os_scrollbar_unrealize;
 
   gobject_class->dispose = os_scrollbar_dispose;
+  gobject_class->finalize = os_scrollbar_finalize;
 
   g_type_class_add_private (gobject_class, sizeof (OsScrollbarPrivate));
 }
@@ -1258,6 +1260,12 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 static void
 os_scrollbar_dispose (GObject *object)
 {
+  G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
+}
+
+static void
+os_scrollbar_finalize (GObject *object)
+{
   OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (object);
 
   os_scrollbar_swap_adjustment (OS_SCROLLBAR (object), NULL);
@@ -1270,7 +1278,7 @@ os_scrollbar_dispose (GObject *object)
       priv->pager = NULL;
     }
 
-  G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
+  G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
 }
 
 static gboolean
