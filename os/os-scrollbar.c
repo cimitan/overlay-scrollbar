@@ -943,10 +943,12 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  /* FIXME we should control each time os_pager_show/hide
+  /* FIXME(Cimi) we should control each time os_pager_show/hide
    * is called here and in map()/unmap().
    * We are arbitrary calling that and I'm frightened we should show or keep
-   * hidden a pager that is meant to be hidden/shown. */
+   * hidden a pager that is meant to be hidden/shown.
+   * I don't want to see pagers reappearing because
+   * of a change in the adjustment of an invisible pager or viceversa. */
   if ((adjustment->upper - adjustment->lower) > adjustment->page_size)
     {
       priv->fullsize = FALSE;
