@@ -20,30 +20,36 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#if !defined (__OS_H_INSIDE__) && !defined (OS_COMPILATION)
-#error "Only <os/os.h> can be included directly."
+#ifndef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#include "os-private.h"
+
+#if !defined(NDEBUG)
+OsLogLevel threshold = OS_INFO;
+#else
+OsLogLevel threshold = OS_WARN;
 #endif
 
-#ifndef __OS_VERSION_H__
-#define __OS_VERSION_H__
+/* Public functions. */
 
-#include <glib.h>
+void
+os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
+                gint32 line, const gchar* format, ...)
+{
+  static const gchar* prefix[3] = {
+    "\033[37;01m", /* OS_LOG_INFO */
+    "\033[33;01m", /* OS_LOG_WARN */
+    "\033[31;01m"  /* OS_LOG_ERROR */
+  };
+  gchar buffer[512];
+  va_list args;
 
-G_BEGIN_DECLS
+  va_start (args, format);
+  vsnprintf (buffer, 512, format, args);
+  va_end (args);
 
-/* The major version of scrollbar-overlay at compile time. */
-#define OS_VERSION_MAJOR (0)
-
-/* The minor version of scrollbar-overlay at compile time. */
-#define OS_VERSION_MINOR (1)
-
-/* The micro version of scrollbar-overlay at compile time. */
-#define OS_VERSION_MICRO (1)
-
-/* The nano version of scrollbar-overlay at compile time, actual releases have
- * 0, Bazaar trunk check-outs have 1, pre-release versions have [2-n]. */
-#define OS_VERSION_NANO (0)
-
-G_END_DECLS
-
-#endif /* __OS_VERSION_H__ */
+  fprintf (stderr, "%s%s\033[00m %s() %s %d\n", prefix[level], buffer, function,
+           file, line);
+}

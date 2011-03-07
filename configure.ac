@@ -2,7 +2,7 @@ AC_PREREQ(2.63)
 
 # Package
 
-AC_INIT([overlay-scrollbar],[0.1.0],[https://bugs.launchpad.net/aarti],[overlay-scrollbar])
+AC_INIT([overlay-scrollbar],[0.1.1],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
 AC_CONFIG_SRCDIR([os/os-scrollbar.h])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
@@ -18,7 +18,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 # - interfaces added -> increment AGE
 # - interfaces removed -> AGE = 0
 OS_LT_CURRENT=0
-OS_LT_REV=0
+OS_LT_REV=1
 OS_LT_AGE=0
 OS_LT_VERSION="$OS_LT_CURRENT:$OS_LT_REV:$OS_LT_AGE"
 OS_LT_LDFLAGS="-version-info $OS_LT_VERSION"
@@ -86,10 +86,10 @@ AS_CASE([$enable_debug],
         [yes],
         [
           test "$cflags_set" = set || CFLAGS="$CFLAGS -g"
-          DEBUG_CFLAGS=""
+          DEBUG_CFLAGS="-D_DEBUG"
         ],
         [no],
-        [DEBUG_CFLAGS="-DG_DISABLE_CAST_CHECKS -DG_DISABLE_CHECKS -DG_DISABLE_ASSERT"],
+        [DEBUG_CFLAGS="-DNDEBUG -DG_DISABLE_CAST_CHECKS -DG_DISABLE_CHECKS -DG_DISABLE_ASSERT"],
         [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
 AC_SUBST(DEBUG_CFLAGS)

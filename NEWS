@@ -1,3 +1,12 @@
+overlay-scrollbar 0.1.1 (March 7, 2011)
+---------------------------------------
+
+* Bugs fixed:
+ 728416 Fix crashes in hide_thumb
+ 728415 Maximized windows: Move thumb internally when there's not enough...
+ 728407 Unwanted scrollbars are appearing for hidden scrolled windows...
+
+
 overlay-scrollbar 0.1.0 (March 2, 2011)
 ---------------------------------------
 
