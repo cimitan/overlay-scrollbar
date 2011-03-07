@@ -1104,8 +1104,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xevent->xmotion.x < PROXIMITY_WIDTH &&
-                   priv->thumb_all.x + priv->slider.width - xevent->xmotion.x > 0) &&
+              if ((priv->thumb_all.x - xevent->xmotion.x <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.x - xevent->xmotion.x >= 0) &&
                   (xevent->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
                    xevent->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
                 {
@@ -1140,8 +1140,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xevent->xmotion.y < PROXIMITY_WIDTH &&
-                   priv->thumb_all.y + priv->slider.height - xevent->xmotion.y > 0) &&
+              if ((priv->thumb_all.y - xevent->xmotion.y <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.y - xevent->xmotion.y >= 0) &&
                   (xevent->xmotion.x >= priv->thumb_all.x + priv->overlay.x &&
                    xevent->xmotion.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
                 {
