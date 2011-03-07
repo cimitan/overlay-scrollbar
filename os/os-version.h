@@ -38,7 +38,7 @@ G_BEGIN_DECLS
 #define OS_VERSION_MINOR (1)
 
 /* The micro version of scrollbar-overlay at compile time. */
-#define OS_VERSION_MICRO (0)
+#define OS_VERSION_MICRO (1)
 
 /* The nano version of scrollbar-overlay at compile time, actual releases have
  * 0, Bazaar trunk check-outs have 1, pre-release versions have [2-n]. */

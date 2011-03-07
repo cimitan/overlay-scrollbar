@@ -1,4 +1,4 @@
-/* liboverlay-scrollbar
+/* overlay-scrollbar
  *
  * Copyright © 2011 Canonical Ltd
  *
@@ -20,14 +20,36 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#ifndef __HAVE_OS_H__
-#define __HAVE_OS_H__
+#ifndef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
 
-#define __OS_H_INSIDE__
+#include "os-private.h"
 
-#include "os-utils.h"
-#include "os-scrollbar.h"
+#if !defined(NDEBUG)
+OsLogLevel threshold = OS_INFO;
+#else
+OsLogLevel threshold = OS_WARN;
+#endif
 
-#undef __OS_H_INSIDE__
+/* Public functions. */
 
-#endif /* __HAVE_OS_H__ */
+void
+os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
+                gint32 line, const gchar* format, ...)
+{
+  static const gchar* prefix[3] = {
+    "\033[37;01m", /* OS_LOG_INFO */
+    "\033[33;01m", /* OS_LOG_WARN */
+    "\033[31;01m"  /* OS_LOG_ERROR */
+  };
+  gchar buffer[512];
+  va_list args;
+
+  va_start (args, format);
+  vsnprintf (buffer, 512, format, args);
+  va_end (args);
+
+  fprintf (stderr, "%s%s\033[00m %s() %s %d\n", prefix[level], buffer, function,
+           file, line);
+}
