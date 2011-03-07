@@ -36,7 +36,7 @@
 #define DEFAULT_SCROLLBAR_HEIGHT 80
 
 /* Width of the proximity effect in pixels. */
-#define PROXIMITY_WIDTH 40
+#define PROXIMITY_WIDTH 30
 
 /* Timeout before hiding in milliseconds. */
 #define TIMEOUT_HIDE 1000
