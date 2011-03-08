@@ -1,3 +1,9 @@
+overlay-scrollbar (0.1.1-0ubuntu2) UNRELEASED; urgency=low
+
+  * Force new gtk
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 08 Mar 2011 08:43:03 +0100
+
 overlay-scrollbar (0.1.1-0ubuntu1) natty; urgency=low
 
   * New upstream release.
