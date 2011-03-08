@@ -39,21 +39,13 @@ struct _OsPagerPrivate {
   GdkRectangle mask;
   GdkRectangle allocation;
   gboolean active;
+  gboolean visible;
   gint width;
   gint height;
 };
 
-enum {
-  PROP_0,
-  PROP_PARENT,
-  LAST_ARG
-};
-
-static void os_pager_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
-static void os_pager_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
-static void os_pager_check_properties (OsPager *pager);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
 static void os_pager_draw_bitmap (GdkPixmap *pixmap, GdkRectangle mask);
@@ -62,38 +54,36 @@ static void os_pager_mask (OsPager *pager);
 
 /* Private functions */
 
-/* Check if all properties are set. */
-static void
-os_pager_check_properties (OsPager *pager)
-{
-  OsPagerPrivate *priv;
-
-  priv = OS_PAGER_GET_PRIVATE (pager);
-
-  g_return_if_fail (GTK_WIDGET (priv->parent));
-
-  os_pager_create (pager);
-}
-
 /* Create a pager. */
 static void
 os_pager_create (OsPager *pager)
 {
-  GdkWindowAttr attributes;
   OsPagerPrivate *priv;
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  attributes.width = priv->allocation.width;
-  attributes.height = priv->allocation.height;
-  attributes.wclass = GDK_INPUT_OUTPUT;
-  attributes.window_type = GDK_WINDOW_CHILD;
+  if (priv->pager_window != NULL)
+    {
+      gdk_window_reparent (priv->pager_window,
+                           gtk_widget_get_window (priv->parent),
+                           priv->allocation.x,
+                           priv->allocation.y);
+    }
+  else
+    {
+      GdkWindowAttr attributes;
 
-  priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                       &attributes, 0);
+      attributes.width = priv->allocation.width;
+      attributes.height = priv->allocation.height;
+      attributes.wclass = GDK_INPUT_OUTPUT;
+      attributes.window_type = GDK_WINDOW_CHILD;
 
-  gdk_window_set_transient_for (priv->pager_window,
-                                gtk_widget_get_window (priv->parent));
+      priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+                                           &attributes, 0);
+
+      gdk_window_set_transient_for (priv->pager_window,
+                                    gtk_widget_get_window (priv->parent));
+    }
 }
 
 /* Draw on the pager. */
@@ -108,9 +98,6 @@ os_pager_draw (OsPager *pager)
   pixmap = gdk_pixmap_new (NULL, priv->allocation.width,
                            priv->allocation.height, 24);
   os_pager_draw_pixmap (pixmap, priv->active);
-
-  if (priv->pager_window == NULL)
-    os_pager_check_properties (pager);
 
   gdk_window_set_back_pixmap (priv->pager_window, pixmap, FALSE);
   gdk_window_clear (priv->pager_window);
@@ -196,18 +183,8 @@ os_pager_class_init (OsPagerClass *class)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (class);
 
-  gobject_class->get_property = os_pager_get_property;
-  gobject_class->set_property = os_pager_set_property;
-  gobject_class->dispose = os_pager_dispose;
+  gobject_class->dispose  = os_pager_dispose;
   gobject_class->finalize = os_pager_finalize;
-
-  g_object_class_install_property
-      (gobject_class, PROP_PARENT,
-       g_param_spec_object ("parent", "Parent",
-                            "Reference to the parent GtkWidget",
-                            GTK_TYPE_WIDGET,
-                            G_PARAM_READWRITE | G_PARAM_STATIC_NAME |
-                            G_PARAM_STATIC_NICK | G_PARAM_STATIC_BLURB));
 
   g_type_class_add_private (gobject_class, sizeof (OsPagerPrivate));
 }
@@ -227,7 +204,8 @@ os_pager_init (OsPager *pager)
 
   priv->allocation = allocation;
 
-  priv->active = FALSE;
+  priv->active = TRUE;
+  priv->visible = FALSE;
 }
 
 static void
@@ -242,62 +220,19 @@ os_pager_finalize (GObject *object)
   G_OBJECT_CLASS (os_pager_parent_class)->finalize (object);
 }
 
-static void
-os_pager_get_property (GObject    *object,
-                       guint       prop_id,
-                       GValue     *value,
-                       GParamSpec *pspec)
-{
-  OsPagerPrivate *priv;
-
-  priv = OS_PAGER_GET_PRIVATE (OS_PAGER (object));
-
-  switch (prop_id)
-    {
-      case PROP_PARENT:
-        g_value_set_object (value, priv->parent);
-        break;
-
-      default:
-        break;
-    }
-}
-
-static void
-os_pager_set_property (GObject      *object,
-                       guint         prop_id,
-                       const GValue *value,
-                       GParamSpec   *pspec)
-{
-  OsPagerPrivate *priv;
-
-  priv = OS_PAGER_GET_PRIVATE (OS_PAGER (object));
-
-  switch (prop_id)
-    {
-      case PROP_PARENT:
-        priv->parent = g_value_get_object (value);
-        break;
-
-      default:
-        break;
-    }
-}
-
 /* Public functions. */
 
 /**
  * os_pager_new:
- * @widget: the parent window
  *
  * Creates a new #OsPager instance.
  *
  * Returns: the new #OsPager instance.
  */
 GObject*
-os_pager_new (GtkWidget *widget)
+os_pager_new (void)
 {
-  return g_object_new (OS_TYPE_PAGER, "parent", widget, NULL);
+  return g_object_new (OS_TYPE_PAGER, NULL);
 }
 
 /**
@@ -315,7 +250,9 @@ os_pager_hide (OsPager *pager)
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  if (priv->pager_window == NULL)
+  priv->visible = FALSE;
+
+  if (priv->parent == NULL)
     return;
 
   gdk_window_hide (priv->pager_window);
@@ -338,16 +275,16 @@ os_pager_move_resize (OsPager      *pager,
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  if (priv->pager_window == NULL)
-    os_pager_check_properties (pager);
-
   priv->mask = mask;
+
+  if (priv->parent == NULL)
+    return;
 
   os_pager_mask (pager);
 }
 
 /**
- * os_pager_show:
+ * os_pager_set_active:
  * @pager: a #OsPager
  * @active: whether is active or not
  *
@@ -366,7 +303,54 @@ os_pager_set_active (OsPager *pager,
   if (priv->active != active)
     {
       priv->active = active;
+
+      if (priv->parent == NULL)
+        return;
+
       os_pager_draw (pager);
+    }
+}
+
+/**
+ * os_pager_set_parent:
+ * @pager: a #OsPager
+ * @parent: a #GtkWidget
+ *
+ * Sets the parent widget
+ **/
+void
+os_pager_set_parent (OsPager   *pager,
+                     GtkWidget *parent)
+{
+  OsPagerPrivate *priv;
+
+  g_return_if_fail (OS_PAGER (pager));
+
+  priv = OS_PAGER_GET_PRIVATE (pager);
+
+  if (priv->parent != NULL)
+    {
+      g_object_unref (priv->parent);
+    }
+
+  priv->parent = parent;
+
+  if (priv->parent != NULL)
+    {
+      g_object_ref_sink (priv->parent);
+
+      os_pager_create (pager);
+      os_pager_draw (pager);
+      os_pager_mask (pager);
+
+      gdk_window_move_resize (priv->pager_window,
+                              priv->allocation.x,
+                              priv->allocation.y,
+                              priv->allocation.width,
+                              priv->allocation.height);
+
+      if (priv->visible)
+        gdk_window_show (priv->pager_window);
     }
 }
 
@@ -385,8 +369,10 @@ os_pager_show (OsPager *pager)
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  if (priv->pager_window == NULL)
-    os_pager_draw (pager);
+  priv->visible = TRUE;
+
+  if (priv->parent == NULL)
+    return;
 
   gdk_window_show (priv->pager_window);
 }
@@ -399,8 +385,8 @@ os_pager_show (OsPager *pager)
  * Sets the position and dimension of the whole area.
  **/
 void
-os_pager_size_allocate (OsPager *pager,
-                        GdkRectangle  rectangle)
+os_pager_size_allocate (OsPager     *pager,
+                        GdkRectangle rectangle)
 {
   OsPagerPrivate *priv;
 
@@ -410,8 +396,8 @@ os_pager_size_allocate (OsPager *pager,
 
   priv->allocation = rectangle;
 
-  if (priv->pager_window == NULL)
-    os_pager_draw (pager);
+  if (priv->parent == NULL)
+    return;
 
   gdk_window_move_resize (priv->pager_window,
                           rectangle.x,
