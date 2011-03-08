@@ -145,20 +145,24 @@ struct _OsPagerClass {
 
 GType    os_pager_get_type      (void) G_GNUC_CONST;
 
-GObject *os_pager_new           (GtkWidget *widget);
+GObject* os_pager_new           (void);
 
 void     os_pager_hide          (OsPager *overlay);
 
-void     os_pager_move_resize   (OsPager *overlay,
-                                 GdkRectangle  mask);
-
-void     os_pager_size_allocate (OsPager *overlay,
-                                 GdkRectangle rectangle);
-
-void     os_pager_show          (OsPager *overlay);
+void     os_pager_move_resize   (OsPager     *overlay,
+                                 GdkRectangle mask);
 
 void     os_pager_set_active    (OsPager *overlay,
                                  gboolean active);
+
+void     os_pager_set_parent    (OsPager   *pager,
+                                 GtkWidget *parent);
+
+void     os_pager_show          (OsPager *overlay);
+
+void     os_pager_size_allocate (OsPager     *overlay,
+                                 GdkRectangle rectangle);
+
 
 G_END_DECLS
 

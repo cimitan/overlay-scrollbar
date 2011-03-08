@@ -36,7 +36,7 @@
 #define DEFAULT_SCROLLBAR_HEIGHT 80
 
 /* Width of the proximity effect in pixels. */
-#define PROXIMITY_WIDTH 40
+#define PROXIMITY_WIDTH 30
 
 /* Timeout before hiding in milliseconds. */
 #define TIMEOUT_HIDE 1000
@@ -111,6 +111,7 @@ static void pager_set_allocation (OsScrollbar *scrollbar);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static gboolean parent_expose_event_cb (GtkWidget *widget, GdkEventExpose *event, gpointer user_data);
+static void parent_realize_cb (GtkWidget *widget, gpointer user_data);
 static void parent_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
@@ -215,8 +216,7 @@ os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar,
       priv->overlay.height = height;
 
       if (tmp_height != height)
-        if (priv->pager != NULL)
-          pager_move (scrollbar);
+        pager_move (scrollbar);
     }
   else
     {
@@ -254,8 +254,7 @@ os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar,
       priv->overlay.width = width;
 
       if (tmp_width != width)
-        if (priv->pager != NULL)
-          pager_move (scrollbar);
+        pager_move (scrollbar);
     }
 }
 
@@ -554,6 +553,8 @@ os_scrollbar_swap_parent (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
                                             G_CALLBACK (parent_expose_event_cb), scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
+                                            G_CALLBACK (parent_realize_cb), scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
                                             G_CALLBACK (parent_size_allocate_cb), scrollbar);
 
       g_object_unref (priv->parent);
@@ -567,6 +568,8 @@ os_scrollbar_swap_parent (OsScrollbar *scrollbar,
 
       g_signal_connect (G_OBJECT (priv->parent), "expose-event",
                         G_CALLBACK (parent_expose_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->parent), "realize",
+                        G_CALLBACK (parent_realize_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->parent), "size-allocate",
                         G_CALLBACK (parent_size_allocate_cb), scrollbar);
     }
@@ -639,15 +642,6 @@ os_scrollbar_toplevel_connect (OsScrollbar *scrollbar)
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
   os_scrollbar_move_thumb (scrollbar, x_pos + priv->thumb_all.x, y_pos + priv->thumb_all.y);
-
-  if (priv->pager != NULL)
-    {
-      g_object_unref (priv->pager);
-      priv->pager = NULL;
-    }
-
-  priv->pager = os_pager_new (priv->parent);
-  os_pager_show (OS_PAGER (priv->pager));
 
   os_scrollbar_store_window_position (scrollbar);
 }
@@ -952,13 +946,13 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   if ((adjustment->upper - adjustment->lower) > adjustment->page_size)
     {
       priv->fullsize = FALSE;
-      if (priv->pager != NULL && priv->proximity != FALSE)
+      if (priv->proximity != FALSE)
         os_pager_show (OS_PAGER (priv->pager));
     }
   else
     {
       priv->fullsize = TRUE;
-      if (priv->pager != NULL && priv->proximity != FALSE)
+      if (priv->proximity != FALSE)
         os_pager_hide (OS_PAGER (priv->pager));
     }
 }
@@ -999,6 +993,20 @@ parent_expose_event_cb (GtkWidget      *widget,
     }
 
   return FALSE;
+}
+
+static void
+parent_realize_cb (GtkWidget *widget,
+                   gpointer   user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  os_pager_set_parent (OS_PAGER (priv->pager), priv->parent);
+  os_pager_show (OS_PAGER (priv->pager));
 }
 
 static void
@@ -1104,8 +1112,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xevent->xmotion.x < PROXIMITY_WIDTH &&
-                   priv->thumb_all.x + priv->slider.width - xevent->xmotion.x > 0) &&
+              if ((priv->thumb_all.x - xevent->xmotion.x <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.x - xevent->xmotion.x >= 0) &&
                   (xevent->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
                    xevent->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
                 {
@@ -1140,8 +1148,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xevent->xmotion.y < PROXIMITY_WIDTH &&
-                   priv->thumb_all.y + priv->slider.height - xevent->xmotion.y > 0) &&
+              if ((priv->thumb_all.y - xevent->xmotion.y <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.y - xevent->xmotion.y >= 0) &&
                   (xevent->xmotion.x >= priv->thumb_all.x + priv->overlay.x &&
                    xevent->xmotion.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
                 {
@@ -1261,6 +1269,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->fullsize = FALSE;
   priv->proximity = FALSE;
 
+  priv->pager = os_pager_new ();
+
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
                     G_CALLBACK (os_scrollbar_notify_adjustment_cb), NULL);
 
@@ -1316,8 +1326,7 @@ os_scrollbar_map (GtkWidget *widget)
 
   priv->proximity = TRUE;
 
-  if (priv->pager != NULL)
-    os_pager_show (OS_PAGER (priv->pager));
+  os_pager_show (OS_PAGER (priv->pager));
 
 #if 0
   Display *display;
@@ -1399,8 +1408,7 @@ os_scrollbar_unmap (GtkWidget *widget)
 
   priv->proximity = FALSE;
 
-  if (priv->pager != NULL)
-    os_pager_hide (OS_PAGER (priv->pager));
+  os_pager_hide (OS_PAGER (priv->pager));
 }
 
 static void
