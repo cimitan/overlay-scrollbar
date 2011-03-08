@@ -58,21 +58,32 @@ static void os_pager_mask (OsPager *pager);
 static void
 os_pager_create (OsPager *pager)
 {
-  GdkWindowAttr attributes;
   OsPagerPrivate *priv;
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  attributes.width = priv->allocation.width;
-  attributes.height = priv->allocation.height;
-  attributes.wclass = GDK_INPUT_OUTPUT;
-  attributes.window_type = GDK_WINDOW_CHILD;
+  if (priv->pager_window != NULL)
+    {
+      gdk_window_reparent (priv->pager_window,
+                           gtk_widget_get_window (priv->parent),
+                           priv->allocation.x,
+                           priv->allocation.y);
+    }
+  else
+    {
+      GdkWindowAttr attributes;
 
-  priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                       &attributes, 0);
+      attributes.width = priv->allocation.width;
+      attributes.height = priv->allocation.height;
+      attributes.wclass = GDK_INPUT_OUTPUT;
+      attributes.window_type = GDK_WINDOW_CHILD;
 
-  gdk_window_set_transient_for (priv->pager_window,
-                                gtk_widget_get_window (priv->parent));
+      priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+                                           &attributes, 0);
+
+      gdk_window_set_transient_for (priv->pager_window,
+                                    gtk_widget_get_window (priv->parent));
+    }
 }
 
 /* Draw on the pager. */
