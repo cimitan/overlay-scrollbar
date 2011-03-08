@@ -163,7 +163,6 @@ void     os_pager_show          (OsPager *overlay);
 void     os_pager_size_allocate (OsPager     *overlay,
                                  GdkRectangle rectangle);
 
-
 G_END_DECLS
 
 #ifdef __GNUC__

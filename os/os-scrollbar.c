@@ -1006,7 +1006,6 @@ parent_realize_cb (GtkWidget *widget,
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
   os_pager_set_parent (OS_PAGER (priv->pager), priv->parent);
-  os_pager_show (OS_PAGER (priv->pager));
 }
 
 static void
