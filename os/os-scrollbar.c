@@ -1024,15 +1024,15 @@ parent_size_allocate_cb (GtkWidget     *widget,
     {
       priv->slider.width = DEFAULT_SCROLLBAR_WIDTH;
       priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
-      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH;
-      priv->thumb_all.x = allocation->x + allocation->width;
+      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - 1;
+      priv->thumb_all.x = allocation->x + allocation->width - 1;
     }
   else
     {
       priv->slider.width = DEFAULT_SCROLLBAR_HEIGHT;
       priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
-      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH;
-      priv->thumb_all.y = allocation->y + allocation->height;
+      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - 1;
+      priv->thumb_all.y = allocation->y + allocation->height - 1;
     }
 
   if (priv->adjustment != NULL)
