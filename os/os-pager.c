@@ -48,8 +48,7 @@ static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
-static void os_pager_draw_bitmap (GdkPixmap *pixmap, GdkRectangle mask);
-static void os_pager_draw_pixmap (GdkPixmap *pixmap, gboolean active);
+static void os_pager_draw_bitmap (GdkPixmap *pixmap);
 static void os_pager_mask (OsPager *pager);
 
 /* Private functions */
@@ -90,16 +89,17 @@ os_pager_create (OsPager *pager)
 static void
 os_pager_draw (OsPager *pager)
 {
-  GdkPixmap *pixmap;
   OsPagerPrivate *priv;
+  GtkStyle *style;
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  pixmap = gdk_pixmap_new (NULL, priv->allocation.width,
-                           priv->allocation.height, 24);
-  os_pager_draw_pixmap (pixmap, priv->active);
+  style = gtk_widget_get_style (priv->parent);
 
-  gdk_window_set_back_pixmap (priv->pager_window, pixmap, FALSE);
+  gdk_window_set_background (priv->pager_window,
+                             priv->active ? &style->base[GTK_STATE_SELECTED] :
+                                            &style->base[GTK_STATE_INSENSITIVE]);
+
   gdk_window_clear (priv->pager_window);
 }
 
@@ -112,23 +112,25 @@ os_pager_mask (OsPager *pager)
 
   priv = OS_PAGER_GET_PRIVATE (pager);
 
-  bitmap = gdk_pixmap_new (NULL, priv->allocation.width,
-                           priv->allocation.height, 1);
-  os_pager_draw_bitmap (bitmap, priv->mask);
+  bitmap = gdk_pixmap_new (NULL, MAX (1, priv->mask.width),
+                           MAX (1, priv->mask.height), 1);
+  os_pager_draw_bitmap (bitmap);
 
-  gdk_window_shape_combine_mask (priv->pager_window, bitmap, 0, 0);
+  gdk_window_shape_combine_mask (priv->pager_window, bitmap,
+                                 priv->mask.x, priv->mask.y);
+
+  g_object_unref (bitmap);
 }
 
 /* Draw on the bitmap of the pager, to get a mask. */
 static void
-os_pager_draw_bitmap (GdkBitmap    *bitmap,
-                      GdkRectangle  mask)
+os_pager_draw_bitmap (GdkBitmap *bitmap)
 {
   cairo_t *cr_surface;
   cairo_surface_t *surface;
   gint width, height;
 
-  gdk_drawable_get_size (bitmap, &width, &height);
+  gdk_pixmap_get_size (bitmap, &width, &height);
 
   surface = cairo_xlib_surface_create_for_bitmap
       (GDK_DRAWABLE_XDISPLAY (bitmap), gdk_x11_drawable_get_xid (bitmap),
@@ -136,42 +138,11 @@ os_pager_draw_bitmap (GdkBitmap    *bitmap,
 
   cr_surface = cairo_create (surface);
 
-  cairo_set_operator (cr_surface, CAIRO_OPERATOR_CLEAR);
-  cairo_paint (cr_surface);
-
-  cairo_set_operator (cr_surface, CAIRO_OPERATOR_OVER);
-  cairo_rectangle (cr_surface, mask.x, mask.y, mask.width, mask.height);
-  cairo_set_source_rgb (cr_surface, 1.0, 1.0, 1.0);
-  cairo_fill (cr_surface);
-
-  cairo_destroy (cr_surface);
-}
-
-/* Draw on the pixmap of the pager, the real drawing. */
-static void
-os_pager_draw_pixmap (GdkPixmap *pixmap,
-                      gboolean   active)
-{
-  cairo_t *cr_surface;
-  cairo_surface_t *surface;
-  gint width, height;
-
-  gdk_drawable_get_size (pixmap, &width, &height);
-
-  surface = cairo_xlib_surface_create
-      (GDK_DRAWABLE_XDISPLAY (pixmap), gdk_x11_drawable_get_xid (pixmap),
-       GDK_VISUAL_XVISUAL (gdk_drawable_get_visual (pixmap)), width, height);
-
-  cr_surface = cairo_create (surface);
-
-  if (active)
-    cairo_set_source_rgb (cr_surface, 240.0 / 255.0, 119.0 / 255.0, 70.0 / 255.0);
-  else
-    cairo_set_source_rgb (cr_surface, 0.85, 0.85, 0.85);
-
   cairo_paint (cr_surface);
 
   cairo_destroy (cr_surface);
+
+  cairo_surface_destroy (surface);
 }
 
 /* Type definition. */
@@ -192,7 +163,7 @@ os_pager_class_init (OsPagerClass *class)
 static void
 os_pager_init (OsPager *pager)
 {
-  GdkRectangle allocation;
+  GdkRectangle allocation, mask;
   OsPagerPrivate *priv;
 
   priv = OS_PAGER_GET_PRIVATE (pager);
@@ -204,7 +175,14 @@ os_pager_init (OsPager *pager)
 
   priv->allocation = allocation;
 
-  priv->active = TRUE;
+  mask.x = 0;
+  mask.y = 0;
+  mask.width = 1;
+  mask.height = 1;
+
+  priv->mask = mask;
+
+  priv->active = FALSE;
   priv->visible = FALSE;
 }
 
