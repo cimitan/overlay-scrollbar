@@ -62,7 +62,6 @@ struct _OsScrollbarPrivate
   gboolean enter_notify_event;
   gboolean motion_notify_event;
   gboolean value_changed_event;
-  gboolean toplevel_connected;
   gboolean fullsize;
   gboolean proximity;
   gboolean filter;
@@ -101,7 +100,6 @@ static void os_scrollbar_store_window_position (OsScrollbar *scrollbar);
 static void os_scrollbar_swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
 static void os_scrollbar_swap_parent (OsScrollbar *scrollbar, GtkWidget *parent);
 static void os_scrollbar_swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
-static void os_scrollbar_toplevel_connect (OsScrollbar *scrollbar);
 static gboolean thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
@@ -614,40 +612,6 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
     }
 }
 
-/* Create elements. */
-/* FIXME(Cimi): Needs to be improved. */
-static void
-os_scrollbar_toplevel_connect (OsScrollbar *scrollbar)
-{
-  OsScrollbarPrivate *priv;
-  gint x_pos, y_pos;
-
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
-
-  g_return_if_fail (priv->parent != NULL);
-  g_return_if_fail (GDK_IS_WINDOW (gtk_widget_get_window (priv->parent)));
-
-  if (priv->filter == FALSE && priv->proximity == TRUE)
-    {
-      priv->filter =  TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
-    }
-
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "configure-event",
-                    G_CALLBACK (toplevel_configure_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "leave-notify-event",
-                    G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
-  priv->toplevel_connected = TRUE;
-
-  gdk_window_get_position (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
-
-  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
-
-  os_scrollbar_move_thumb (scrollbar, x_pos + priv->thumb_all.x, y_pos + priv->thumb_all.y);
-
-  os_scrollbar_store_window_position (scrollbar);
-}
-
 static gboolean
 thumb_button_press_event_cb (GtkWidget      *widget,
                              GdkEventButton *event,
@@ -1002,10 +966,18 @@ parent_realize_cb (GtkWidget *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  if (!priv->toplevel_connected)
+  if (priv->filter == FALSE && priv->proximity == TRUE)
     {
-      os_scrollbar_toplevel_connect (scrollbar);
+      priv->filter =  TRUE;
+      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
     }
+
+  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "configure-event",
+                    G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "leave-notify-event",
+                    G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
+
+  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
   os_pager_set_parent (OS_PAGER (priv->pager), priv->parent);
 }
