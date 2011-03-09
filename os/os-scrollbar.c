@@ -112,6 +112,7 @@ static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void parent_realize_cb (GtkWidget *widget, gpointer user_data);
 static void parent_size_allocate_cb (GtkWidget *widget, GtkAllocation *allocation, gpointer user_data);
+static void parent_unrealize_cb (GtkWidget *widget, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
 static gboolean toplevel_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
@@ -553,6 +554,8 @@ os_scrollbar_swap_parent (OsScrollbar *scrollbar,
                                             G_CALLBACK (parent_realize_cb), scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
                                             G_CALLBACK (parent_size_allocate_cb), scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
+                                            G_CALLBACK (parent_unrealize_cb), scrollbar);
 
       g_object_unref (priv->parent);
     }
@@ -567,6 +570,8 @@ os_scrollbar_swap_parent (OsScrollbar *scrollbar,
                         G_CALLBACK (parent_realize_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->parent), "size-allocate",
                         G_CALLBACK (parent_size_allocate_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->parent), "unrealize",
+                        G_CALLBACK (parent_unrealize_cb), scrollbar);
     }
 }
 
@@ -1022,6 +1027,31 @@ parent_size_allocate_cb (GtkWidget     *widget,
   pager_set_allocation (scrollbar);
 
   os_scrollbar_store_window_position (scrollbar);
+}
+
+static void
+parent_unrealize_cb (GtkWidget *widget,
+                     gpointer   user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  /* FIXME(Cimi) check if
+   * gtk_widget_get_window (priv->parent) and
+   * gtk_widget_get_toplevel (priv->parent))
+   * are ready to use, otherwise we might need to store them in priv */
+
+  gdk_window_remove_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
+
+  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (priv->parent)),
+                                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (priv->parent)),
+                                        G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
+
+  os_pager_set_parent (OS_PAGER (priv->pager), NULL);
 }
 
 static gboolean
