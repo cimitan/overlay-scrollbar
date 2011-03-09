@@ -77,9 +77,12 @@ os_pager_create (OsPager *pager)
       attributes.height = priv->allocation.height;
       attributes.wclass = GDK_INPUT_OUTPUT;
       attributes.window_type = GDK_WINDOW_CHILD;
+      attributes.visual = gtk_widget_get_visual (priv->parent);
+      attributes.colormap = gtk_widget_get_colormap (priv->parent);
 
       priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                           &attributes, 0);
+                                           &attributes,
+                                           GDK_WA_VISUAL | GDK_WA_COLORMAP);
 
       gdk_window_set_transient_for (priv->pager_window,
                                     gtk_widget_get_window (priv->parent));
