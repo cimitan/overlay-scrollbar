@@ -496,8 +496,7 @@ os_scrollbar_store_window_position (OsScrollbar *scrollbar)
 
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  if (GDK_IS_WINDOW (gtk_widget_get_window (priv->parent)))
-    gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
+  gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -985,6 +984,8 @@ parent_realize_cb (GtkWidget *widget,
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
   os_pager_set_parent (OS_PAGER (priv->pager), priv->parent);
+
+  os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
@@ -1025,8 +1026,6 @@ parent_size_allocate_cb (GtkWidget     *widget,
     os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
   pager_set_allocation (scrollbar);
-
-  os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
@@ -1110,7 +1109,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
           os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
 
-          /* XXX missing horizontal */
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
