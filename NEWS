@@ -1,3 +1,18 @@
+overlay-scrollbar 0.1.2 (March 10, 2011)
+----------------------------------------
+
+* Bugs fixed:
+ 728411 Correctly show the pager when opening the app
+ 731366 BadAlloc in apps with many scrollbars
+ 730822 crash with evolution and overlay 0.1.1
+ 730849 Scrollbar overlay crashes Filezilla
+ 730892 gnome-system-monitor crash when switching to a tab with scrollbar
+ 731006 The scrollbar (pager+thumb) should be moved 1px left/up
+ 731459 Proximity does not work with empathy
+ 731650 Scroll position indicator is not visible in gedit Plugins list
+ 732712 issue with gtk-demo without configure event
+
+
 overlay-scrollbar 0.1.1 (March 7, 2011)
 ---------------------------------------
 
