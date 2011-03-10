@@ -652,8 +652,6 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
-
-          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -699,8 +697,6 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
-
-          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -777,9 +773,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           os_scrollbar_move (scrollbar, event->x_root, event->y_root);
           priv->value_changed_event = FALSE;
         }
-
-      if (!priv->motion_notify_event)
-        gtk_widget_queue_draw (widget);
 
       priv->motion_notify_event = TRUE;
 
@@ -1107,9 +1100,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
-          os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
-          os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
-
           /* XXX missing horizontal */
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
