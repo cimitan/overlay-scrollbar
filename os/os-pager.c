@@ -44,6 +44,7 @@ struct _OsPagerPrivate {
   gint height;
 };
 
+static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
 static void os_pager_create (OsPager *pager);
@@ -52,6 +53,18 @@ static void os_pager_draw_bitmap (GdkPixmap *pixmap);
 static void os_pager_mask (OsPager *pager);
 
 /* Private functions */
+
+static gboolean
+rectangle_changed (GdkRectangle rectangle1,
+                   GdkRectangle rectangle2)
+{
+  if (rectangle1.x != rectangle2.x) return TRUE;
+  if (rectangle1.y != rectangle2.y) return TRUE;
+  if (rectangle1.width  != rectangle2.width)  return TRUE;
+  if (rectangle1.height != rectangle2.height) return TRUE;
+
+  return FALSE;
+}
 
 /* Create a pager. */
 static void
@@ -255,6 +268,9 @@ os_pager_move_resize (OsPager      *pager,
   g_return_if_fail (OS_PAGER (pager));
 
   priv = OS_PAGER_GET_PRIVATE (pager);
+
+  if (!rectangle_changed (priv->mask, mask))
+    return;
 
   priv->mask = mask;
 
