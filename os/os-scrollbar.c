@@ -67,6 +67,7 @@ struct _OsScrollbarPrivate
   gboolean filter;
   gboolean can_hide;
   gboolean can_rgba;
+  gdouble value;
   gint win_x;
   gint win_y;
   gint slide_initial_slider_position;
@@ -74,7 +75,6 @@ struct _OsScrollbarPrivate
   gint pointer_x;
   gint pointer_y;
   gint idle_id;
-  gdouble value;
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
