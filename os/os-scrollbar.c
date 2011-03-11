@@ -1030,6 +1030,9 @@ parent_size_allocate_cb (GtkWidget     *widget,
 
   pager_set_allocation (scrollbar);
   pager_move (scrollbar);
+
+  if (gtk_widget_get_realized (widget))
+    os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
