@@ -1023,9 +1023,13 @@ parent_size_allocate_cb (GtkWidget     *widget,
     }
 
   if (priv->adjustment != NULL)
+  {
     os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+    os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+  }
 
   pager_set_allocation (scrollbar);
+  pager_move (scrollbar);
 }
 
 static void
