@@ -73,6 +73,8 @@ struct _OsScrollbarPrivate
   gint slide_initial_coordinate;
   gint pointer_x;
   gint pointer_y;
+  gint idle_id;
+  gdouble value;
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
@@ -108,6 +110,7 @@ static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion 
 static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_allocation (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
+static gboolean adjustment_set_value (gpointer user_data);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void parent_realize_cb (GtkWidget *widget, gpointer user_data);
@@ -402,7 +405,13 @@ os_scrollbar_move (OsScrollbar *scrollbar,
 
   new_value = os_scrollbar_coord_to_value (scrollbar, c);
 
-  gtk_adjustment_set_value (priv->adjustment, new_value);
+  if (priv->value != new_value)
+    priv->value = new_value;
+  else
+    return;
+
+  if (priv->idle_id == 0)
+    priv->idle_id = g_idle_add ((GSourceFunc)adjustment_set_value, scrollbar);
 }
 
 static void
@@ -905,6 +914,19 @@ pager_set_state (OsScrollbar *scrollbar)
     os_pager_set_active (OS_PAGER (priv->pager), TRUE);
 }
 
+static gboolean
+adjustment_set_value (gpointer user_data)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (user_data));
+
+  priv->idle_id = 0;
+  gtk_adjustment_set_value (priv->adjustment, priv->value);
+
+  return FALSE;
+}
+
 static void
 adjustment_changed_cb (GtkAdjustment *adjustment,
                        gpointer       user_data)
@@ -944,6 +966,8 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  priv->value = adjustment->value;
 
   os_scrollbar_calc_layout_pager (scrollbar, adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, adjustment->value);
@@ -1015,11 +1039,16 @@ parent_size_allocate_cb (GtkWidget     *widget,
     }
 
   if (priv->adjustment != NULL)
-    os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+    {
+      os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+      os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+    }
 
   pager_set_allocation (scrollbar);
+  pager_move (scrollbar);
 
-  os_scrollbar_store_window_position (scrollbar);
+  if (gtk_widget_get_realized (widget))
+    os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
@@ -1062,6 +1091,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+
   os_scrollbar_move_thumb (scrollbar,
                            event->x + priv->thumb_all.x + priv->slider.x,
                            event->y + priv->thumb_all.y + priv->slider.y);
@@ -1255,6 +1285,9 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->fullsize = FALSE;
   priv->proximity = FALSE;
   priv->filter = FALSE;
+
+  priv->idle_id = 0;
+  priv->value = 0;
 
   priv->pager = os_pager_new ();
 
