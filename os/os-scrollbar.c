@@ -73,6 +73,7 @@ struct _OsScrollbarPrivate
   gint slide_initial_coordinate;
   gint pointer_x;
   gint pointer_y;
+  gint parent_offset;
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
@@ -571,6 +572,12 @@ os_scrollbar_swap_parent (OsScrollbar *scrollbar,
                         G_CALLBACK (parent_size_allocate_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->parent), "unrealize",
                         G_CALLBACK (parent_unrealize_cb), scrollbar);
+
+      if (GTK_SCROLLED_WINDOW (priv->parent) &&
+          gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (priv->parent)) != GTK_SHADOW_NONE)
+        priv->parent_offset = 1;
+      else
+        priv->parent_offset = 0;
     }
 }
 
@@ -882,15 +889,15 @@ pager_set_allocation (OsScrollbar *scrollbar)
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       rect.x = priv->overlay_all.x;
-      rect.y = priv->overlay_all.y + 1;
+      rect.y = priv->overlay_all.y + priv->parent_offset;
       rect.width = DEFAULT_PAGER_WIDTH;
-      rect.height = priv->overlay_all.height - 2;
+      rect.height = priv->overlay_all.height - priv->parent_offset * 2;
     }
   else
     {
-      rect.x = priv->overlay_all.x + 1;
+      rect.x = priv->overlay_all.x + priv->parent_offset;
       rect.y = priv->overlay_all.y;
-      rect.width = priv->overlay_all.width - 2;
+      rect.width = priv->overlay_all.width - priv->parent_offset * 2;
       rect.height = DEFAULT_PAGER_WIDTH;
     }
 
@@ -1011,15 +1018,15 @@ parent_size_allocate_cb (GtkWidget     *widget,
     {
       priv->slider.width = DEFAULT_SCROLLBAR_WIDTH;
       priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
-      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.x = allocation->x + allocation->width - 1;
+      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - priv->parent_offset;
+      priv->thumb_all.x = allocation->x + allocation->width - priv->parent_offset;
     }
   else
     {
       priv->slider.width = DEFAULT_SCROLLBAR_HEIGHT;
       priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
-      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.y = allocation->y + allocation->height - 1;
+      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - priv->parent_offset;
+      priv->thumb_all.y = allocation->y + allocation->height - priv->parent_offset;
     }
 
   if (priv->adjustment != NULL)
@@ -1270,6 +1277,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->fullsize = FALSE;
   priv->proximity = FALSE;
   priv->filter = FALSE;
+
+  priv->parent_offset = 0;
 
   priv->pager = os_pager_new ();
 
