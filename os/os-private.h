@@ -133,10 +133,13 @@ GtkWidget* os_thumb_new      (GtkOrientation orientation);
   (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_PAGER, OsPagerClass))
 
 typedef struct _OsPager OsPager;
+typedef struct _OsPagerPrivate OsPagerPrivate;
 typedef struct _OsPagerClass OsPagerClass;
 
 struct _OsPager {
   GObject parent_instance;
+
+  OsPagerPrivate *priv;
 };
 
 struct _OsPagerClass {
