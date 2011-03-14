@@ -104,10 +104,13 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
   (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_THUMB, OsThumbClass))
 
 typedef struct _OsThumb      OsThumb;
+typedef struct _OsThumbPrivate OsThumbPrivate;
 typedef struct _OsThumbClass OsThumbClass;
 
 struct _OsThumb {
   GtkWindow parent_object;
+
+  OsThumbPrivate *priv;
 };
 
 struct _OsThumbClass {
@@ -133,10 +136,13 @@ GtkWidget* os_thumb_new      (GtkOrientation orientation);
   (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_PAGER, OsPagerClass))
 
 typedef struct _OsPager OsPager;
+typedef struct _OsPagerPrivate OsPagerPrivate;
 typedef struct _OsPagerClass OsPagerClass;
 
 struct _OsPager {
   GObject parent_instance;
+
+  OsPagerPrivate *priv;
 };
 
 struct _OsPagerClass {
