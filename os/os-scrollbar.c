@@ -39,7 +39,6 @@
 #define PROXIMITY_WIDTH 30
 
 /* Timeout before hiding in milliseconds. */
-#define TIMEOUT_HIDE 1000
 
 #define OS_SCROLLBAR_GET_PRIVATE(obj) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_SCROLLBAR, OsScrollbarPrivate))
@@ -411,7 +410,10 @@ os_scrollbar_move (OsScrollbar *scrollbar,
     return;
 
   if (priv->idle_id == 0)
-    priv->idle_id = g_idle_add ((GSourceFunc)adjustment_set_value, scrollbar);
+    priv->idle_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
+                                     (GSourceFunc)adjustment_set_value,
+                                     scrollbar,
+                                     NULL);
 }
 
 static void
@@ -1098,9 +1100,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
                            event->y + priv->thumb_all.y + priv->slider.y);
 
   os_scrollbar_store_window_position (scrollbar);
-
-  pager_set_allocation (scrollbar);
-  pager_move (scrollbar);
 
   return FALSE;
 }
