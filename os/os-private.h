@@ -104,10 +104,13 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
   (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_THUMB, OsThumbClass))
 
 typedef struct _OsThumb      OsThumb;
+typedef struct _OsThumbPrivate OsThumbPrivate;
 typedef struct _OsThumbClass OsThumbClass;
 
 struct _OsThumb {
   GtkWindow parent_object;
+
+  OsThumbPrivate *priv;
 };
 
 struct _OsThumbClass {
