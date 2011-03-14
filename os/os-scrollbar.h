@@ -44,10 +44,13 @@ G_BEGIN_DECLS
   (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_SCROLLBAR, OsScrollbarClass))
 
 typedef struct _OsScrollbar      OsScrollbar;
+typedef struct _OsScrollbarPrivate OsScrollbarPrivate;
 typedef struct _OsScrollbarClass OsScrollbarClass;
 
 struct _OsScrollbar {
   GtkScrollbar parent_object;
+
+  OsScrollbarPrivate *priv;
 };
 
 struct _OsScrollbarClass {
