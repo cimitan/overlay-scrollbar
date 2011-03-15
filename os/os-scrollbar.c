@@ -933,8 +933,10 @@ pager_set_state (OsScrollbar *scrollbar)
 static gboolean
 adjustment_set_value (gpointer user_data)
 {
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
+  scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
   priv->idle_id = 0;
