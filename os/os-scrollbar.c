@@ -881,21 +881,28 @@ pager_set_allocation (OsScrollbar *scrollbar)
 {
   GdkRectangle rect;
   OsScrollbarPrivate *priv;
+  gint offset;
 
   priv = scrollbar->priv;
+
+  if (GTK_IS_SCROLLED_WINDOW (priv->parent) &&
+      gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (priv->parent)) != GTK_SHADOW_NONE)
+    offset = 1;
+  else
+    offset = 0;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       rect.x = priv->overlay_all.x;
-      rect.y = priv->overlay_all.y + 1;
+      rect.y = priv->overlay_all.y + offset;
       rect.width = DEFAULT_PAGER_WIDTH;
-      rect.height = priv->overlay_all.height - 2;
+      rect.height = priv->overlay_all.height - offset * 2;
     }
   else
     {
-      rect.x = priv->overlay_all.x + 1;
+      rect.x = priv->overlay_all.x + offset;
       rect.y = priv->overlay_all.y;
-      rect.width = priv->overlay_all.width - 2;
+      rect.width = priv->overlay_all.width - offset * 2;
       rect.height = DEFAULT_PAGER_WIDTH;
     }
 
@@ -1000,6 +1007,7 @@ parent_size_allocate_cb (GtkWidget     *widget,
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
+  gint offset;
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
@@ -1012,19 +1020,25 @@ parent_size_allocate_cb (GtkWidget     *widget,
   priv->overlay_all = *allocation;
   priv->thumb_all = *allocation;
 
+  if (GTK_IS_SCROLLED_WINDOW (widget) &&
+      gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (widget)) != GTK_SHADOW_NONE)
+    offset = 1;
+  else
+    offset = 0;
+
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       priv->slider.width = DEFAULT_SCROLLBAR_WIDTH;
       priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
-      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.x = allocation->x + allocation->width - 1;
+      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - offset;
+      priv->thumb_all.x = allocation->x + allocation->width - offset;
     }
   else
     {
       priv->slider.width = DEFAULT_SCROLLBAR_HEIGHT;
       priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
-      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.y = allocation->y + allocation->height - 1;
+      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - offset;
+      priv->thumb_all.y = allocation->y + allocation->height - offset;
     }
 
   if (priv->adjustment != NULL)
