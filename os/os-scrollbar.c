@@ -39,6 +39,7 @@
 #define PROXIMITY_WIDTH 30
 
 /* Timeout before hiding in milliseconds. */
+#define TIMEOUT_HIDE 1000
 
 #define OS_SCROLLBAR_GET_PRIVATE(obj) \
   (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_SCROLLBAR, OsScrollbarPrivate))
@@ -74,6 +75,7 @@ struct _OsScrollbarPrivate
   gint pointer_x;
   gint pointer_y;
   gint idle_id;
+  gint value_changed_id;
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
@@ -110,6 +112,7 @@ static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_allocation (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
 static gboolean adjustment_set_value (gpointer user_data);
+static gboolean adjustment_value_changed (gpointer user_data);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void parent_realize_cb (GtkWidget *widget, gpointer user_data);
@@ -410,10 +413,10 @@ os_scrollbar_move (OsScrollbar *scrollbar,
     return;
 
   if (priv->idle_id == 0)
-    priv->idle_id = g_idle_add_full (G_PRIORITY_DEFAULT_IDLE,
-                                     (GSourceFunc)adjustment_set_value,
-                                     scrollbar,
-                                     NULL);
+    priv->idle_id = gdk_threads_add_idle_full (G_PRIORITY_DEFAULT_IDLE,
+                                               (GSourceFunc)adjustment_set_value,
+                                               scrollbar,
+                                               NULL);
 }
 
 static void
@@ -958,6 +961,29 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
     }
 }
 
+static gboolean
+adjustment_value_changed (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+
+  priv->value_changed_id = 0;
+  priv->value = priv->adjustment->value;
+
+  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+  os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+
+  if (!priv->motion_notify_event && !priv->enter_notify_event)
+    gtk_widget_hide (GTK_WIDGET (priv->thumb));
+
+  pager_move (scrollbar);
+
+  return FALSE;
+}
+
 static void
 adjustment_value_changed_cb (GtkAdjustment *adjustment,
                              gpointer       user_data)
@@ -968,15 +994,12 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  priv->value = adjustment->value;
-
-  os_scrollbar_calc_layout_pager (scrollbar, adjustment->value);
-  os_scrollbar_calc_layout_slider (scrollbar, adjustment->value);
-
-  if (!priv->motion_notify_event && !priv->enter_notify_event)
-    gtk_widget_hide (GTK_WIDGET (priv->thumb));
-
-  pager_move (scrollbar);
+  if (priv->value_changed_id == 0)
+    priv->value_changed_id = g_timeout_add_full (0,
+                                                 G_PRIORITY_HIGH_IDLE,
+                                                 (GSourceFunc)adjustment_value_changed,
+                                                 scrollbar,
+                                                 NULL);
 }
 
 static void
@@ -1286,6 +1309,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->filter = FALSE;
 
   priv->idle_id = 0;
+  priv->value_changed_id = 0;
   priv->value = 0;
 
   priv->pager = os_pager_new ();
