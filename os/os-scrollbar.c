@@ -880,7 +880,7 @@ pager_set_allocation (OsScrollbar *scrollbar)
 
   priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
 
-  if (GTK_SCROLLED_WINDOW (priv->parent) &&
+  if (GTK_IS_SCROLLED_WINDOW (priv->parent) &&
       gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (priv->parent)) != GTK_SHADOW_NONE)
     offset = 1;
   else
@@ -1015,7 +1015,7 @@ parent_size_allocate_cb (GtkWidget     *widget,
   priv->overlay_all = *allocation;
   priv->thumb_all = *allocation;
 
-  if (GTK_SCROLLED_WINDOW (widget) &&
+  if (GTK_IS_SCROLLED_WINDOW (widget) &&
       gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (widget)) != GTK_SHADOW_NONE)
     offset = 1;
   else
