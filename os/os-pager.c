@@ -28,10 +28,6 @@
 #include <gdk/gdkx.h>
 #include "os-private.h"
 
-#define OS_PAGER_GET_PRIVATE(obj) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_PAGER, OsPagerPrivate))
-
-typedef struct _OsPagerPrivate OsPagerPrivate;
 
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
@@ -72,7 +68,7 @@ os_pager_create (OsPager *pager)
 {
   OsPagerPrivate *priv;
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   if (priv->pager_window != NULL)
     {
@@ -108,7 +104,7 @@ os_pager_draw (OsPager *pager)
   OsPagerPrivate *priv;
   GtkStyle *style;
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   style = gtk_widget_get_style (priv->parent);
 
@@ -126,7 +122,7 @@ os_pager_mask (OsPager *pager)
   GdkBitmap *bitmap;
   OsPagerPrivate *priv;
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   bitmap = gdk_pixmap_new (NULL, MAX (1, priv->mask.width),
                            MAX (1, priv->mask.height), 1);
@@ -182,7 +178,10 @@ os_pager_init (OsPager *pager)
   GdkRectangle allocation, mask;
   OsPagerPrivate *priv;
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  pager->priv = G_TYPE_INSTANCE_GET_PRIVATE (pager,
+                                             OS_TYPE_PAGER,
+                                             OsPagerPrivate);
+  priv = pager->priv;
 
   allocation.x = 0;
   allocation.y = 0;
@@ -242,7 +241,7 @@ os_pager_hide (OsPager *pager)
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   priv->visible = FALSE;
 
@@ -267,7 +266,7 @@ os_pager_move_resize (OsPager      *pager,
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   if (!rectangle_changed (priv->mask, mask))
     return;
@@ -295,7 +294,7 @@ os_pager_set_active (OsPager *pager,
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   if (priv->active != active)
     {
@@ -323,7 +322,7 @@ os_pager_set_parent (OsPager   *pager,
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   if (priv->parent != NULL)
     {
@@ -364,7 +363,7 @@ os_pager_show (OsPager *pager)
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   priv->visible = TRUE;
 
@@ -389,7 +388,7 @@ os_pager_size_allocate (OsPager     *pager,
 
   g_return_if_fail (OS_PAGER (pager));
 
-  priv = OS_PAGER_GET_PRIVATE (pager);
+  priv = pager->priv;
 
   priv->allocation = rectangle;
 
