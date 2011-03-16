@@ -118,14 +118,13 @@ os_pager_draw (OsPager *pager)
 static void
 os_pager_mask (OsPager *pager)
 {
-  GdkRegion *region;
   OsPagerPrivate *priv;
 
   priv = pager->priv;
 
-  region = gdk_region_rectangle (&priv->mask);
-
-  gdk_window_shape_combine_region (priv->pager_window, region, 0, 0);
+  gdk_window_shape_combine_region (priv->pager_window,
+                                   gdk_region_rectangle (&priv->mask),
+                                   0, 0);
 
   gdk_window_clear (priv->pager_window);
 }
