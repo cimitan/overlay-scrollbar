@@ -101,7 +101,6 @@ static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
-static void pager_set_allocation (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
@@ -868,40 +867,6 @@ pager_move (OsScrollbar *scrollbar)
   os_pager_move_resize (OS_PAGER (priv->pager), mask);
 }
 
-/* Resize the overlay window. */
-static void
-pager_set_allocation (OsScrollbar *scrollbar)
-{
-  GdkRectangle rect;
-  OsScrollbarPrivate *priv;
-  gint offset;
-
-  priv = scrollbar->priv;
-
-  if (GTK_IS_SCROLLED_WINDOW (priv->parent) &&
-      gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (priv->parent)) != GTK_SHADOW_NONE)
-    offset = 1;
-  else
-    offset = 0;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      rect.x = priv->overlay_all.x;
-      rect.y = priv->overlay_all.y + offset;
-      rect.width = DEFAULT_PAGER_WIDTH;
-      rect.height = priv->overlay_all.height - offset * 2;
-    }
-  else
-    {
-      rect.x = priv->overlay_all.x + offset;
-      rect.y = priv->overlay_all.y;
-      rect.width = priv->overlay_all.width - offset * 2;
-      rect.height = DEFAULT_PAGER_WIDTH;
-    }
-
-  os_pager_size_allocate (OS_PAGER (priv->pager), rect);
-}
-
 static void
 pager_set_state (OsScrollbar *scrollbar)
 {
@@ -998,6 +963,7 @@ parent_size_allocate_cb (GtkWidget     *widget,
                          GtkAllocation *allocation,
                          gpointer       user_data)
 {
+  GdkRectangle rect;
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   gint offset;
@@ -1025,6 +991,11 @@ parent_size_allocate_cb (GtkWidget     *widget,
       priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
       priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - offset;
       priv->thumb_all.x = allocation->x + allocation->width - offset;
+
+      rect.x = priv->overlay_all.x;
+      rect.y = priv->overlay_all.y + offset;
+      rect.width = DEFAULT_PAGER_WIDTH;
+      rect.height = priv->overlay_all.height - offset * 2;
     }
   else
     {
@@ -1032,6 +1003,11 @@ parent_size_allocate_cb (GtkWidget     *widget,
       priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
       priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - offset;
       priv->thumb_all.y = allocation->y + allocation->height - offset;
+
+      rect.x = priv->overlay_all.x + offset;
+      rect.y = priv->overlay_all.y;
+      rect.width = priv->overlay_all.width - offset * 2;
+      rect.height = DEFAULT_PAGER_WIDTH;
     }
 
   if (priv->adjustment != NULL)
@@ -1040,7 +1016,8 @@ parent_size_allocate_cb (GtkWidget     *widget,
       os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
     }
 
-  pager_set_allocation (scrollbar);
+  os_pager_size_allocate (OS_PAGER (priv->pager), rect);
+
   pager_move (scrollbar);
 
   if (gtk_widget_get_realized (widget))
