@@ -40,14 +40,26 @@ struct _OsPagerPrivate {
   gint height;
 };
 
+static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
-static void os_pager_draw_bitmap (GdkPixmap *pixmap);
 static void os_pager_mask (OsPager *pager);
 
 /* Private functions */
+
+static gboolean
+rectangle_changed (GdkRectangle rectangle1,
+                   GdkRectangle rectangle2)
+{
+  if (rectangle1.x != rectangle2.x) return TRUE;
+  if (rectangle1.y != rectangle2.y) return TRUE;
+  if (rectangle1.width  != rectangle2.width)  return TRUE;
+  if (rectangle1.height != rectangle2.height) return TRUE;
+
+  return FALSE;
+}
 
 /* Create a pager. */
 static void
@@ -106,44 +118,15 @@ os_pager_draw (OsPager *pager)
 static void
 os_pager_mask (OsPager *pager)
 {
-  GdkBitmap *bitmap;
   OsPagerPrivate *priv;
 
   priv = pager->priv;
 
-  bitmap = gdk_pixmap_new (NULL, MAX (1, priv->mask.width),
-                           MAX (1, priv->mask.height), 1);
-  os_pager_draw_bitmap (bitmap);
-
-  gdk_window_shape_combine_mask (priv->pager_window, bitmap,
-                                 priv->mask.x, priv->mask.y);
+  gdk_window_shape_combine_region (priv->pager_window,
+                                   gdk_region_rectangle (&priv->mask),
+                                   0, 0);
 
   gdk_window_clear (priv->pager_window);
-
-  g_object_unref (bitmap);
-}
-
-/* Draw on the bitmap of the pager, to get a mask. */
-static void
-os_pager_draw_bitmap (GdkBitmap *bitmap)
-{
-  cairo_t *cr_surface;
-  cairo_surface_t *surface;
-  gint width, height;
-
-  gdk_pixmap_get_size (bitmap, &width, &height);
-
-  surface = cairo_xlib_surface_create_for_bitmap
-      (GDK_DRAWABLE_XDISPLAY (bitmap), gdk_x11_drawable_get_xid (bitmap),
-       GDK_SCREEN_XSCREEN (gdk_drawable_get_screen (bitmap)), width, height);
-
-  cr_surface = cairo_create (surface);
-
-  cairo_paint (cr_surface);
-
-  cairo_destroy (cr_surface);
-
-  cairo_surface_destroy (surface);
 }
 
 /* Type definition. */
@@ -256,6 +239,9 @@ os_pager_move_resize (OsPager      *pager,
   g_return_if_fail (OS_PAGER (pager));
 
   priv = pager->priv;
+
+  if (!rectangle_changed (priv->mask, mask))
+    return;
 
   priv->mask = mask;
 
@@ -375,6 +361,9 @@ os_pager_size_allocate (OsPager     *pager,
   g_return_if_fail (OS_PAGER (pager));
 
   priv = pager->priv;
+
+  if (!rectangle_changed (priv->allocation, rectangle))
+    return;
 
   priv->allocation = rectangle;
 
