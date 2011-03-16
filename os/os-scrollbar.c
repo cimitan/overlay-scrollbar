@@ -76,6 +76,7 @@ static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_parent_set (GtkWidget *widget, GtkWidget *old_parent);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
+static void os_scrollbar_size_allocate (GtkWidget *widget, GtkAllocation *allocation);
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
@@ -1262,14 +1263,15 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
 
-  widget_class->expose_event = os_scrollbar_expose_event;
-  widget_class->hide         = os_scrollbar_hide;
-  widget_class->map          = os_scrollbar_map;
-  widget_class->realize      = os_scrollbar_realize;
-  widget_class->parent_set   = os_scrollbar_parent_set;
-  widget_class->show         = os_scrollbar_show;
-  widget_class->unmap        = os_scrollbar_unmap;
-  widget_class->unrealize    = os_scrollbar_unrealize;
+  widget_class->expose_event  = os_scrollbar_expose_event;
+  widget_class->hide          = os_scrollbar_hide;
+  widget_class->map           = os_scrollbar_map;
+  widget_class->realize       = os_scrollbar_realize;
+  widget_class->parent_set    = os_scrollbar_parent_set;
+  widget_class->show          = os_scrollbar_show;
+  widget_class->size_allocate = os_scrollbar_size_allocate;
+  widget_class->unmap         = os_scrollbar_unmap;
+  widget_class->unrealize     = os_scrollbar_unrealize;
 
   gobject_class->dispose  = os_scrollbar_dispose;
   gobject_class->finalize = os_scrollbar_finalize;
@@ -1340,7 +1342,7 @@ os_scrollbar_expose_event (GtkWidget      *widget,
 static void
 os_scrollbar_hide (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->hide (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->hide (widget);
 }
 
 static void
@@ -1352,7 +1354,7 @@ os_scrollbar_map (GtkWidget *widget)
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->map (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->map (widget);
 
   priv->proximity = TRUE;
 
@@ -1427,13 +1429,20 @@ os_scrollbar_parent_set (GtkWidget *widget,
 static void
 os_scrollbar_realize (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->realize (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->realize (widget);
 }
 
 static void
 os_scrollbar_show (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->show (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->show (widget);
+}
+
+static void
+os_scrollbar_size_allocate (GtkWidget     *widget,
+                            GtkAllocation *allocation)
+{
+  widget->allocation = *allocation;
 }
 
 static void
@@ -1445,7 +1454,7 @@ os_scrollbar_unmap (GtkWidget *widget)
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->unmap (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->unmap (widget);
 
   priv->proximity = FALSE;
 
@@ -1461,7 +1470,7 @@ os_scrollbar_unmap (GtkWidget *widget)
 static void
 os_scrollbar_unrealize (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->unrealize (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek_parent (g_type_class_peek_parent (os_scrollbar_parent_class)))->unrealize (widget);
 }
 
 /* Public functions. */
