@@ -318,7 +318,11 @@ os_pager_set_parent (OsPager   *pager,
                               priv->allocation.height);
 
       if (priv->visible)
-        gdk_window_show (priv->pager_window);
+        {
+          gdk_window_show (priv->pager_window);
+
+          gdk_window_clear (priv->pager_window);
+        }
     }
 }
 
@@ -343,6 +347,8 @@ os_pager_show (OsPager *pager)
     return;
 
   gdk_window_show (priv->pager_window);
+
+  gdk_window_clear (priv->pager_window);
 }
 
 /**
