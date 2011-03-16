@@ -266,7 +266,7 @@ os_thumb_expose (GtkWidget      *widget,
   gint radius;
 
   thumb = OS_THUMB (widget);
-  priv = thumb->priv;;
+  priv = thumb->priv;
 
   state_type_down = GTK_STATE_NORMAL;
   state_type_up = GTK_STATE_NORMAL;
