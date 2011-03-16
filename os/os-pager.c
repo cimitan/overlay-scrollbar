@@ -362,6 +362,9 @@ os_pager_size_allocate (OsPager     *pager,
 
   priv = pager->priv;
 
+  if (!rectangle_changed (priv->allocation, rectangle))
+    return;
+
   priv->allocation = rectangle;
 
   if (priv->parent == NULL)
