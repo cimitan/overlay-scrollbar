@@ -219,19 +219,18 @@ static void
 os_thumb_composited_changed (GtkWidget *widget)
 {
   GdkScreen *screen;
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   screen = gtk_widget_get_screen (widget);
 
   if (gdk_screen_is_composited (screen))
-    {
-      OsThumb *thumb;
-      OsThumbPrivate *priv;
-
-      thumb = OS_THUMB (widget);
-      priv = thumb->priv;
-
-      priv->can_rgba = TRUE;
-    }
+    priv->can_rgba = TRUE;
+  else
+    priv->can_rgba = FALSE;
 
   gtk_widget_queue_draw (widget);
 }
