@@ -131,6 +131,8 @@ os_pager_mask (OsPager *pager)
   gdk_window_shape_combine_mask (priv->pager_window, bitmap,
                                  priv->mask.x, priv->mask.y);
 
+  gdk_window_clear (priv->pager_window);
+
   g_object_unref (bitmap);
 }
 
