@@ -1066,10 +1066,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
 
-  os_scrollbar_move_thumb (scrollbar,
-                           event->x + priv->thumb_all.x + priv->slider.x,
-                           event->y + priv->thumb_all.y + priv->slider.y);
-
   os_scrollbar_store_window_position (scrollbar);
 
   return FALSE;
