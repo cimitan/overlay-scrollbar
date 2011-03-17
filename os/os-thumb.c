@@ -182,6 +182,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
           thumb = OS_THUMB (widget);
           priv = thumb->priv;
 
+          gtk_grab_add (widget);
+
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
 
@@ -208,6 +210,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
           thumb = OS_THUMB (widget);
           priv = thumb->priv;
+
+          gtk_grab_remove (widget);
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
