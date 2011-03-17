@@ -1,3 +1,19 @@
+overlay-scrollbar 0.1.3 (March 17, 2011)
+----------------------------------------
+
+* Performance tweaks
+
+* Bugs fixed:
+ 728664 Scrollbar (thumb) is not working in modal dialogs
+ 732091 unity's restore from maximize is breaking the positioning of overlay...
+ 735618 with jjardon's performance tweak branch, sometimes the pager is not...
+ 735906 You can scroll even if the thumb is not shown
+ 736076 rendering issues for the pager
+ 733031 Issues when reallocating widgets
+ 736280 The thumb has black borders after switching back to metacity
+ 733212 scrollbar should be shifted depending on the scrolled window's...
+
+
 overlay-scrollbar 0.1.2 (March 10, 2011)
 ----------------------------------------
 
