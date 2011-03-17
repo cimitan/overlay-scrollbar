@@ -721,7 +721,7 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   priv->enter_notify_event = TRUE;
   priv->can_hide = FALSE;
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean
@@ -741,7 +741,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean
@@ -838,7 +838,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       os_scrollbar_move_thumb (scrollbar, x, y);
     }
 
-  return TRUE;
+  return FALSE;
 }
 
 /* Move the pager to the right position. */
