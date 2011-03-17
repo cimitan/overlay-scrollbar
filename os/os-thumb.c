@@ -54,7 +54,9 @@ static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
+static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
+static void os_thumb_unmap (GtkWidget *widget);
 static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
 static void os_thumb_dispose (GObject *object);
 static void os_thumb_finalize (GObject *object);
@@ -107,8 +109,10 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
+  widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
+  widget_class->unmap                = os_thumb_unmap;
 
   gobject_class->constructor  = os_thumb_constructor;
   gobject_class->get_property = os_thumb_get_property;
@@ -210,8 +214,6 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
           thumb = OS_THUMB (widget);
           priv = thumb->priv;
-
-          gtk_grab_remove (widget);
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
@@ -484,6 +486,14 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
+static void
+os_thumb_map (GtkWidget *widget)
+{
+  gtk_grab_add (widget);
+
+  GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
+}
+
 static gboolean
 os_thumb_motion_notify_event (GtkWidget      *widget,
                               GdkEventMotion *event)
@@ -517,6 +527,14 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
+}
+
+static void
+os_thumb_unmap (GtkWidget *widget)
+{
+  gtk_grab_remove (widget);
+
+  GTK_WIDGET_CLASS (os_thumb_parent_class)->unmap (widget);
 }
 
 static GObject*
