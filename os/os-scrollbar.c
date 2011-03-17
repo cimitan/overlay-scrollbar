@@ -495,7 +495,7 @@ os_scrollbar_store_window_position (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
+  gdk_window_get_origin (gtk_widget_get_window (priv->parent), &win_x, &win_y);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -1115,7 +1115,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_position (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
 
                       x = priv->thumb_all.x;
                       y = CLAMP (xevent->xmotion.y - priv->slider.height / 2,
@@ -1151,7 +1151,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_position (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
 
                       x = CLAMP (xevent->xmotion.x - priv->slider.width / 2,
                                  priv->thumb_all.x + priv->overlay.x,
