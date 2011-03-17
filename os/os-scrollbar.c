@@ -41,11 +41,6 @@
 /* Timeout before hiding in milliseconds. */
 #define TIMEOUT_HIDE 1000
 
-#define OS_SCROLLBAR_GET_PRIVATE(obj) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_SCROLLBAR, OsScrollbarPrivate))
-
-typedef struct _OsScrollbarPrivate OsScrollbarPrivate;
-
 struct _OsScrollbarPrivate
 {
   GdkRectangle trough;
@@ -81,6 +76,7 @@ static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_parent_set (GtkWidget *widget, GtkWidget *old_parent);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
+static void os_scrollbar_size_allocate (GtkWidget *widget, GtkAllocation *allocation);
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
@@ -106,7 +102,6 @@ static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
-static void pager_set_allocation (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
@@ -178,7 +173,7 @@ os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar,
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -265,7 +260,7 @@ os_scrollbar_calc_layout_slider (OsScrollbar *scrollbar,
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -325,7 +320,7 @@ os_scrollbar_coord_to_value (OsScrollbar *scrollbar,
   gint    trough_start;
   gint    slider_length;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -361,7 +356,7 @@ os_scrollbar_hide_thumb (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->can_hide)
     {
@@ -391,7 +386,7 @@ os_scrollbar_move (OsScrollbar *scrollbar,
   gint c;
   gdouble new_value;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     delta = mouse_y - priv->slide_initial_coordinate;
@@ -412,7 +407,7 @@ os_scrollbar_move_thumb (OsScrollbar *scrollbar,
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   gtk_window_move (GTK_WINDOW (priv->thumb),
                    os_scrollbar_sanitize_x (scrollbar, x),
@@ -423,24 +418,28 @@ static void
 os_scrollbar_notify_adjustment_cb (GObject *object,
                                    gpointer user_data)
 {
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (object));
+  scrollbar = OS_SCROLLBAR (object);
+  priv = scrollbar->priv;
 
-  os_scrollbar_swap_adjustment (OS_SCROLLBAR (object), gtk_range_get_adjustment (GTK_RANGE (object)));
+  os_scrollbar_swap_adjustment (scrollbar, gtk_range_get_adjustment (GTK_RANGE (object)));
 }
 
 static void
 os_scrollbar_notify_orientation_cb (GObject *object,
                                     gpointer user_data)
 {
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (object));
+  scrollbar = OS_SCROLLBAR (object);
+  priv = scrollbar->priv;
 
   priv->orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (object));
 
-  os_scrollbar_swap_thumb (OS_SCROLLBAR (object), os_thumb_new (priv->orientation));
+  os_scrollbar_swap_thumb (scrollbar, os_thumb_new (priv->orientation));
 }
 
 static gint
@@ -450,7 +449,7 @@ os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
   OsScrollbarPrivate *priv;
   gint screen_width;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   /* FIXME we could store screen_width in priv
    * and change it at screen-changed signal */
@@ -472,7 +471,7 @@ os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
   OsScrollbarPrivate *priv;
   gint screen_height;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   /* FIXME we could store screen_height in priv
    * and change it at screen-changed signal */
@@ -494,7 +493,7 @@ os_scrollbar_store_window_position (OsScrollbar *scrollbar)
   OsScrollbarPrivate *priv;
   gint win_x, win_y;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
 
@@ -515,7 +514,9 @@ static void
 os_scrollbar_swap_adjustment (OsScrollbar   *scrollbar,
                               GtkAdjustment *adjustment)
 {
-  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
 
   if (priv->adjustment != NULL)
     {
@@ -545,7 +546,9 @@ static void
 os_scrollbar_swap_parent (OsScrollbar *scrollbar,
                           GtkWidget   *parent)
 {
-  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
 
   if (priv->parent != NULL)
     {
@@ -579,7 +582,9 @@ static void
 os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                          GtkWidget   *thumb)
 {
-  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
 
   if (priv->thumb != NULL)
     {
@@ -629,7 +634,7 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           OsScrollbarPrivate *priv;
 
           scrollbar = OS_SCROLLBAR (user_data);
-          priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (scrollbar));
+          priv = scrollbar->priv;
 
 /*          os_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->parent)));
@@ -651,8 +656,6 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
-
-          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -672,7 +675,7 @@ thumb_button_release_event_cb (GtkWidget      *widget,
           OsScrollbarPrivate *priv;
 
           scrollbar = OS_SCROLLBAR (user_data);
-          priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (scrollbar));
+          priv = scrollbar->priv;
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
@@ -698,8 +701,6 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
-
-          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -715,7 +716,7 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (scrollbar));
+  priv = scrollbar->priv;
 
   priv->enter_notify_event = TRUE;
   priv->can_hide = FALSE;
@@ -732,7 +733,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (scrollbar));
+  priv = scrollbar->priv;
 
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
@@ -752,7 +753,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (scrollbar));
+  priv = scrollbar->priv;
 
   /* XXX improve speed by not rendering when moving */
   if (priv->button_press_event)
@@ -776,9 +777,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           os_scrollbar_move (scrollbar, event->x_root, event->y_root);
           priv->value_changed_event = FALSE;
         }
-
-      if (!priv->motion_notify_event)
-        gtk_widget_queue_draw (widget);
 
       priv->motion_notify_event = TRUE;
 
@@ -850,7 +848,7 @@ pager_move (OsScrollbar *scrollbar)
   GdkRectangle mask;
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -870,39 +868,12 @@ pager_move (OsScrollbar *scrollbar)
   os_pager_move_resize (OS_PAGER (priv->pager), mask);
 }
 
-/* Resize the overlay window. */
-static void
-pager_set_allocation (OsScrollbar *scrollbar)
-{
-  GdkRectangle rect;
-  OsScrollbarPrivate *priv;
-
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      rect.x = priv->overlay_all.x;
-      rect.y = priv->overlay_all.y + 1;
-      rect.width = DEFAULT_PAGER_WIDTH;
-      rect.height = priv->overlay_all.height - 2;
-    }
-  else
-    {
-      rect.x = priv->overlay_all.x + 1;
-      rect.y = priv->overlay_all.y;
-      rect.width = priv->overlay_all.width - 2;
-      rect.height = DEFAULT_PAGER_WIDTH;
-    }
-
-  os_pager_size_allocate (OS_PAGER (priv->pager), rect);
-}
-
 static void
 pager_set_state (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (gdk_screen_get_active_window (gtk_widget_get_screen (priv->parent)) !=
       gtk_widget_get_window (priv->parent))
@@ -919,7 +890,7 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   /* FIXME(Cimi) we should control each time os_pager_show()/hide()
    * is called here and in map()/unmap().
@@ -949,7 +920,7 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   os_scrollbar_calc_layout_pager (scrollbar, adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, adjustment->value);
@@ -968,7 +939,7 @@ parent_realize_cb (GtkWidget *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   if (priv->filter == FALSE && priv->proximity == TRUE)
     {
@@ -993,11 +964,13 @@ parent_size_allocate_cb (GtkWidget     *widget,
                          GtkAllocation *allocation,
                          gpointer       user_data)
 {
+  GdkRectangle rect;
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
+  gint offset;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   priv->trough.x = 0;
   priv->trough.y = 0;
@@ -1007,25 +980,49 @@ parent_size_allocate_cb (GtkWidget     *widget,
   priv->overlay_all = *allocation;
   priv->thumb_all = *allocation;
 
+  if (GTK_IS_SCROLLED_WINDOW (widget) &&
+      gtk_scrolled_window_get_shadow_type (GTK_SCROLLED_WINDOW (widget)) != GTK_SHADOW_NONE)
+    offset = 1;
+  else
+    offset = 0;
+
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       priv->slider.width = DEFAULT_SCROLLBAR_WIDTH;
       priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
-      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.x = allocation->x + allocation->width - 1;
+      priv->overlay_all.x = allocation->x + allocation->width - DEFAULT_PAGER_WIDTH - offset;
+      priv->thumb_all.x = allocation->x + allocation->width - offset;
+
+      rect.x = priv->overlay_all.x;
+      rect.y = priv->overlay_all.y + offset;
+      rect.width = DEFAULT_PAGER_WIDTH;
+      rect.height = priv->overlay_all.height - offset * 2;
     }
   else
     {
       priv->slider.width = DEFAULT_SCROLLBAR_HEIGHT;
       priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
-      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - 1;
-      priv->thumb_all.y = allocation->y + allocation->height - 1;
+      priv->overlay_all.y = allocation->y + allocation->height - DEFAULT_PAGER_WIDTH - offset;
+      priv->thumb_all.y = allocation->y + allocation->height - offset;
+
+      rect.x = priv->overlay_all.x + offset;
+      rect.y = priv->overlay_all.y;
+      rect.width = priv->overlay_all.width - offset * 2;
+      rect.height = DEFAULT_PAGER_WIDTH;
     }
 
   if (priv->adjustment != NULL)
-    os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+    {
+      os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+      os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+    }
 
-  pager_set_allocation (scrollbar);
+  os_pager_size_allocate (OS_PAGER (priv->pager), rect);
+
+  pager_move (scrollbar);
+
+  if (gtk_widget_get_realized (widget))
+    os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
@@ -1036,7 +1033,7 @@ parent_unrealize_cb (GtkWidget *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   /* FIXME(Cimi) check if
    * gtk_widget_get_window (priv->parent) and
@@ -1062,20 +1059,18 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   gtk_widget_hide (GTK_WIDGET (priv->thumb));
 
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
+
   os_scrollbar_move_thumb (scrollbar,
                            event->x + priv->thumb_all.x + priv->slider.x,
                            event->y + priv->thumb_all.y + priv->slider.y);
 
   os_scrollbar_store_window_position (scrollbar);
-
-  pager_set_allocation (scrollbar);
-  pager_move (scrollbar);
 
   return FALSE;
 }
@@ -1094,7 +1089,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
   scrollbar = OS_SCROLLBAR (user_data);
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
   xevent = gdkxevent;
 
   g_return_val_if_fail (priv->parent != NULL, GDK_FILTER_CONTINUE);
@@ -1106,9 +1101,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
-          os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
-          os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
-
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1215,7 +1207,7 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  priv = scrollbar->priv;
 
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
@@ -1236,14 +1228,15 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
 
-  widget_class->expose_event = os_scrollbar_expose_event;
-  widget_class->hide         = os_scrollbar_hide;
-  widget_class->map          = os_scrollbar_map;
-  widget_class->realize      = os_scrollbar_realize;
-  widget_class->parent_set   = os_scrollbar_parent_set;
-  widget_class->show         = os_scrollbar_show;
-  widget_class->unmap        = os_scrollbar_unmap;
-  widget_class->unrealize    = os_scrollbar_unrealize;
+  widget_class->expose_event  = os_scrollbar_expose_event;
+  widget_class->hide          = os_scrollbar_hide;
+  widget_class->map           = os_scrollbar_map;
+  widget_class->realize       = os_scrollbar_realize;
+  widget_class->parent_set    = os_scrollbar_parent_set;
+  widget_class->show          = os_scrollbar_show;
+  widget_class->size_allocate = os_scrollbar_size_allocate;
+  widget_class->unmap         = os_scrollbar_unmap;
+  widget_class->unrealize     = os_scrollbar_unrealize;
 
   gobject_class->dispose  = os_scrollbar_dispose;
   gobject_class->finalize = os_scrollbar_finalize;
@@ -1256,7 +1249,10 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (scrollbar);
+  scrollbar->priv = G_TYPE_INSTANCE_GET_PRIVATE (scrollbar,
+                                                 OS_TYPE_SCROLLBAR,
+                                                 OsScrollbarPrivate);
+  priv = scrollbar->priv;
 
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
@@ -1282,11 +1278,15 @@ os_scrollbar_dispose (GObject *object)
 static void
 os_scrollbar_finalize (GObject *object)
 {
-  OsScrollbarPrivate *priv = OS_SCROLLBAR_GET_PRIVATE (object);
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
 
-  os_scrollbar_swap_adjustment (OS_SCROLLBAR (object), NULL);
-  os_scrollbar_swap_parent (OS_SCROLLBAR (object), NULL);
-  os_scrollbar_swap_thumb (OS_SCROLLBAR (object), NULL);
+  scrollbar = OS_SCROLLBAR (object);
+  priv = scrollbar->priv;
+
+  os_scrollbar_swap_adjustment (scrollbar, NULL);
+  os_scrollbar_swap_parent (scrollbar, NULL);
+  os_scrollbar_swap_thumb (scrollbar, NULL);
 
   if (priv->pager != NULL)
     {
@@ -1307,21 +1307,23 @@ os_scrollbar_expose_event (GtkWidget      *widget,
 static void
 os_scrollbar_hide (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->hide (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->hide (widget);
 }
 
 static void
 os_scrollbar_map (GtkWidget *widget)
 {
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (widget));
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
 
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->map (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->map (widget);
 
   priv->proximity = TRUE;
 
-  pager_set_state (OS_SCROLLBAR (widget));
+  pager_set_state (scrollbar);
 
   if (priv->fullsize == FALSE)
     os_pager_show (OS_PAGER (priv->pager));
@@ -1329,7 +1331,7 @@ os_scrollbar_map (GtkWidget *widget)
   if (gtk_widget_get_realized (priv->parent) && priv->filter == FALSE)
     {
       priv->filter = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, OS_SCROLLBAR (widget));
+      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
     }
 
 #if 0
@@ -1392,23 +1394,32 @@ os_scrollbar_parent_set (GtkWidget *widget,
 static void
 os_scrollbar_realize (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->realize (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
 }
 
 static void
 os_scrollbar_show (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->show (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->show (widget);
+}
+
+static void
+os_scrollbar_size_allocate (GtkWidget     *widget,
+                            GtkAllocation *allocation)
+{
+  widget->allocation = *allocation;
 }
 
 static void
 os_scrollbar_unmap (GtkWidget *widget)
 {
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  priv = OS_SCROLLBAR_GET_PRIVATE (OS_SCROLLBAR (widget));
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
 
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->unmap (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unmap (widget);
 
   priv->proximity = FALSE;
 
@@ -1417,14 +1428,14 @@ os_scrollbar_unmap (GtkWidget *widget)
   if (gtk_widget_get_realized (priv->parent) && priv->filter == TRUE)
     {
       priv->filter = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, OS_SCROLLBAR (widget));
+      gdk_window_remove_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
     }
 }
 
 static void
 os_scrollbar_unrealize (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (os_scrollbar_parent_class)->unrealize (widget);
+  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
 
 /* Public functions. */
