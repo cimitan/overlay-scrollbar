@@ -187,6 +187,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
+
+          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -209,6 +211,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
+
+          gtk_widget_queue_draw (widget);
         }
     }
 
