@@ -93,6 +93,10 @@ os_pager_create (OsPager *pager)
 
       gdk_window_set_transient_for (priv->pager_window,
                                     gtk_widget_get_window (priv->parent));
+
+      gdk_window_input_shape_combine_region (priv->pager_window,
+                                             gdk_region_new (),
+                                             0, 0);
     }
 }
 

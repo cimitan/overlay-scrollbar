@@ -71,6 +71,7 @@ struct _OsScrollbarPrivate
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
+static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static void os_scrollbar_hide (GtkWidget *widget);
 static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_parent_set (GtkWidget *widget, GtkWidget *old_parent);
@@ -101,6 +102,7 @@ static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton
 static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
+static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
@@ -598,6 +600,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                                             thumb_leave_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_motion_notify_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            thumb_unmap_cb, scrollbar);
 
       g_object_unref (priv->thumb);
     }
@@ -618,6 +622,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                         G_CALLBACK (thumb_leave_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
                         G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "unmap",
+                        G_CALLBACK (thumb_unmap_cb), scrollbar);
     }
 }
 
@@ -839,6 +845,21 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
     }
 
   return FALSE;
+}
+
+static void
+thumb_unmap_cb (GtkWidget *widget,
+                gpointer   user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  priv->button_press_event = FALSE;
+  priv->motion_notify_event = FALSE;
+  priv->enter_notify_event = FALSE;
 }
 
 /* Move the pager to the right position. */
@@ -1225,6 +1246,7 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class = GTK_WIDGET_CLASS (class);
 
   widget_class->expose_event  = os_scrollbar_expose_event;
+  widget_class->grab_notify   = os_scrollbar_grab_notify;
   widget_class->hide          = os_scrollbar_hide;
   widget_class->map           = os_scrollbar_map;
   widget_class->realize       = os_scrollbar_realize;
@@ -1298,6 +1320,12 @@ os_scrollbar_expose_event (GtkWidget      *widget,
                            GdkEventExpose *event)
 {
   return TRUE;
+}
+
+static void
+os_scrollbar_grab_notify (GtkWidget *widget,
+                          gboolean   was_grabbed)
+{
 }
 
 static void
