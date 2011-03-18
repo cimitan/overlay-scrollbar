@@ -50,7 +50,6 @@ static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
-static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
@@ -105,7 +104,6 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
   widget_class->expose_event         = os_thumb_expose;
-  widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
@@ -447,13 +445,6 @@ os_thumb_expose (GtkWidget      *widget,
 
   cairo_destroy (cr);
 
-  return FALSE;
-}
-
-static gboolean
-os_thumb_leave_notify_event (GtkWidget        *widget,
-                             GdkEventCrossing *event)
-{
   return FALSE;
 }
 
