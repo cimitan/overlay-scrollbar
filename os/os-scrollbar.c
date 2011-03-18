@@ -495,7 +495,7 @@ os_scrollbar_store_window_position (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  gdk_window_get_position (gtk_widget_get_window (priv->parent), &win_x, &win_y);
+  gdk_window_get_origin (gtk_widget_get_window (priv->parent), &win_x, &win_y);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -721,7 +721,7 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   priv->enter_notify_event = TRUE;
   priv->can_hide = FALSE;
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean
@@ -741,7 +741,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean
@@ -838,7 +838,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       os_scrollbar_move_thumb (scrollbar, x, y);
     }
 
-  return TRUE;
+  return FALSE;
 }
 
 /* Move the pager to the right position. */
@@ -1066,10 +1066,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
   os_scrollbar_calc_layout_slider (scrollbar, priv->adjustment->value);
 
-  os_scrollbar_move_thumb (scrollbar,
-                           event->x + priv->thumb_all.x + priv->slider.x,
-                           event->y + priv->thumb_all.y + priv->slider.y);
-
   os_scrollbar_store_window_position (scrollbar);
 
   return FALSE;
@@ -1115,7 +1111,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_position (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
 
                       x = priv->thumb_all.x;
                       y = CLAMP (xevent->xmotion.y - priv->slider.height / 2,
@@ -1151,7 +1147,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_position (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
 
                       x = CLAMP (xevent->xmotion.x - priv->slider.width / 2,
                                  priv->thumb_all.x + priv->overlay.x,

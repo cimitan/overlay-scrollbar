@@ -1,3 +1,27 @@
+overlay-scrollbar (0.1.3-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Performance improvements
+    - Scrollbar (thumb) is not working in modal dialogs (LP: #728664)
+    - unity's restore from maximize is breaking the positioning of 
+      overlay (LP: #732091)
+    - with jjardon's performance tweak branch, sometimes the pager is 
+      not (LP: #735618)
+    - You can scroll even if the thumb is not shown (LP: #735906)
+    - rendering issues for the pager (LP: #736076)
+    - Issues when reallocating widgets (LP: #733031)
+    - The thumb has black borders after switching back to metacity (LP: #736280)
+    - scrollbar should be shifted depending on the scrolled 
+      window's (LP: #733212)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 17 Mar 2011 21:21:41 -0400
+
+overlay-scrollbar (0.1.2+r161-0ubuntu1) natty; urgency=low
+
+  * New snapshot from r161
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 Mar 2011 22:16:42 -0400
+
 overlay-scrollbar (0.1.2-0ubuntu1) natty; urgency=low
 
   * New upstream release.
