@@ -32,6 +32,7 @@
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
+  GtkWidget *grabbed_widget;
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
@@ -53,6 +54,7 @@ static void os_thumb_composited_changed (GtkWidget *widget);
 static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
+static void os_thumb_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
@@ -109,6 +111,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
+  widget_class->grab_notify          = os_thumb_grab_notify;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
@@ -214,6 +217,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
           thumb = OS_THUMB (widget);
           priv = thumb->priv;
+
+          gtk_grab_remove (widget);
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
@@ -447,7 +452,7 @@ os_thumb_expose (GtkWidget      *widget,
                        4,
                        height - 8,
                        height - 8);
-   
+
       gtk_paint_arrow (gtk_widget_get_style (widget),
                        gtk_widget_get_window (widget),
                        state_type_down,
@@ -466,6 +471,12 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_destroy (cr);
 
   return FALSE;
+}
+
+static void
+os_thumb_grab_notify (GtkWidget *widget,
+                      gboolean   was_grabbed)
+{
 }
 
 static gboolean
@@ -489,7 +500,16 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
 static void
 os_thumb_map (GtkWidget *widget)
 {
-  gtk_grab_add (widget);
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  priv->grabbed_widget = gtk_grab_get_current ();
+
+  if (priv->grabbed_widget != NULL)
+    gtk_grab_remove (priv->grabbed_widget);
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
 }
@@ -532,7 +552,14 @@ os_thumb_screen_changed (GtkWidget *widget,
 static void
 os_thumb_unmap (GtkWidget *widget)
 {
-  gtk_grab_remove (widget);
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  if (priv->grabbed_widget != NULL)
+    gtk_grab_add (priv->grabbed_widget);
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->unmap (widget);
 }

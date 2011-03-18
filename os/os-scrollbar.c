@@ -71,6 +71,7 @@ struct _OsScrollbarPrivate
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
+static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static void os_scrollbar_hide (GtkWidget *widget);
 static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_parent_set (GtkWidget *widget, GtkWidget *old_parent);
@@ -635,6 +636,9 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           scrollbar = OS_SCROLLBAR (user_data);
           priv = scrollbar->priv;
+
+          if (!priv->enter_notify_event)
+            return TRUE;
 
 /*          os_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->parent)));
@@ -1225,6 +1229,7 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class = GTK_WIDGET_CLASS (class);
 
   widget_class->expose_event  = os_scrollbar_expose_event;
+  widget_class->grab_notify   = os_scrollbar_grab_notify;
   widget_class->hide          = os_scrollbar_hide;
   widget_class->map           = os_scrollbar_map;
   widget_class->realize       = os_scrollbar_realize;
@@ -1298,6 +1303,12 @@ os_scrollbar_expose_event (GtkWidget      *widget,
                            GdkEventExpose *event)
 {
   return TRUE;
+}
+
+static void
+os_scrollbar_grab_notify (GtkWidget *widget,
+                          gboolean   was_grabbed)
+{
 }
 
 static void
