@@ -30,11 +30,6 @@
 #define DEFAULT_THUMB_WIDTH  15
 #define DEFAULT_THUMB_HEIGHT 80
 
-#define OS_THUMB_GET_PRIVATE(obj) \
-  (G_TYPE_INSTANCE_GET_PRIVATE ((obj), OS_TYPE_THUMB, OsThumbPrivate))
-
-typedef struct _OsThumbPrivate OsThumbPrivate;
-
 struct _OsThumbPrivate {
   GtkOrientation orientation;
   gboolean button_press_event;
@@ -59,7 +54,9 @@ static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
+static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
+static void os_thumb_unmap (GtkWidget *widget);
 static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
 static void os_thumb_dispose (GObject *object);
 static void os_thumb_finalize (GObject *object);
@@ -112,8 +109,10 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
+  widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
+  widget_class->unmap                = os_thumb_unmap;
 
   gobject_class->constructor  = os_thumb_constructor;
   gobject_class->get_property = os_thumb_get_property;
@@ -137,7 +136,10 @@ os_thumb_init (OsThumb *thumb)
 {
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (thumb);
+  thumb->priv = G_TYPE_INSTANCE_GET_PRIVATE (thumb,
+                                             OS_TYPE_THUMB,
+                                             OsThumbPrivate);
+  priv = thumb->priv;
 
   priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
@@ -178,15 +180,21 @@ os_thumb_button_press_event (GtkWidget      *widget,
     {
       if (event->button == 1)
         {
+          OsThumb *thumb;
           OsThumbPrivate *priv;
 
-          priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+          thumb = OS_THUMB (widget);
+          priv = thumb->priv;
+
+          gtk_grab_add (widget);
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
+
+          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -201,12 +209,16 @@ os_thumb_button_release_event (GtkWidget      *widget,
     {
       if (event->button == 1)
         {
+          OsThumb *thumb;
           OsThumbPrivate *priv;
 
-          priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+          thumb = OS_THUMB (widget);
+          priv = thumb->priv;
 
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
+
+          gtk_widget_queue_draw (widget);
         }
     }
 
@@ -217,17 +229,18 @@ static void
 os_thumb_composited_changed (GtkWidget *widget)
 {
   GdkScreen *screen;
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   screen = gtk_widget_get_screen (widget);
 
   if (gdk_screen_is_composited (screen))
-    {
-      OsThumbPrivate *priv;
-
-      priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
-
-      priv->can_rgba = TRUE;
-    }
+    priv->can_rgba = TRUE;
+  else
+    priv->can_rgba = FALSE;
 
   gtk_widget_queue_draw (widget);
 }
@@ -236,9 +249,11 @@ static gboolean
 os_thumb_enter_notify_event (GtkWidget        *widget,
                              GdkEventCrossing *event)
 {
+  OsThumb *thumb;
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   priv->enter_notify_event = TRUE;
   priv->can_hide = FALSE;
@@ -252,13 +267,15 @@ os_thumb_expose (GtkWidget      *widget,
 {
   GtkAllocation allocation;
   GtkStateType state_type_down, state_type_up;
+  OsThumb *thumb;
   OsThumbPrivate *priv;
   cairo_pattern_t *pat;
   cairo_t *cr;
   gint x, y, width, height;
   gint radius;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   state_type_down = GTK_STATE_NORMAL;
   state_type_up = GTK_STATE_NORMAL;
@@ -455,9 +472,11 @@ static gboolean
 os_thumb_leave_notify_event (GtkWidget        *widget,
                              GdkEventCrossing *event)
 {
+  OsThumb *thumb;
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   if (!priv->button_press_event)
     priv->can_hide = TRUE;
@@ -467,13 +486,23 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   return TRUE;
 }
 
+static void
+os_thumb_map (GtkWidget *widget)
+{
+  gtk_grab_add (widget);
+
+  GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
+}
+
 static gboolean
 os_thumb_motion_notify_event (GtkWidget      *widget,
                               GdkEventMotion *event)
 {
+  OsThumb *thumb;
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (widget));
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
 
   if (priv->button_press_event)
     {
@@ -500,6 +529,14 @@ os_thumb_screen_changed (GtkWidget *widget,
     gtk_widget_set_colormap (widget, colormap);
 }
 
+static void
+os_thumb_unmap (GtkWidget *widget)
+{
+  gtk_grab_remove (widget);
+
+  GTK_WIDGET_CLASS (os_thumb_parent_class)->unmap (widget);
+}
+
 static GObject*
 os_thumb_constructor (GType                  type,
                       guint                  n_construct_properties,
@@ -521,9 +558,11 @@ os_thumb_get_property (GObject    *object,
                        GValue     *value,
                        GParamSpec *pspec)
 {
+  OsThumb *thumb;
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (object));
+  thumb = OS_THUMB (object);
+  priv = thumb->priv;
 
   switch (prop_id)
     {
@@ -542,9 +581,11 @@ os_thumb_set_property (GObject      *object,
                        const GValue *value,
                        GParamSpec   *pspec)
 {
+  OsThumb *thumb;
   OsThumbPrivate *priv;
 
-  priv = OS_THUMB_GET_PRIVATE (OS_THUMB (object));
+  thumb = OS_THUMB (object);
+  priv = thumb->priv;
 
   switch (prop_id)
     {
