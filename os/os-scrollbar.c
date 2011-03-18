@@ -642,9 +642,6 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           scrollbar = OS_SCROLLBAR (user_data);
           priv = scrollbar->priv;
 
-          if (!priv->enter_notify_event)
-            return TRUE;
-
 /*          os_scrollbar_map (widget);*/
           gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->parent)));
           os_present_gdk_window_with_timestamp (priv->parent, event->time);
