@@ -34,7 +34,6 @@ struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
   gboolean button_press_event;
-  gboolean enter_notify_event;
   gboolean motion_notify_event;
   gboolean can_rgba;
   gint pointer_x;
@@ -50,7 +49,6 @@ enum {
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
-static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
@@ -106,7 +104,6 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-  widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
@@ -244,21 +241,6 @@ os_thumb_composited_changed (GtkWidget *widget)
     priv->can_rgba = FALSE;
 
   gtk_widget_queue_draw (widget);
-}
-
-static gboolean
-os_thumb_enter_notify_event (GtkWidget        *widget,
-                             GdkEventCrossing *event)
-{
-  OsThumb *thumb;
-  OsThumbPrivate *priv;
-
-  thumb = OS_THUMB (widget);
-  priv = thumb->priv;
-
-  priv->enter_notify_event = TRUE;
-
-  return FALSE;
 }
 
 static gboolean
@@ -538,7 +520,6 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
-  priv->enter_notify_event = FALSE;
 
   if (priv->grabbed_widget != NULL)
     gtk_grab_add (priv->grabbed_widget);
