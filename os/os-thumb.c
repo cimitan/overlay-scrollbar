@@ -36,7 +36,6 @@ struct _OsThumbPrivate {
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
-  gboolean can_hide;
   gboolean can_rgba;
   gint pointer_x;
   gint pointer_y;
@@ -144,7 +143,6 @@ os_thumb_init (OsThumb *thumb)
                                              OsThumbPrivate);
   priv = thumb->priv;
 
-  priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
@@ -261,9 +259,8 @@ os_thumb_enter_notify_event (GtkWidget        *widget,
   priv = thumb->priv;
 
   priv->enter_notify_event = TRUE;
-  priv->can_hide = FALSE;
 
-  return TRUE;
+  return FALSE;
 }
 
 static gboolean
@@ -483,18 +480,7 @@ static gboolean
 os_thumb_leave_notify_event (GtkWidget        *widget,
                              GdkEventCrossing *event)
 {
-  OsThumb *thumb;
-  OsThumbPrivate *priv;
-
-  thumb = OS_THUMB (widget);
-  priv = thumb->priv;
-
-  if (!priv->button_press_event)
-    priv->can_hide = TRUE;
-
-/*  g_timeout_add (TIMEOUT_HIDE, os_thumb_hide, widget);*/
-
-  return TRUE;
+  return FALSE;
 }
 
 static void
@@ -532,7 +518,7 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
       priv->motion_notify_event = TRUE;
     }
 
-  return TRUE;
+  return FALSE;
 }
 
 static void
@@ -557,6 +543,10 @@ os_thumb_unmap (GtkWidget *widget)
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
+
+  priv->button_press_event = FALSE;
+  priv->motion_notify_event = FALSE;
+  priv->enter_notify_event = FALSE;
 
   if (priv->grabbed_widget != NULL)
     gtk_grab_add (priv->grabbed_widget);
