@@ -44,3 +44,60 @@ os_utils_is_blacklisted (const gchar* program)
 
   return FALSE;
 }
+
+gboolean
+os_utils_is_whitelisted (const gchar* program)
+{
+  /* White-list of program names retrieved with g_get_prgname(). */
+  static const gchar *const whitelist[] = {
+    "Banshee",
+    "baobab",
+    "ccsm",
+    "cheese",
+    "chromium",
+    "devhelp",
+    "empathy",
+    "eog",
+    "epiphany",
+    "evince",
+    "gedit",
+    "gnome-about-me",
+    "gnome-appearance-properties",
+    "gnome-audio-profiles-properties",
+    "gnome-character-map",
+    "gnome-control-center",
+    "gnome-dictionary",
+    "gnome-font-viewer",
+    "gnome-help",
+    "gnome-keybinding-properties",
+    "gnome-keyboard-properties",
+    "gnome-network-properties",
+    "gnome-screensaver-preferences",
+    "gnome-session-properties",
+    "gnome-sound-recorder",
+    "gnome-system-log",
+    "gnome-system-monitor",
+    "gnome-volume-control",
+    "google-chrome",
+    "gwibber",
+    "gwibber-accounts",
+    "midori",
+    "nautilus",
+    "palimpsest",
+    "rhythmbox",
+    "shotwell",
+    "synaptic",
+    "Tomboy",
+    "totem",
+    "ubuntuone-control-panel-gtk",
+    "xchat"
+  };
+
+  gint32 i;
+  const gint32 nr_programs = G_N_ELEMENTS (whitelist);
+  for (i = 0; i < nr_programs; i++)
+    if (g_strcmp0 (whitelist[i], program) == 0)
+      return TRUE;
+
+  return FALSE;
+}
