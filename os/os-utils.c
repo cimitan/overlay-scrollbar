@@ -38,6 +38,11 @@ os_utils_is_blacklisted (const gchar* program)
 
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+
+  /* Black list RTL languages, not supported yet */
+  if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
+    return TRUE;
+
   for (i = 0; i < nr_programs; i++)
     if (g_strcmp0 (blacklist[i], program) == 0)
       return TRUE;

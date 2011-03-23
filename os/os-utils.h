@@ -28,6 +28,8 @@
 #define __OS_UTILS_H__
 
 #include <glib.h>
+#include <gtk/gtkwidget.h>
+#include <gtk/gtkenums.h>
 
 G_BEGIN_DECLS
 
