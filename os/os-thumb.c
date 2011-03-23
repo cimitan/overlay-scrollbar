@@ -147,7 +147,8 @@ os_thumb_init (OsThumb *thumb)
   gtk_widget_set_app_paintable (GTK_WIDGET (thumb), TRUE);
   gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
                                              GDK_BUTTON_RELEASE_MASK |
-                                             GDK_POINTER_MOTION_MASK);
+                                             GDK_BUTTON_MOTION_MASK |
+                                             GDK_POINTER_MOTION_HINT_MASK);
 
   os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
   os_thumb_composited_changed (GTK_WIDGET (thumb));

@@ -1,3 +1,14 @@
+overlay-scrollbar (0.1.4-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Add whitelist support (LP: #740276)
+    - Improve scrolling speed (LP: #728418)
+    - Scrollbars are not working with wxWidgets (LP: #731369)
+    - blacklist RTL languages (LP: #741071)
+    - stop events when the thumb is unmapped (LP: #737627)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 23 Mar 2011 16:05:07 -0400
+
 overlay-scrollbar (0.1.3-0ubuntu2) natty; urgency=low
 
   * Merged in grab fixes from trunk r169
