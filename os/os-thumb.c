@@ -32,10 +32,9 @@
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
+  GtkWidget *grabbed_widget;
   gboolean button_press_event;
-  gboolean enter_notify_event;
   gboolean motion_notify_event;
-  gboolean can_hide;
   gboolean can_rgba;
   gint pointer_x;
   gint pointer_y;
@@ -50,9 +49,7 @@ enum {
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
-static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
-static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
@@ -106,9 +103,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-  widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
-  widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
@@ -141,7 +136,6 @@ os_thumb_init (OsThumb *thumb)
                                              OsThumbPrivate);
   priv = thumb->priv;
 
-  priv->can_hide = TRUE;
   priv->can_rgba = FALSE;
 
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
@@ -153,7 +147,8 @@ os_thumb_init (OsThumb *thumb)
   gtk_widget_set_app_paintable (GTK_WIDGET (thumb), TRUE);
   gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
                                              GDK_BUTTON_RELEASE_MASK |
-                                             GDK_POINTER_MOTION_MASK);
+                                             GDK_BUTTON_MOTION_MASK |
+                                             GDK_POINTER_MOTION_HINT_MASK);
 
   os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
   os_thumb_composited_changed (GTK_WIDGET (thumb));
@@ -215,6 +210,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
           thumb = OS_THUMB (widget);
           priv = thumb->priv;
 
+          gtk_grab_remove (widget);
+
           priv->button_press_event = FALSE;
           priv->motion_notify_event = FALSE;
 
@@ -243,22 +240,6 @@ os_thumb_composited_changed (GtkWidget *widget)
     priv->can_rgba = FALSE;
 
   gtk_widget_queue_draw (widget);
-}
-
-static gboolean
-os_thumb_enter_notify_event (GtkWidget        *widget,
-                             GdkEventCrossing *event)
-{
-  OsThumb *thumb;
-  OsThumbPrivate *priv;
-
-  thumb = OS_THUMB (widget);
-  priv = thumb->priv;
-
-  priv->enter_notify_event = TRUE;
-  priv->can_hide = FALSE;
-
-  return TRUE;
 }
 
 static gboolean
@@ -447,7 +428,7 @@ os_thumb_expose (GtkWidget      *widget,
                        4,
                        height - 8,
                        height - 8);
-   
+
       gtk_paint_arrow (gtk_widget_get_style (widget),
                        gtk_widget_get_window (widget),
                        state_type_down,
@@ -468,9 +449,8 @@ os_thumb_expose (GtkWidget      *widget,
   return FALSE;
 }
 
-static gboolean
-os_thumb_leave_notify_event (GtkWidget        *widget,
-                             GdkEventCrossing *event)
+static void
+os_thumb_map (GtkWidget *widget)
 {
   OsThumb *thumb;
   OsThumbPrivate *priv;
@@ -478,18 +458,10 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  if (!priv->button_press_event)
-    priv->can_hide = TRUE;
+  priv->grabbed_widget = gtk_grab_get_current ();
 
-/*  g_timeout_add (TIMEOUT_HIDE, os_thumb_hide, widget);*/
-
-  return TRUE;
-}
-
-static void
-os_thumb_map (GtkWidget *widget)
-{
-  gtk_grab_add (widget);
+  if (priv->grabbed_widget != NULL)
+    gtk_grab_remove (priv->grabbed_widget);
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
 }
@@ -512,7 +484,7 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
       priv->motion_notify_event = TRUE;
     }
 
-  return TRUE;
+  return FALSE;
 }
 
 static void
@@ -532,7 +504,17 @@ os_thumb_screen_changed (GtkWidget *widget,
 static void
 os_thumb_unmap (GtkWidget *widget)
 {
-  gtk_grab_remove (widget);
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  priv->button_press_event = FALSE;
+  priv->motion_notify_event = FALSE;
+
+  if (priv->grabbed_widget != NULL)
+    gtk_grab_add (priv->grabbed_widget);
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->unmap (widget);
 }
