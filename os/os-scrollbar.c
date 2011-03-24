@@ -784,24 +784,24 @@ thumb_map_cb (GtkWidget *widget,
   if ((res = gdk_error_trap_pop ()))
     {
       Window root = gdk_x11_get_default_root_xwindow ();
-      XEvent event;
+      XEvent xev;
 
-      event.xclient.type = ClientMessage;
-      event.xclient.display = display;
-      event.xclient.serial = 0;
-      event.xclient.send_event = True;
-      event.xclient.window = xid;
-      event.xclient.message_type = gdk_x11_get_xatom_by_name ("_NET_RESTACK_WINDOW");
-      event.xclient.format = 32;
-      event.xclient.data.l[0] = 2;
-      event.xclient.data.l[1] = xid_parent;
-      event.xclient.data.l[2] = Above;
-      event.xclient.data.l[3] = 0;
-      event.xclient.data.l[4] = 0;
+      xev.xclient.type = ClientMessage;
+      xev.xclient.display = display;
+      xev.xclient.serial = 0;
+      xev.xclient.send_event = True;
+      xev.xclient.window = xid;
+      xev.xclient.message_type = gdk_x11_get_xatom_by_name ("_NET_RESTACK_WINDOW");
+      xev.xclient.format = 32;
+      xev.xclient.data.l[0] = 2;
+      xev.xclient.data.l[1] = xid_parent;
+      xev.xclient.data.l[2] = Above;
+      xev.xclient.data.l[3] = 0;
+      xev.xclient.data.l[4] = 0;
 
       XSendEvent (display, root, False,
                   SubstructureRedirectMask | SubstructureNotifyMask,
-                  &event);
+                  &xev);
 
       XSync (display, False);
     }
