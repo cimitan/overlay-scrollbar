@@ -760,7 +760,6 @@ thumb_map_cb (GtkWidget *widget,
               gpointer   user_data)
 {
   Display *display;
-  GtkWidget *parent;
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   XWindowChanges changes;
@@ -771,10 +770,8 @@ thumb_map_cb (GtkWidget *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  parent = gtk_widget_get_parent (priv->parent);
-
   xid = GDK_WINDOW_XID (gtk_widget_get_window (priv->thumb));
-  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (parent));
+  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (priv->parent));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
 
   changes.sibling = xid_parent;
