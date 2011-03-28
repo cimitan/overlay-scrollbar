@@ -585,6 +585,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_unmap_cb, scrollbar);
 
+      gtk_widget_destroy (priv->thumb);
+
       g_object_unref (priv->thumb);
     }
 
