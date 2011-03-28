@@ -987,7 +987,7 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
         {
           os_pager_hide (OS_PAGER (priv->pager));
 
-          /* I don't know if (priv->thumb != NULL) is really necessary,
+          /* I don't know if (priv->thumb != NULL) is really necessary here,
            * but it won't hurt. */
           if (priv->thumb != NULL)
             gtk_widget_hide (priv->thumb);
