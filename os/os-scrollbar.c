@@ -799,11 +799,16 @@ thumb_map_cb (GtkWidget *widget,
       xev.xclient.data.l[3] = 0;
       xev.xclient.data.l[4] = 0;
 
+      gdk_error_trap_push ();
+
       XSendEvent (display, root, False,
                   SubstructureRedirectMask | SubstructureNotifyMask,
                   &xev);
 
       XSync (display, False);
+
+      gdk_flush ();
+      gdk_error_trap_pop ();
     }
 }
 
