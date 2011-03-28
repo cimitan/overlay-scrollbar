@@ -97,6 +97,7 @@ static gboolean thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *
 static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
+static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
@@ -578,6 +579,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_leave_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            thumb_map_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_motion_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_unmap_cb, scrollbar);
@@ -599,6 +602,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                         G_CALLBACK (thumb_enter_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "leave-notify-event",
                         G_CALLBACK (thumb_leave_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "map",
+                        G_CALLBACK (thumb_map_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
                         G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "unmap",
@@ -727,6 +732,77 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                  g_object_ref (scrollbar));
 
   return FALSE;
+}
+
+static void
+thumb_map_cb (GtkWidget *widget,
+              gpointer   user_data)
+{
+  Display *display;
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+  XWindowChanges changes;
+  guint32 xid, xid_parent;
+  unsigned int value_mask = CWSibling | CWStackMode;
+  int res;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  xid = GDK_WINDOW_XID (gtk_widget_get_window (priv->thumb));
+  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (priv->parent));
+  display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
+
+  changes.sibling = xid_parent;
+  changes.stack_mode = Above;
+
+  gdk_error_trap_push ();
+  XConfigureWindow (display, xid, value_mask, &changes);
+
+  gdk_flush ();
+  if ((res = gdk_error_trap_pop ()))
+    {
+      /* FIXME(Cimi) this code tries to restack the window using
+       * the _NET_RESTACK_WINDOW atom. See:
+       * http://standards.freedesktop.org/wm-spec/wm-spec-1.3.html#id2506866
+       * 
+       * Should work on window managers that supports this, like compiz.
+       * Unfortunately, metacity doesn't yet, so we might decide to implement
+       * this atom in metacity/mutter as well. 
+       * 
+       * We need to restack the window because the thumb window can be above
+       * every window, noticeable when you make the thumb of an unfocused window
+       * appear, and it could be above other windows (like the focused one).
+       * 
+       * XConfigureWindow doesn't always work (well, should work only with
+       * compiz 0.8 or older), because it is not handling the reparenting done
+       * at the WM level (metacity and compiz >= 0.9 do reparenting). */
+      Window root = gdk_x11_get_default_root_xwindow ();
+      XEvent xev;
+
+      xev.xclient.type = ClientMessage;
+      xev.xclient.display = display;
+      xev.xclient.serial = 0;
+      xev.xclient.send_event = True;
+      xev.xclient.window = xid;
+      xev.xclient.message_type = gdk_x11_get_xatom_by_name ("_NET_RESTACK_WINDOW");
+      xev.xclient.format = 32;
+      xev.xclient.data.l[0] = 2;
+      xev.xclient.data.l[1] = xid_parent;
+      xev.xclient.data.l[2] = Above;
+      xev.xclient.data.l[3] = 0;
+      xev.xclient.data.l[4] = 0;
+
+      gdk_error_trap_push ();
+
+      XSendEvent (display, root, False,
+                  SubstructureRedirectMask | SubstructureNotifyMask,
+                  &xev);
+
+      gdk_flush ();
+
+      gdk_error_trap_pop ();
+    }
 }
 
 static gboolean
