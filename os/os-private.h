@@ -30,6 +30,10 @@
 #pragma GCC visibility push(hidden)
 #endif /* __GNUC__ */
 
+/* Default size of the thumb in pixels. */
+#define DEFAULT_THUMB_WIDTH  15
+#define DEFAULT_THUMB_HEIGHT 67
+
 G_BEGIN_DECLS
 
 /* os-log.c */
