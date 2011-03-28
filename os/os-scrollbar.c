@@ -783,6 +783,21 @@ thumb_map_cb (GtkWidget *widget,
   gdk_flush ();
   if ((res = gdk_error_trap_pop ()))
     {
+      /* FIXME(Cimi) this code tries to restack the window using
+       * the _NET_RESTACK_WINDOW atom. See:
+       * http://standards.freedesktop.org/wm-spec/wm-spec-1.3.html#id2506866
+       * 
+       * Should work on window managers that supports this, like compiz.
+       * Unfortunately, metacity doesn't yet, so we might decide to implement
+       * this atom in metacity/mutter as well. 
+       * 
+       * We need to restack the window because the thumb window can be above
+       * every window, noticeable when you make the thumb of an unfocused window
+       * appear, and it could be above other windows (like the focused one).
+       * 
+       * XConfigureWindow doesn't always work (well, should work only with
+       * compiz 0.8 or older), because it is not handling the reparenting done
+       * at the WM level (metacity and compiz >= 0.9 do reparenting). */
       Window root = gdk_x11_get_default_root_xwindow ();
       XEvent xev;
 
