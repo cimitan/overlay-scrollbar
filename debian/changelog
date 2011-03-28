@@ -1,3 +1,10 @@
+overlay-scrollbar (0.1.4-0ubuntu2) natty; urgency=low
+
+  * debian/control
+    - Bump the depends for gtk to >= 2.24.3-0ubuntu4+overlayscrollbar1 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 28 Mar 2011 10:06:17 -0400
+
 overlay-scrollbar (0.1.4-0ubuntu1) natty; urgency=low
 
   * New upstream release.
