@@ -805,9 +805,8 @@ thumb_map_cb (GtkWidget *widget,
                   SubstructureRedirectMask | SubstructureNotifyMask,
                   &xev);
 
-      XSync (display, False);
-
       gdk_flush ();
+
       gdk_error_trap_pop ();
     }
 }
