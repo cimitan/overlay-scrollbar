@@ -31,10 +31,6 @@
 /* Default size of the pager in pixels. */
 #define DEFAULT_PAGER_WIDTH 3
 
-/* Default size of the scrollbar in pixels. */
-#define DEFAULT_SCROLLBAR_WIDTH  15
-#define DEFAULT_SCROLLBAR_HEIGHT 80
-
 /* Width of the proximity effect in pixels. */
 #define PROXIMITY_WIDTH 30
 
@@ -1373,8 +1369,8 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      priv->slider.width = DEFAULT_SCROLLBAR_WIDTH;
-      priv->slider.height = DEFAULT_SCROLLBAR_HEIGHT;
+      priv->slider.width = DEFAULT_THUMB_WIDTH;
+      priv->slider.height = DEFAULT_THUMB_HEIGHT;
       priv->overlay_all.x = allocation->x - DEFAULT_PAGER_WIDTH;
       priv->thumb_all.x = allocation->x;
 
@@ -1387,8 +1383,8 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
     }
   else
     {
-      priv->slider.width = DEFAULT_SCROLLBAR_HEIGHT;
-      priv->slider.height = DEFAULT_SCROLLBAR_WIDTH;
+      priv->slider.width = DEFAULT_THUMB_HEIGHT;
+      priv->slider.height = DEFAULT_THUMB_WIDTH;
       priv->overlay_all.y = allocation->y - DEFAULT_PAGER_WIDTH ;
       priv->thumb_all.y = allocation->y;
 
