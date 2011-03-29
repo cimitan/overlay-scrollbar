@@ -987,10 +987,7 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
         {
           os_pager_hide (OS_PAGER (priv->pager));
 
-          /* I don't know if (priv->thumb != NULL) is really necessary here,
-           * but it won't hurt. */
-          if (priv->thumb != NULL)
-            gtk_widget_hide (priv->thumb);
+          gtk_widget_hide (priv->thumb);
         }
     }
 
@@ -1510,8 +1507,7 @@ os_scrollbar_unmap (GtkWidget *widget)
 
   os_pager_hide (OS_PAGER (priv->pager));
 
-  if (priv->thumb != NULL)
-    gtk_widget_hide (priv->thumb);
+  gtk_widget_hide (priv->thumb);
 
   if (gtk_widget_get_realized (priv->parent) && priv->filter == TRUE)
     {
@@ -1529,8 +1525,7 @@ os_scrollbar_unrealize (GtkWidget *widget)
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
-  if (priv->thumb != NULL)
-    gtk_widget_hide (priv->thumb);
+  gtk_widget_hide (priv->thumb);
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
