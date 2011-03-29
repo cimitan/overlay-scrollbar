@@ -1223,6 +1223,8 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  priv->can_hide = TRUE;
+
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
