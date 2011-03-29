@@ -46,7 +46,6 @@ struct _OsScrollbarPrivate
   GtkAllocation thumb_all;
   GObject *pager;
   GtkWidget *thumb;
-  GtkWidget *parent;
   GtkAdjustment *adjustment;
   GtkOrientation orientation;
   gboolean button_press_event;
@@ -70,7 +69,6 @@ static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *ev
 static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static void os_scrollbar_hide (GtkWidget *widget);
 static void os_scrollbar_map (GtkWidget *widget);
-static void os_scrollbar_parent_set (GtkWidget *widget, GtkWidget *old_parent);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
 static void os_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
@@ -91,7 +89,6 @@ static gint os_scrollbar_sanitize_x (OsScrollbar *scrollbar, gint x);
 static gint os_scrollbar_sanitize_y (OsScrollbar *scrollbar, gint y);
 static void os_scrollbar_store_window_position (OsScrollbar *scrollbar);
 static void os_scrollbar_swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
-static void os_scrollbar_swap_parent (OsScrollbar *scrollbar, GtkWidget *parent);
 static void os_scrollbar_swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
 static gboolean thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
@@ -104,8 +101,6 @@ static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_state (OsScrollbar *scrollbar);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
-static void parent_realize_cb (GtkWidget *widget, gpointer user_data);
-static void parent_unrealize_cb (GtkWidget *widget, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
 static gboolean toplevel_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
@@ -481,7 +476,7 @@ os_scrollbar_store_window_position (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  gdk_window_get_origin (gtk_widget_get_window (priv->parent), &win_x, &win_y);
+  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &win_x, &win_y);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -524,38 +519,6 @@ os_scrollbar_swap_adjustment (OsScrollbar   *scrollbar,
                         G_CALLBACK (adjustment_changed_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->adjustment), "value-changed",
                         G_CALLBACK (adjustment_value_changed_cb), scrollbar);
-    }
-}
-
-/* Swap the parent pointer. */
-static void
-os_scrollbar_swap_parent (OsScrollbar *scrollbar,
-                          GtkWidget   *parent)
-{
-  OsScrollbarPrivate *priv;
-
-  priv = scrollbar->priv;
-
-  if (priv->parent != NULL)
-    {
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
-                                            G_CALLBACK (parent_realize_cb), scrollbar);
-      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->parent),
-                                            G_CALLBACK (parent_unrealize_cb), scrollbar);
-
-      g_object_unref (priv->parent);
-    }
-
-  priv->parent = parent;
-
-  if (priv->parent != NULL)
-    {
-      g_object_ref_sink (priv->parent);
-
-      g_signal_connect (G_OBJECT (priv->parent), "realize",
-                        G_CALLBACK (parent_realize_cb), scrollbar);
-      g_signal_connect (G_OBJECT (priv->parent), "unrealize",
-                        G_CALLBACK (parent_unrealize_cb), scrollbar);
     }
 }
 
@@ -628,9 +591,8 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           scrollbar = OS_SCROLLBAR (user_data);
           priv = scrollbar->priv;
 
-/*          os_scrollbar_map (widget);*/
-          gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (priv->parent)));
-          os_present_gdk_window_with_timestamp (priv->parent, event->time);
+          gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
+          os_present_gdk_window_with_timestamp (GTK_WIDGET (scrollbar), event->time);
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
@@ -752,7 +714,7 @@ thumb_map_cb (GtkWidget *widget,
   priv = scrollbar->priv;
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (priv->thumb));
-  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (priv->parent));
+  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
 
   changes.sibling = xid_parent;
@@ -818,7 +780,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  /* XXX improve speed by not rendering when moving */
   if (priv->button_press_event)
     {
       gint x, y;
@@ -953,8 +914,8 @@ pager_set_state (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  if (gdk_screen_get_active_window (gtk_widget_get_screen (priv->parent)) !=
-      gtk_widget_get_window (priv->parent))
+  if (gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))) !=
+      gtk_widget_get_window (GTK_WIDGET (scrollbar)))
     os_pager_set_active (OS_PAGER (priv->pager), FALSE);
   else
     os_pager_set_active (OS_PAGER (priv->pager), TRUE);
@@ -1021,59 +982,6 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   pager_move (scrollbar);
 }
 
-static void
-parent_realize_cb (GtkWidget *widget,
-                   gpointer   user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
-
-  if (priv->filter == FALSE && priv->proximity == TRUE)
-    {
-      priv->filter =  TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
-    }
-
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "configure-event",
-                    G_CALLBACK (toplevel_configure_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (priv->parent)), "leave-notify-event",
-                    G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
-
-  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
-
-  os_pager_set_parent (OS_PAGER (priv->pager), priv->parent);
-
-  os_scrollbar_store_window_position (scrollbar);
-}
-
-static void
-parent_unrealize_cb (GtkWidget *widget,
-                     gpointer   user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
-
-  /* FIXME(Cimi) check if
-   * gtk_widget_get_window (priv->parent) and
-   * gtk_widget_get_toplevel (priv->parent))
-   * are ready to use, otherwise we might need to store them in priv */
-
-  gdk_window_remove_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
-
-  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (priv->parent)),
-                                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
-  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (priv->parent)),
-                                        G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
-
-  os_pager_set_parent (OS_PAGER (priv->pager), NULL);
-}
-
 static gboolean
 toplevel_configure_event_cb (GtkWidget         *widget,
                              GdkEventConfigure *event,
@@ -1112,7 +1020,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   priv = scrollbar->priv;
   xevent = gdkxevent;
 
-  g_return_val_if_fail (priv->parent != NULL, GDK_FILTER_CONTINUE);
   g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
   g_return_val_if_fail (priv->thumb != NULL, GDK_FILTER_CONTINUE);
 
@@ -1135,7 +1042,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                       x = priv->thumb_all.x;
                       y = CLAMP (xevent->xmotion.y - priv->slider.height / 2,
@@ -1150,7 +1057,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     }
 
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
-/*                  os_scrollbar_map (GTK_WIDGET (scrollbar));*/
                 }
               else
                 {
@@ -1171,7 +1077,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     {
                       gint x, y, x_pos, y_pos;
 
-                      gdk_window_get_origin (gtk_widget_get_window (priv->parent), &x_pos, &y_pos);
+                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                       x = CLAMP (xevent->xmotion.x - priv->slider.width / 2,
                                  priv->thumb_all.x + priv->overlay.x,
@@ -1186,7 +1092,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     }
 
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
-/*                  os_scrollbar_map (GTK_WIDGET (scrollbar));*/
                 }
               else
                 {
@@ -1204,8 +1109,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   /* code to check if the window is active */
   if (xevent->type == PropertyNotify)
     {
-      if (gdk_screen_get_active_window (gtk_widget_get_screen (priv->parent)) !=
-          gtk_widget_get_window (priv->parent))
+      if (gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))) !=
+          gtk_widget_get_window (GTK_WIDGET (scrollbar)))
         {
           gtk_widget_hide (GTK_WIDGET (priv->thumb));
           os_pager_set_active (OS_PAGER (priv->pager), FALSE);
@@ -1255,7 +1160,6 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class->hide          = os_scrollbar_hide;
   widget_class->map           = os_scrollbar_map;
   widget_class->realize       = os_scrollbar_realize;
-  widget_class->parent_set    = os_scrollbar_parent_set;
   widget_class->show          = os_scrollbar_show;
   widget_class->size_allocate = os_scrollbar_size_allocate;
   widget_class->unmap         = os_scrollbar_unmap;
@@ -1308,7 +1212,6 @@ os_scrollbar_finalize (GObject *object)
   priv = scrollbar->priv;
 
   os_scrollbar_swap_adjustment (scrollbar, NULL);
-  os_scrollbar_swap_parent (scrollbar, NULL);
   os_scrollbar_swap_thumb (scrollbar, NULL);
 
   if (priv->pager != NULL)
@@ -1357,73 +1260,40 @@ os_scrollbar_map (GtkWidget *widget)
   if (priv->fullsize == FALSE)
     os_pager_show (OS_PAGER (priv->pager));
 
-  if (gtk_widget_get_realized (priv->parent) && priv->filter == FALSE)
+  if (gtk_widget_get_realized (widget) && priv->filter == FALSE)
     {
       priv->filter = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
+      gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
     }
-
-#if 0
-  Display *display;
-  GtkWidget *parent;
-  XWindowChanges changes;
-  guint32 xid, xid_parent;
-  unsigned int value_mask = CWSibling | CWStackMode;
-  int res;
-
-  parent = gtk_widget_get_parent (widget);
-
-  xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
-  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (parent));
-  display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (widget));
-
-  changes.sibling = xid_parent;
-  changes.stack_mode = Above;
-
-  gdk_error_trap_push ();
-  XConfigureWindow (display, xid, value_mask, &changes);
-
-  gdk_flush ();
-  if ((res = gdk_error_trap_pop ()))
-    {
-      XEvent event;
-      Window xroot = gdk_x11_get_default_root_xwindow ();
-
-      /* Synthetic ConfigureRequest (so it looks to the window manager
-       * like a normal ConfigureRequest) so it can handle that
-       * and *actually* Configure the window without errors
-       */
-      event.type = ConfigureRequest;
-      
-      /* The WM will know the event is synthetic since the send_event
-       * field is always set */
-      event.xconfigurerequest.window = xid;
-      event.xconfigurerequest.parent = xid_parent;
-      event.xconfigurerequest.detail = changes.stack_mode;
-      event.xconfigurerequest.above = changes.sibling;
-      event.xconfigurerequest.value_mask = value_mask;
-
-      /* Sends the event to the root window (which the WM has the Selection
-       * on) so now Compiz will get a ConfigureRequest for the scrollbar
-       * to stack relative to the reparented window */
-      XSendEvent (display, xroot, FALSE, SubstructureRedirectMask | SubstructureNotifyMask, &event);
-
-      g_warning ("Received X error: %d, working around\n", res);
-    }
-#endif
-}
-
-static void
-os_scrollbar_parent_set (GtkWidget *widget,
-                         GtkWidget *old_parent)
-{
-  os_scrollbar_swap_parent (OS_SCROLLBAR (widget), gtk_widget_get_parent (widget));
 }
 
 static void
 os_scrollbar_realize (GtkWidget *widget)
 {
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
+
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
+
+  if (priv->filter == FALSE && priv->proximity == TRUE)
+    {
+      priv->filter =  TRUE;
+      gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+    }
+
+  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
+                    G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "leave-notify-event",
+                    G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
+
+  os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
+
+  os_pager_set_parent (OS_PAGER (priv->pager), widget);
+
+  os_scrollbar_store_window_position (scrollbar);
 }
 
 static void
@@ -1513,10 +1383,10 @@ os_scrollbar_unmap (GtkWidget *widget)
 
   gtk_widget_hide (priv->thumb);
 
-  if (gtk_widget_get_realized (priv->parent) && priv->filter == TRUE)
+  if (gtk_widget_get_realized (widget) && priv->filter == TRUE)
     {
       priv->filter = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (priv->parent), toplevel_filter_func, scrollbar);
+      gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
     }
 }
 
@@ -1530,6 +1400,15 @@ os_scrollbar_unrealize (GtkWidget *widget)
   priv = scrollbar->priv;
 
   gtk_widget_hide (priv->thumb);
+
+  gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+
+  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
+                                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
+                                        G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
+
+  os_pager_set_parent (OS_PAGER (priv->pager), NULL);
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
