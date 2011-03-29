@@ -109,8 +109,7 @@ static gboolean toplevel_leave_notify_event_cb (GtkWidget *widget, GdkEventCross
 
 /* Present a X11 window. */
 static void
-os_present_window_with_timestamp (Display *default_display,
-                                  Screen  *screen,
+os_present_window_with_timestamp (Screen  *screen,
                                   gint     xid,
                                   guint32  timestamp)
 {
@@ -139,12 +138,13 @@ os_present_window_with_timestamp (Display *default_display,
   xev.xclient.data.l[4] = 0;
 
   gdk_error_trap_push ();
-  XSendEvent (display,
-              root,
-              False,
+
+  XSendEvent (display, root, False,
               SubstructureRedirectMask | SubstructureNotifyMask,
               &xev);
-  XSync (default_display, False);
+
+  gdk_flush ();
+
   gdk_error_trap_pop ();
 }
 
@@ -153,8 +153,7 @@ static void
 os_present_gdk_window_with_timestamp (GtkWidget *widget,
                                       guint32    timestamp)
 {
-  os_present_window_with_timestamp (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
-                                    GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
+  os_present_window_with_timestamp (GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
                                     GDK_WINDOW_XID (gtk_widget_get_window (widget)),
                                     timestamp);
 }
