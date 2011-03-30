@@ -1,4 +1,4 @@
-overlay-scrollbar (0.1.5-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.1.5-0ubuntu1) natty; urgency=low
 
   * New upstream release.
     - Compiz: make it sibling of the parent toplevel window (LP: #728412)
