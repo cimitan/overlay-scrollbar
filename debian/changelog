@@ -1,3 +1,15 @@
+overlay-scrollbar (0.1.5-0ubuntu1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - Compiz: make it sibling of the parent toplevel window (LP: #728412)
+    - Rendering error on multiple monitors (LP: #736992)
+    - overlay scrollbar thumbs not hidden if different window has 
+      focus (LP: #743229)
+    - Scrollbar stays on top after closing window (LP: #744431)
+    - use proper allocation, not from the parent (LP: #741885)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 30 Mar 2011 14:29:24 -0400
+
 overlay-scrollbar (0.1.4-0ubuntu2) natty; urgency=low
 
   * debian/control

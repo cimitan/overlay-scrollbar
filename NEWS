@@ -1,3 +1,19 @@
+overlay-scrollbar 0.1.5 (March 30, 2011)
+----------------------------------------
+
+* Performance tweaks
+
+* Bugs fixed:
+ 728412 Compiz: make it sibling of the parent toplevel window
+ 736992 Rendering error on multiple monitors
+ 743229 overlay scrollbar thumbs not hidden if different window has focus
+ 744431 Scrollbar stays on top after closing window
+ 741885 use proper allocation, not from the parent
+
+* Contributors:
+ Andrea Azzarone <aazzarone@hotmail.it>
+
+
 overlay-scrollbar 0.1.4 (March 23, 2011)
 ----------------------------------------
 
