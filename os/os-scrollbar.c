@@ -467,8 +467,8 @@ os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
   screen_height = rect.y + rect.height;
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-      (n_monitor != gdk_screen_get_monitor_at_point (screen, y + priv->slider.height, y) ||
-      (y + priv->slider.height) > screen_height))
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y + priv->slider.height) ||
+       (y + priv->slider.height) >= screen_height))
     return y - DEFAULT_PAGER_WIDTH - priv->slider.height;
 
   return y;
