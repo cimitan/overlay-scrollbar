@@ -26,10 +26,6 @@
 
 #include "os-private.h"
 
-/* Default size of the thumb in pixels. */
-#define DEFAULT_THUMB_WIDTH  15
-#define DEFAULT_THUMB_HEIGHT 80
-
 struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
