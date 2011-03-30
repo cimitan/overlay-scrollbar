@@ -85,8 +85,8 @@ static void os_scrollbar_move (OsScrollbar *scrollbar, gint mouse_x, gint mouse_
 static void os_scrollbar_move_thumb (OsScrollbar *scrollbar, gint x, gint y);
 static void os_scrollbar_notify_adjustment_cb (GObject *object, gpointer user_data);
 static void os_scrollbar_notify_orientation_cb (GObject *object, gpointer user_data);
-static gint os_scrollbar_sanitize_x (OsScrollbar *scrollbar, gint x);
-static gint os_scrollbar_sanitize_y (OsScrollbar *scrollbar, gint y);
+static gint os_scrollbar_sanitize_x (OsScrollbar *scrollbar, gint x, gint y);
+static gint os_scrollbar_sanitize_y (OsScrollbar *scrollbar, gint x, gint y);
 static void os_scrollbar_store_window_position (OsScrollbar *scrollbar);
 static void os_scrollbar_swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
 static void os_scrollbar_swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
@@ -390,8 +390,8 @@ os_scrollbar_move_thumb (OsScrollbar *scrollbar,
   priv = scrollbar->priv;
 
   gtk_window_move (GTK_WINDOW (priv->thumb),
-                   os_scrollbar_sanitize_x (scrollbar, x),
-                   os_scrollbar_sanitize_y (scrollbar, y));
+                   os_scrollbar_sanitize_x (scrollbar, x, y),
+                   os_scrollbar_sanitize_y (scrollbar, x, y));
 }
 
 static void
@@ -424,21 +424,25 @@ os_scrollbar_notify_orientation_cb (GObject *object,
 
 static gint
 os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
-                         gint         x)
+                         gint         x,
+                         gint         y)
 {
+  GdkRectangle rect;
   OsScrollbarPrivate *priv;
-  gint screen_width;
-
+  gint screen_width, n_monitor;
+  GdkScreen *screen;
+  
   priv = scrollbar->priv;
 
-  /* FIXME we could store screen_width in priv
-   * and change it at screen-changed signal */
-  screen_width = gdk_screen_get_width (gtk_widget_get_screen (GTK_WIDGET (scrollbar)));
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 
-  /* FIXME we could apply a static offest we
-   * set in size-allocate and configure-event */
+  screen_width = rect.x + rect.width;
+
   if (priv->orientation == GTK_ORIENTATION_VERTICAL &&
-      (x + priv->slider.width > screen_width))
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x + priv->slider.width, y) ||
+       (x + priv->slider.width) >= screen_width))
     return x - DEFAULT_PAGER_WIDTH - priv->slider.width;
 
   return x;
@@ -446,21 +450,25 @@ os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
 
 static gint
 os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
+                         gint         x,
                          gint         y)
 {
+  GdkRectangle rect;
   OsScrollbarPrivate *priv;
-  gint screen_height;
-
+  gint screen_height, n_monitor;
+  GdkScreen *screen;
+  
   priv = scrollbar->priv;
 
-  /* FIXME we could store screen_height in priv
-   * and change it at screen-changed signal */
-  screen_height = gdk_screen_get_height (gtk_widget_get_screen (GTK_WIDGET (scrollbar)));
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+  
+  screen_height = rect.y + rect.height;
 
-  /* FIXME we could apply a static offest we
-   * set in size-allocate and configure-event */
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-      (y + priv->slider.height > screen_height))
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y + priv->slider.height) ||
+       (y + priv->slider.height) >= screen_height))
     return y - DEFAULT_PAGER_WIDTH - priv->slider.height;
 
   return y;
