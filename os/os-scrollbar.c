@@ -56,7 +56,6 @@ struct _OsScrollbarPrivate
   gboolean proximity;
   gboolean filter;
   gboolean can_hide;
-  gboolean can_rgba;
   gint win_x;
   gint win_y;
   gint slide_initial_slider_position;
@@ -1189,7 +1188,6 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv = scrollbar->priv;
 
   priv->can_hide = TRUE;
-  priv->can_rgba = FALSE;
   priv->fullsize = FALSE;
   priv->proximity = FALSE;
   priv->filter = FALSE;
