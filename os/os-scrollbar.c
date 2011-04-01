@@ -55,6 +55,7 @@ struct _OsScrollbarPrivate
   gboolean fullsize;
   gboolean proximity;
   gboolean filter;
+  gboolean can_deactivate_pager;
   gboolean can_hide;
   gint win_x;
   gint win_y;
@@ -78,6 +79,8 @@ static void os_scrollbar_finalize (GObject *object);
 static void os_scrollbar_calc_layout_pager (OsScrollbar *scrollbar, gdouble adjustment_value);
 static void os_scrollbar_calc_layout_slider (OsScrollbar *scrollbar, gdouble adjustment_value);
 static gdouble os_scrollbar_coord_to_value (OsScrollbar *scrollbar, gint coord);
+static void os_scrollbar_deactivate_pager (OsScrollbar *scrollbar);
+static gboolean os_scrollbar_deactivate_pager_cb (gpointer user_data);
 static void os_scrollbar_hide_thumb (OsScrollbar *scrollbar);
 static gboolean os_scrollbar_hide_thumb_cb (gpointer user_data);
 static void os_scrollbar_move (OsScrollbar *scrollbar, gint mouse_x, gint mouse_y);
@@ -97,7 +100,7 @@ static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
-static void pager_set_state (OsScrollbar *scrollbar);
+static void pager_set_state_from_pointer (OsScrollbar *scrollbar, gint x, gint y);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
@@ -327,6 +330,29 @@ os_scrollbar_coord_to_value (OsScrollbar *scrollbar,
   value = CLAMP (value, priv->adjustment->lower, priv->adjustment->upper - priv->adjustment->page_size);
 
   return value;
+}
+
+/* Deactivate pager if it's ok to make it inactive. */
+static void
+os_scrollbar_deactivate_pager (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  if (priv->can_deactivate_pager)
+    os_pager_set_active (OS_PAGER (priv->pager), FALSE);
+}
+
+static gboolean
+os_scrollbar_deactivate_pager_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
+
+  os_scrollbar_deactivate_pager (scrollbar);
+  g_object_unref (scrollbar);
+
+  return FALSE;
 }
 
 /* Hide if it's ok to hide. */
@@ -679,6 +705,7 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   priv = scrollbar->priv;
 
   priv->enter_notify_event = TRUE;
+  priv->can_deactivate_pager = FALSE;
   priv->can_hide = FALSE;
 
   return FALSE;
@@ -696,8 +723,13 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   priv = scrollbar->priv;
 
   if (!priv->button_press_event)
-    priv->can_hide = TRUE;
+    {
+      priv->can_deactivate_pager = TRUE;
+      priv->can_hide = TRUE;
+    }
 
+  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_deactivate_pager_cb,
+                 g_object_ref (scrollbar));
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
@@ -914,17 +946,28 @@ pager_move (OsScrollbar *scrollbar)
 }
 
 static void
-pager_set_state (OsScrollbar *scrollbar)
+pager_set_state_from_pointer (OsScrollbar *scrollbar,
+                              gint x,
+                              gint y)
 {
+  GtkAllocation allocation;
   OsScrollbarPrivate *priv;
 
   priv = scrollbar->priv;
 
-  if (gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))) !=
-      gtk_widget_get_window (GTK_WIDGET (scrollbar)))
-    os_pager_set_active (OS_PAGER (priv->pager), FALSE);
+  gtk_widget_get_allocation (gtk_widget_get_parent (GTK_WIDGET (scrollbar)), &allocation);
+
+  if ((x > allocation.x && x < allocation.x + allocation.width) &&
+      (y > allocation.y && y < allocation.y + allocation.height))
+    {
+      priv->can_deactivate_pager = FALSE;
+      os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+    }
   else
-    os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+    {
+      priv->can_deactivate_pager = TRUE;
+      os_scrollbar_deactivate_pager (scrollbar);
+    }
 }
 
 static void
@@ -995,9 +1038,14 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
+  gint x, y;
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
+
+  gtk_widget_get_pointer (widget, &x, &y);
+
+  pager_set_state_from_pointer (scrollbar, x, y);
 
   if (!priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
@@ -1035,6 +1083,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
+          pager_set_state_from_pointer (scrollbar, xevent->xmotion.x, xevent->xmotion.y);
+
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1113,19 +1163,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       return GDK_FILTER_CONTINUE;
     }
 
-  /* code to check if the window is active */
-  if (xevent->type == PropertyNotify)
-    {
-      if (gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))) !=
-          gtk_widget_get_window (GTK_WIDGET (scrollbar)))
-        {
-          gtk_widget_hide (GTK_WIDGET (priv->thumb));
-          os_pager_set_active (OS_PAGER (priv->pager), FALSE);
-        }
-      else
-        os_pager_set_active (OS_PAGER (priv->pager), TRUE);
-    }
-
   return GDK_FILTER_CONTINUE;
 }
 
@@ -1141,8 +1178,11 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  priv->can_deactivate_pager = TRUE;
   priv->can_hide = TRUE;
 
+  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_deactivate_pager_cb,
+                 g_object_ref (scrollbar));
   g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
@@ -1188,6 +1228,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
                                                  OsScrollbarPrivate);
   priv = scrollbar->priv;
 
+  priv->can_deactivate_pager = TRUE;
   priv->can_hide = TRUE;
   priv->fullsize = FALSE;
   priv->proximity = FALSE;
@@ -1253,6 +1294,7 @@ os_scrollbar_map (GtkWidget *widget)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
+  gint x, y;
 
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
@@ -1261,7 +1303,9 @@ os_scrollbar_map (GtkWidget *widget)
 
   priv->proximity = TRUE;
 
-  pager_set_state (scrollbar);
+  gtk_widget_get_pointer (gtk_widget_get_toplevel (widget), &x, &y);
+
+  pager_set_state_from_pointer (scrollbar, x, y);
 
   if (priv->fullsize == FALSE)
     os_pager_show (OS_PAGER (priv->pager));

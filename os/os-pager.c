@@ -111,6 +111,8 @@ os_pager_draw (OsPager *pager)
 
   style = gtk_widget_get_style (priv->parent);
 
+  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
+
   gdk_window_set_background (priv->pager_window,
                              priv->active ? &style->base[GTK_STATE_SELECTED] :
                                             &style->base[GTK_STATE_INSENSITIVE]);
