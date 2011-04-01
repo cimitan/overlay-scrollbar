@@ -28,6 +28,8 @@
 #include <gdk/gdkx.h>
 #include "os-private.h"
 
+/* Timeout of the fade */
+#define TIMEOUT_FADE 34
 
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
@@ -36,6 +38,7 @@ struct _OsPagerPrivate {
   GdkRectangle allocation;
   gboolean active;
   gboolean visible;
+  gint frame;
   gint width;
   gint height;
 };
@@ -43,6 +46,7 @@ struct _OsPagerPrivate {
 static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
+static gboolean os_pager_change_state_cb (gpointer user_data);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
 static void os_pager_mask (OsPager *pager);
@@ -100,20 +104,65 @@ os_pager_create (OsPager *pager)
     }
 }
 
+static gboolean
+os_pager_change_state_cb (gpointer user_data)
+{
+  OsPager *pager;
+  OsPagerPrivate *priv;
+
+  pager = OS_PAGER (user_data);
+
+  priv = pager->priv;
+
+  if (priv->frame < 0)
+    {
+      g_object_unref (pager);
+      return FALSE;
+    }
+
+  os_pager_draw (pager);
+
+  if (priv->active == TRUE)
+    priv->frame -= 20;
+  else
+    priv->frame -= 10;
+
+  return TRUE;
+}
+
 /* Draw on the pager. */
 static void
 os_pager_draw (OsPager *pager)
 {
-  OsPagerPrivate *priv;
+  GdkColor c1, c2, color;
   GtkStyle *style;
+  OsPagerPrivate *priv;
+  gdouble l;
 
   priv = pager->priv;
 
   style = gtk_widget_get_style (priv->parent);
 
-  gdk_window_set_background (priv->pager_window,
-                             priv->active ? &style->base[GTK_STATE_SELECTED] :
-                                            &style->base[GTK_STATE_INSENSITIVE]);
+  if (priv->active == TRUE)
+    {
+      c1 = style->base[GTK_STATE_INSENSITIVE];
+      c2 = style->base[GTK_STATE_SELECTED];
+    }
+  else
+    {
+      c1 = style->base[GTK_STATE_SELECTED];
+      c2 = style->base[GTK_STATE_INSENSITIVE];
+    }
+
+  l = (gdouble) priv->frame / 100;
+
+  color.red   = l * c1.red   + (1.0 - l) * c2.red;
+  color.green = l * c1.green + (1.0 - l) * c2.green;
+  color.blue  = l * c1.blue  + (1.0 - l) * c2.blue;
+
+  gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
+
+  gdk_window_set_background (priv->pager_window, &color);
 
   gdk_window_clear (priv->pager_window);
 }
@@ -277,9 +326,14 @@ os_pager_set_active (OsPager *pager,
       priv->active = active;
 
       if (priv->parent == NULL)
-        return;
+        {
+          priv->frame = 0;
+          return;
+        }
 
-      os_pager_draw (pager);
+      priv->frame = 100;
+
+      g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, g_object_ref (pager));
     }
 }
 
