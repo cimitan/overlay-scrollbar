@@ -32,13 +32,14 @@
 #define TIMEOUT_FADE 34
 
 /* Max lenght of the fade */
-#define MAX_LENGHT_FADE 1000000
+#define MAX_LENGHT_FADE 1000
 
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
   GtkWidget *parent;
   GdkRectangle mask;
   GdkRectangle allocation;
+  OsAnimation *animation;
   gboolean active;
   gboolean visible;
   gint fade_id;
@@ -226,13 +227,14 @@ os_pager_init (OsPager *pager)
 static void
 os_pager_dispose (GObject *object)
 {
-/*  OsPager *pager;*/
-/*  OsPagerPrivate *priv;*/
+  OsPager *pager;
+  OsPagerPrivate *priv;
 
-/*  pager = OS_PAGER (object);*/
-/*  priv = pager->priv;*/
+  pager = OS_PAGER (object);
+  priv = pager->priv;
 
-/*  os_animation_stop (*/
+  if (priv->animation != NULL)
+    os_animation_stop (priv->animation);
 
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
@@ -336,17 +338,8 @@ os_pager_set_active (OsPager *pager,
           return;
         }
 
-      os_animation_spawn_animation (34, 2000, os_pager_change_state_cb, NULL, pager);
-
-/*      priv->fade_start_time = g_get_monotonic_time ();*/
-
-/*      if (priv->fade_id)*/
-/*        g_source_remove (priv->fade_id);*/
-
-      /* counter for frames, decreases till 0 */
-/*      priv->frame = 100;*/
-
-/*      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, pager);*/
+      priv->animation = os_animation_spawn_animation (TIMEOUT_FADE, MAX_LENGHT_FADE,
+                                                      os_pager_change_state_cb, NULL, pager);
     }
 }
 
