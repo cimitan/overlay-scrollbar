@@ -123,7 +123,6 @@ os_pager_change_state_cb (gpointer user_data)
   if (priv->frame < 0)
     {
       priv->fade_id = 0;
-      g_object_unref (pager);
       return FALSE;
     }
 
@@ -363,7 +362,7 @@ os_pager_set_active (OsPager *pager,
       /* counter for frames, decreases till 0 */
       priv->frame = 100;
 
-      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, g_object_ref (pager));
+      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, pager);
     }
 }
 
