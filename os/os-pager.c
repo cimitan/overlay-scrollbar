@@ -220,6 +220,8 @@ os_pager_init (OsPager *pager)
 
   priv->active = FALSE;
   priv->visible = FALSE;
+
+  priv->weight = 1.0f;
 }
 
 static void
@@ -331,10 +333,7 @@ os_pager_set_active (OsPager *pager,
       priv->active = active;
 
       if (priv->parent == NULL)
-        {
-          priv->weight = 0;
-          return;
-        }
+        return;
 
       priv->animation = os_animation_spawn_animation (TIMEOUT_FADE, MAX_LENGHT_FADE,
                                                       os_pager_change_state_cb, NULL, pager);
@@ -368,6 +367,8 @@ os_pager_set_parent (OsPager   *pager,
   if (priv->parent != NULL)
     {
       g_object_ref_sink (priv->parent);
+
+      priv->weight = 1.0f;
 
       os_pager_create (pager);
       os_pager_draw (pager);
