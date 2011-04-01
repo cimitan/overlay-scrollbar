@@ -42,11 +42,9 @@ struct _OsPagerPrivate {
   OsAnimation *animation;
   gboolean active;
   gboolean visible;
-  gint fade_id;
   gfloat weight;
   gint width;
   gint height;
-  gint64 fade_start_time;
 };
 
 static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
@@ -133,7 +131,7 @@ os_pager_draw (OsPager *pager)
   GdkColor c1, c2, color;
   GtkStyle *style;
   OsPagerPrivate *priv;
-  gdouble l;
+  gfloat weight;
 
   priv = pager->priv;
 
@@ -150,11 +148,11 @@ os_pager_draw (OsPager *pager)
       c2 = style->base[GTK_STATE_INSENSITIVE];
     }
 
-  l = priv->weight;
+  weight = priv->weight;
 
-  color.red   = l * c1.red   + (1.0 - l) * c2.red;
-  color.green = l * c1.green + (1.0 - l) * c2.green;
-  color.blue  = l * c1.blue  + (1.0 - l) * c2.blue;
+  color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
+  color.green = weight * c1.green + (1.0 - weight) * c2.green;
+  color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
 
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
 
