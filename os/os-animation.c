@@ -42,14 +42,20 @@ os_animation_cb (gpointer user_data)
       gfloat weight;
 
       if (current_time < end_time)
-        weight = (gfloat) (current_time - animation->start_time) / animation->duration;
+        {
+          weight = (gfloat) (current_time - animation->start_time) / animation->duration;
+          animation->update_func (weight, animation->user_data);
+        }
       else
         {
           weight = 1.0f;
+          animation->update_func (weight, animation->user_data);
+
+          if (animation->end_func != NULL)
+            animation->end_func (animation->user_data);
+
           stopped = TRUE;
         }
-
-      animation->update_func (weight, animation->user_data);
     }
 
   /* Clean up the animation and remove the source from the mainloop if the
@@ -66,7 +72,7 @@ os_animation_cb (gpointer user_data)
 /* Public functions. */
 
 /**
- * os_animation_spawn_animation:
+ * os_animation_spawn:
  * @rate: rate of the update
  * @duration: duration of the animation
  * @update_func: function to call on update
@@ -78,11 +84,11 @@ os_animation_cb (gpointer user_data)
  * Returns: the pointer to the #OsAnimation
  */
 OsAnimation*
-os_animation_spawn_animation (gint32 rate,
-                              gint32 duration,
-                              OsAnimationUpdateFunc update_func,
-                              OsAnimationEndFunc end_func,
-                              gpointer user_data)
+os_animation_spawn (gint32 rate,
+                    gint32 duration,
+                    OsAnimationUpdateFunc update_func,
+                    OsAnimationEndFunc end_func,
+                    gpointer user_data)
 {
   OsAnimation* animation;
 
@@ -113,5 +119,7 @@ os_animation_spawn_animation (gint32 rate,
 void
 os_animation_stop (OsAnimation* animation)
 {
+  g_return_if_fail (animation != NULL);
+
   animation->stopped = TRUE;
 }

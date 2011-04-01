@@ -109,11 +109,11 @@ struct _OsAnimation {
   gboolean stopped;
 };
 
-OsAnimation* os_animation_spawn_animation (gint32 rate,
-                                           gint32 duration,
-                                           OsAnimationUpdateFunc update_func,
-                                           OsAnimationEndFunc end_func,
-                                           gpointer user_data);
+OsAnimation* os_animation_spawn (gint32 rate,
+                                 gint32 duration,
+                                 OsAnimationUpdateFunc update_func,
+                                 OsAnimationEndFunc end_func,
+                                 gpointer user_data);
 
 void         os_animation_stop            (OsAnimation* animation);
 

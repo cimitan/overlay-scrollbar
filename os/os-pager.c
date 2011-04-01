@@ -335,8 +335,8 @@ os_pager_set_active (OsPager *pager,
       if (priv->parent == NULL)
         return;
 
-      priv->animation = os_animation_spawn_animation (TIMEOUT_FADE, MAX_LENGHT_FADE,
-                                                      os_pager_change_state_cb, NULL, pager);
+      priv->animation = os_animation_spawn (TIMEOUT_FADE, MAX_LENGHT_FADE,
+                                            os_pager_change_state_cb, NULL, pager);
     }
 }
 
