@@ -31,6 +31,9 @@
 /* Timeout of the fade */
 #define TIMEOUT_FADE 34
 
+/* Max lenght of the fade */
+#define MAX_LENGHT_FADE 1000000
+
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
   GtkWidget *parent;
@@ -38,9 +41,11 @@ struct _OsPagerPrivate {
   GdkRectangle allocation;
   gboolean active;
   gboolean visible;
+  gint fade_id;
   gint frame;
   gint width;
   gint height;
+  gint64 fade_start_time;
 };
 
 static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
@@ -109,6 +114,7 @@ os_pager_change_state_cb (gpointer user_data)
 {
   OsPager *pager;
   OsPagerPrivate *priv;
+  gint64 diff;
 
   pager = OS_PAGER (user_data);
 
@@ -116,12 +122,19 @@ os_pager_change_state_cb (gpointer user_data)
 
   if (priv->frame < 0)
     {
+      priv->fade_id = 0;
       g_object_unref (pager);
       return FALSE;
     }
 
+  diff = g_get_monotonic_time () - priv->fade_start_time;
+
+  if (diff > MAX_LENGHT_FADE)
+    priv->frame = 0;
+
   os_pager_draw (pager);
 
+  /* frame drop */
   if (priv->active == TRUE)
     priv->frame -= 20;
   else
@@ -161,6 +174,8 @@ os_pager_draw (OsPager *pager)
   color.blue  = l * c1.blue  + (1.0 - l) * c2.blue;
 
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
+
+  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 
   gdk_window_set_background (priv->pager_window, &color);
 
@@ -229,6 +244,15 @@ os_pager_init (OsPager *pager)
 static void
 os_pager_dispose (GObject *object)
 {
+  OsPager *pager;
+  OsPagerPrivate *priv;
+
+  pager = OS_PAGER (object);
+  priv = pager->priv;
+
+  if (priv->fade_id != 0)
+    g_source_remove (priv->fade_id);
+
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
 
@@ -331,9 +355,15 @@ os_pager_set_active (OsPager *pager,
           return;
         }
 
+      priv->fade_start_time = g_get_monotonic_time ();
+
+      if (priv->fade_id)
+        g_source_remove (priv->fade_id);
+
+      /* counter for frames, decreases till 0 */
       priv->frame = 100;
 
-      g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, g_object_ref (pager));
+      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, g_object_ref (pager));
     }
 }
 
