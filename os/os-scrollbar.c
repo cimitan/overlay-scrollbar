@@ -999,7 +999,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  if (!priv->button_press_event && !priv->enter_notify_event)
+  if (!priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
 
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
