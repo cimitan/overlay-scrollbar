@@ -93,6 +93,30 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 #define OS_DCHECK(cond)
 #endif
 
+/* os-animation.c */
+
+typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
+typedef void (*OsAnimationEndFunc) (gpointer user_data);
+
+typedef struct _OsAnimation OsAnimation;
+
+struct _OsAnimation {
+  OsAnimationUpdateFunc update_func;
+  OsAnimationEndFunc end_func;
+  gpointer user_data;
+  gint64 start_time;
+  gint64 duration;
+  gboolean stopped;
+};
+
+OsAnimation* os_animation_spawn_animation (gint32 rate,
+                                           gint32 duration,
+                                           OsAnimationUpdateFunc update_func,
+                                           OsAnimationEndFunc end_func,
+                                           gpointer user_data);
+
+void         os_animation_stop            (OsAnimation* animation);
+
 /* os-thumb.c */
 
 #define OS_TYPE_THUMB (os_thumb_get_type ())
@@ -172,6 +196,7 @@ void     os_pager_show          (OsPager *overlay);
 
 void     os_pager_size_allocate (OsPager     *overlay,
                                  GdkRectangle rectangle);
+
 
 G_END_DECLS
 

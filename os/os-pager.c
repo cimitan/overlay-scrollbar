@@ -42,7 +42,7 @@ struct _OsPagerPrivate {
   gboolean active;
   gboolean visible;
   gint fade_id;
-  gint frame;
+  gfloat weight;
   gint width;
   gint height;
   gint64 fade_start_time;
@@ -51,7 +51,7 @@ struct _OsPagerPrivate {
 static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
-static gboolean os_pager_change_state_cb (gpointer user_data);
+static void os_pager_change_state_cb (gfloat weight, gpointer user_data);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
 static void os_pager_mask (OsPager *pager);
@@ -109,37 +109,20 @@ os_pager_create (OsPager *pager)
     }
 }
 
-static gboolean
-os_pager_change_state_cb (gpointer user_data)
+static void
+os_pager_change_state_cb (gfloat weight,
+                          gpointer user_data)
 {
   OsPager *pager;
   OsPagerPrivate *priv;
-  gint64 diff;
 
   pager = OS_PAGER (user_data);
 
   priv = pager->priv;
 
-  if (priv->frame < 0)
-    {
-      priv->fade_id = 0;
-      return FALSE;
-    }
-
-  diff = g_get_monotonic_time () - priv->fade_start_time;
-
-  if (diff > MAX_LENGHT_FADE)
-    priv->frame = 0;
+  priv->weight = weight;
 
   os_pager_draw (pager);
-
-  /* frame drop */
-  if (priv->active == TRUE)
-    priv->frame -= 20;
-  else
-    priv->frame -= 10;
-
-  return TRUE;
 }
 
 /* Draw on the pager. */
@@ -155,7 +138,7 @@ os_pager_draw (OsPager *pager)
 
   style = gtk_widget_get_style (priv->parent);
 
-  if (priv->active == TRUE)
+  if (priv->active == FALSE)
     {
       c1 = style->base[GTK_STATE_INSENSITIVE];
       c2 = style->base[GTK_STATE_SELECTED];
@@ -166,7 +149,7 @@ os_pager_draw (OsPager *pager)
       c2 = style->base[GTK_STATE_INSENSITIVE];
     }
 
-  l = (gdouble) priv->frame / 100;
+  l = priv->weight;
 
   color.red   = l * c1.red   + (1.0 - l) * c2.red;
   color.green = l * c1.green + (1.0 - l) * c2.green;
@@ -243,14 +226,13 @@ os_pager_init (OsPager *pager)
 static void
 os_pager_dispose (GObject *object)
 {
-  OsPager *pager;
-  OsPagerPrivate *priv;
+/*  OsPager *pager;*/
+/*  OsPagerPrivate *priv;*/
 
-  pager = OS_PAGER (object);
-  priv = pager->priv;
+/*  pager = OS_PAGER (object);*/
+/*  priv = pager->priv;*/
 
-  if (priv->fade_id != 0)
-    g_source_remove (priv->fade_id);
+/*  os_animation_stop (*/
 
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
@@ -350,19 +332,21 @@ os_pager_set_active (OsPager *pager,
 
       if (priv->parent == NULL)
         {
-          priv->frame = 0;
+          priv->weight = 0;
           return;
         }
 
-      priv->fade_start_time = g_get_monotonic_time ();
+      os_animation_spawn_animation (34, 2000, os_pager_change_state_cb, NULL, pager);
 
-      if (priv->fade_id)
-        g_source_remove (priv->fade_id);
+/*      priv->fade_start_time = g_get_monotonic_time ();*/
+
+/*      if (priv->fade_id)*/
+/*        g_source_remove (priv->fade_id);*/
 
       /* counter for frames, decreases till 0 */
-      priv->frame = 100;
+/*      priv->frame = 100;*/
 
-      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, pager);
+/*      priv->fade_id = g_timeout_add (TIMEOUT_FADE, os_pager_change_state_cb, pager);*/
     }
 }
 
