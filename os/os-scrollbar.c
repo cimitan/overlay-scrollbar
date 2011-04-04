@@ -462,6 +462,8 @@ os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
   
   priv = scrollbar->priv;
 
+  /* the x - 1 coordinate shift is done 
+   * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -469,8 +471,8 @@ os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
   screen_width = rect.x + rect.width;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL &&
-      (n_monitor != gdk_screen_get_monitor_at_point (screen, x + priv->slider.width, y) ||
-       (x + priv->slider.width) >= screen_width))
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x - 1 + priv->slider.width, y) ||
+       (x - 1 + priv->slider.width) >= screen_width))
     return x - DEFAULT_PAGER_WIDTH - priv->slider.width;
 
   return x;
@@ -488,6 +490,8 @@ os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
   
   priv = scrollbar->priv;
 
+  /* the y - 1 coordinate shift is done 
+   * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -495,8 +499,8 @@ os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
   screen_height = rect.y + rect.height;
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y + priv->slider.height) ||
-       (y + priv->slider.height) >= screen_height))
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y - 1 + priv->slider.height) ||
+       (y - 1 + priv->slider.height) >= screen_height))
     return y - DEFAULT_PAGER_WIDTH - priv->slider.height;
 
   return y;
