@@ -114,7 +114,10 @@ os_animation_dispose (GObject* object)
   priv = animation->priv;
 
   if (priv->source_id != 0)
-    g_source_remove (priv->source_id);
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
 
   G_OBJECT_CLASS (os_animation_parent_class)->dispose (object);
 }
@@ -227,6 +230,7 @@ os_animation_stop (OsAnimation* animation)
     {
       if (priv->end_func != NULL)
         priv->end_func (priv->user_data);
+
       g_source_remove (priv->source_id);
       priv->source_id = 0;
     }
