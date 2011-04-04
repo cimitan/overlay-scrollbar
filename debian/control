@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 7.0.50~),
                libcairo2-dev (>= 1.10),
 Standards-Version: 3.9.1
 Section: libs
-Homepage: http://launchpad.net/overlay-scrollbar
+Homepage: http://launchpad.net/ayatana-scrollbar
 Vcs-Bzr: https://code.launchpad.net/~ubuntu-desktop/ayatana-scrollbar/ubuntu
 
 Package: liboverlay-scrollbar-0.1-0
