@@ -124,17 +124,20 @@ struct _OsAnimationClass {
   GObjectClass parent_class;
 };
 
-GType        os_animation_get_type (void);
+GType        os_animation_get_type     (void);
 
-OsAnimation* os_animation_new      (gint32 rate,
-                                    gint32 duration,
-                                    OsAnimationUpdateFunc update_func,
-                                    OsAnimationEndFunc end_func,
-                                    gpointer user_data);
+OsAnimation* os_animation_new          (gint32 rate,
+                                        gint32 duration,
+                                        OsAnimationUpdateFunc update_func,
+                                        OsAnimationEndFunc end_func,
+                                        gpointer user_data);
 
-void         os_animation_start    (OsAnimation* animation);
+void         os_animation_set_duration (OsAnimation* animation,
+                                        gint32 duration);
 
-void         os_animation_stop     (OsAnimation* animation);
+void         os_animation_start        (OsAnimation* animation);
+
+void         os_animation_stop         (OsAnimation* animation);
 
 /* os-thumb.c */
 
@@ -215,7 +218,6 @@ void     os_pager_show          (OsPager *overlay);
 
 void     os_pager_size_allocate (OsPager     *overlay,
                                  GdkRectangle rectangle);
-
 
 G_END_DECLS
 

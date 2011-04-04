@@ -166,6 +166,27 @@ os_animation_new (gint32 rate,
 }
 
 /**
+ * os_animation_set_duration:
+ * @animation: a #OsAnimation
+ * @duration: the new duration
+ *
+ * Sets the new duration of the animation
+ **/
+void
+os_animation_set_duration (OsAnimation* animation,
+                           gint32 duration)
+{
+  OsAnimationPrivate* priv;
+
+  g_return_if_fail (animation != NULL);
+  g_return_if_fail (duration != 0);
+
+  priv = animation->priv;
+
+  priv->duration = (gint64) duration * G_GINT64_CONSTANT (1000);
+}
+
+/**
  * os_animation_start:
  * @animation: a #OsAnimation
  *
