@@ -239,7 +239,11 @@ os_pager_dispose (GObject *object)
   pager = OS_PAGER (object);
   priv = pager->priv;
 
-  g_object_unref (priv->animation);
+  if (priv->animation != NULL)
+    {
+      g_object_unref (priv->animation);
+      priv->animation = NULL;
+    }
 
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
