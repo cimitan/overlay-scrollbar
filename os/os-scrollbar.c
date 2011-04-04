@@ -34,8 +34,11 @@
 /* Width of the proximity effect in pixels. */
 #define PROXIMITY_WIDTH 30
 
-/* Timeout before hiding in milliseconds. */
-#define TIMEOUT_HIDE 1000
+/* Timeout before hiding in ms, after leaving the thumb. */
+#define TIMEOUT_THUMB_HIDE 1000
+
+/* Timeout before hiding in ms, after leaving the toplevel. */
+#define TIMEOUT_TOPLEVEL_HIDE 200
 
 struct _OsScrollbarPrivate
 {
@@ -728,9 +731,9 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
       priv->can_hide = TRUE;
     }
 
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_deactivate_pager_cb,
+  g_timeout_add (TIMEOUT_THUMB_HIDE, os_scrollbar_deactivate_pager_cb,
                  g_object_ref (scrollbar));
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
+  g_timeout_add (TIMEOUT_THUMB_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
   return FALSE;
@@ -1181,9 +1184,9 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   priv->can_deactivate_pager = TRUE;
   priv->can_hide = TRUE;
 
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_deactivate_pager_cb,
+  g_timeout_add (TIMEOUT_TOPLEVEL_HIDE, os_scrollbar_deactivate_pager_cb,
                  g_object_ref (scrollbar));
-  g_timeout_add (TIMEOUT_HIDE, os_scrollbar_hide_thumb_cb,
+  g_timeout_add (TIMEOUT_TOPLEVEL_HIDE, os_scrollbar_hide_thumb_cb,
                  g_object_ref (scrollbar));
 
   return FALSE;
