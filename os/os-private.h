@@ -93,6 +93,52 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 #define OS_DCHECK(cond)
 #endif
 
+/* os-animation.c */
+
+#define OS_TYPE_ANIMATION (os_animation_get_type ())
+#define OS_ANIMATION(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_ANIMATION, OsAnimation))
+#define OS_ANIMATION_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_ANIMATION, OsAnimationClass))
+#define OS_IS_ANIMATION(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_ANIMATION))
+#define OS_IS_ANIMATION_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_ANIMATION))
+#define OS_ANIMATION_GET_CLASS(obj) \
+  (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_ANIMATION, OsAnimationClass))
+
+typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
+typedef void (*OsAnimationEndFunc)    (gpointer user_data);
+
+typedef struct _OsAnimation OsAnimation;
+typedef struct _OsAnimationPrivate OsAnimationPrivate;
+typedef struct _OsAnimationClass OsAnimationClass;
+
+struct _OsAnimation {
+  GObject parent_instance;
+
+  OsAnimationPrivate *priv;
+};
+
+struct _OsAnimationClass {
+  GObjectClass parent_class;
+};
+
+GType        os_animation_get_type     (void);
+
+OsAnimation* os_animation_new          (gint32 rate,
+                                        gint32 duration,
+                                        OsAnimationUpdateFunc update_func,
+                                        OsAnimationEndFunc end_func,
+                                        gpointer user_data);
+
+void         os_animation_set_duration (OsAnimation* animation,
+                                        gint32 duration);
+
+void         os_animation_start        (OsAnimation* animation);
+
+void         os_animation_stop         (OsAnimation* animation);
+
 /* os-thumb.c */
 
 #define OS_TYPE_THUMB (os_thumb_get_type ())

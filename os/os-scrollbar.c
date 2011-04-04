@@ -340,7 +340,7 @@ os_scrollbar_deactivate_pager (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  if (priv->can_deactivate_pager)
+  if (priv->pager != NULL && priv->can_deactivate_pager)
     os_pager_set_active (OS_PAGER (priv->pager), FALSE);
 }
 
@@ -1246,6 +1246,18 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 static void
 os_scrollbar_dispose (GObject *object)
 {
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (object);
+  priv = scrollbar->priv;
+
+  if (priv->pager != NULL)
+    {
+      g_object_unref (priv->pager);
+      priv->pager = NULL;
+    }
+
   G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
 }
 
@@ -1260,12 +1272,6 @@ os_scrollbar_finalize (GObject *object)
 
   os_scrollbar_swap_adjustment (scrollbar, NULL);
   os_scrollbar_swap_thumb (scrollbar, NULL);
-
-  if (priv->pager != NULL)
-    {
-      g_object_unref (priv->pager);
-      priv->pager = NULL;
-    }
 
   G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
 }
