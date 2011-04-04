@@ -231,7 +231,16 @@ os_thumb_composited_changed (GtkWidget *widget)
   screen = gtk_widget_get_screen (widget);
 
   if (gdk_screen_is_composited (screen))
-    priv->can_rgba = TRUE;
+  {
+    GdkVisual *visual;
+
+    visual = gtk_widget_get_visual (widget);
+
+    if (visual->depth == 32 && (visual->red_mask   == 0xff0000 &&
+                                visual->green_mask == 0x00ff00 &&
+                                visual->blue_mask  == 0x0000ff))
+      priv->can_rgba = TRUE;
+  }
   else
     priv->can_rgba = FALSE;
 
