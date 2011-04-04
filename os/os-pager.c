@@ -31,8 +31,11 @@
 /* Rate of the fade */
 #define RATE_FADE 30
 
-/* Max lenght of the fade */
-#define DURATION_FADE 250
+/* Duration of the fade-in */
+#define DURATION_FADE_IN 200
+
+/* Duration of the fade-out */
+#define DURATION_FADE_OUT 400
 
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
@@ -223,7 +226,7 @@ os_pager_init (OsPager *pager)
 
   priv->weight = 1.0f;
 
-  priv->animation = os_animation_new (RATE_FADE, DURATION_FADE,
+  priv->animation = os_animation_new (RATE_FADE, DURATION_FADE_OUT,
                                       os_pager_change_state_cb, NULL, pager);
 }
 
@@ -338,6 +341,10 @@ os_pager_set_active (OsPager *pager,
         return;
 
       os_animation_stop (priv->animation);
+
+      os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
+                                                                 DURATION_FADE_OUT);
+
       os_animation_start (priv->animation);
     }
 }
