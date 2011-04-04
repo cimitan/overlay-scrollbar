@@ -463,7 +463,7 @@ os_scrollbar_sanitize_x (OsScrollbar *scrollbar,
   priv = scrollbar->priv;
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
-  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y);
+  n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 
   screen_width = rect.x + rect.width;
@@ -489,7 +489,7 @@ os_scrollbar_sanitize_y (OsScrollbar *scrollbar,
   priv = scrollbar->priv;
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
-  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y);
+  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
   
   screen_height = rect.y + rect.height;
