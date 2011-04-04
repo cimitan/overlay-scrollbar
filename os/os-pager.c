@@ -32,7 +32,7 @@
 #define TIMEOUT_FADE 34
 
 /* Max lenght of the fade */
-#define MAX_LENGHT_FADE 1000
+#define DURATION_FADE 250
 
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
@@ -222,6 +222,9 @@ os_pager_init (OsPager *pager)
   priv->visible = FALSE;
 
   priv->weight = 1.0f;
+
+  priv->animation = os_animation_new (TIMEOUT_FADE, DURATION_FADE,
+                                      os_pager_change_state_cb, NULL, pager);
 }
 
 static void
@@ -233,8 +236,7 @@ os_pager_dispose (GObject *object)
   pager = OS_PAGER (object);
   priv = pager->priv;
 
-  if (priv->animation != NULL)
-    os_animation_stop (priv->animation);
+  g_object_unref (priv->animation);
 
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
@@ -335,8 +337,8 @@ os_pager_set_active (OsPager *pager,
       if (priv->parent == NULL)
         return;
 
-      priv->animation = os_animation_spawn (TIMEOUT_FADE, MAX_LENGHT_FADE,
-                                            os_pager_change_state_cb, NULL, pager);
+      os_animation_stop (priv->animation);
+      os_animation_start (priv->animation);
     }
 }
 

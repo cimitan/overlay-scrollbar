@@ -95,27 +95,46 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 
 /* os-animation.c */
 
+#define OS_TYPE_ANIMATION (os_animation_get_type ())
+#define OS_ANIMATION(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_ANIMATION, OsAnimation))
+#define OS_ANIMATION_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_ANIMATION, OsAnimationClass))
+#define OS_IS_ANIMATION(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_ANIMATION))
+#define OS_IS_ANIMATION_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_ANIMATION))
+#define OS_ANIMATION_GET_CLASS(obj) \
+  (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_ANIMATION, OsAnimationClass))
+
 typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
-typedef void (*OsAnimationEndFunc) (gpointer user_data);
+typedef void (*OsAnimationEndFunc)    (gpointer user_data);
 
 typedef struct _OsAnimation OsAnimation;
+typedef struct _OsAnimationPrivate OsAnimationPrivate;
+typedef struct _OsAnimationClass OsAnimationClass;
 
 struct _OsAnimation {
-  OsAnimationUpdateFunc update_func;
-  OsAnimationEndFunc end_func;
-  gpointer user_data;
-  gint64 start_time;
-  gint64 duration;
-  gboolean stopped;
+  GObject parent_instance;
+
+  OsAnimationPrivate *priv;
 };
 
-OsAnimation* os_animation_spawn (gint32 rate,
-                                 gint32 duration,
-                                 OsAnimationUpdateFunc update_func,
-                                 OsAnimationEndFunc end_func,
-                                 gpointer user_data);
+struct _OsAnimationClass {
+  GObjectClass parent_class;
+};
 
-void         os_animation_stop            (OsAnimation* animation);
+GType        os_animation_get_type (void);
+
+OsAnimation* os_animation_new      (gint32 rate,
+                                    gint32 duration,
+                                    OsAnimationUpdateFunc update_func,
+                                    OsAnimationEndFunc end_func,
+                                    gpointer user_data);
+
+void         os_animation_start    (OsAnimation* animation);
+
+void         os_animation_stop     (OsAnimation* animation);
 
 /* os-thumb.c */
 

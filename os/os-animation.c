@@ -18,6 +18,7 @@
  * Boston, MA 02110-1301 USA
  *
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
+ *             Loïc Molinari <loic.molinari@canonical.com>
  */
 
 #ifndef HAVE_CONFIG_H
@@ -26,88 +27,164 @@
 
 #include "os-private.h"
 
-static gboolean os_animation_cb (gpointer user_data);
+struct _OsAnimationPrivate {
+  OsAnimationUpdateFunc update_func;
+  OsAnimationEndFunc end_func;
+  gpointer user_data;
+  gint64 start_time;
+  gint64 duration;
+  gint32 rate;
+  guint32 source_id;
+};
+
+static gboolean os_animation_update_cb (gpointer user_data);
+static void os_animation_dispose (GObject* object);
+static void os_animation_finalize (GObject* object);
+
+/* Private functions. */
 
 static gboolean
-os_animation_cb (gpointer user_data)
+os_animation_update_cb (gpointer user_data)
 {
-  OsAnimation* animation = (OsAnimation*) user_data;
+  OsAnimation *animation = OS_ANIMATION (user_data);
+  OsAnimationPrivate *priv = animation->priv;
   const gint64 current_time = g_get_monotonic_time ();
-  const gint64 end_time = animation->start_time + animation->duration;
-  gboolean stopped = animation->stopped;
+  const gint64 end_time = priv->start_time + priv->duration;
 
-  /* Update the animation if it's not been stopped. */
-  if (stopped == FALSE)
+  if (current_time < end_time)
     {
-      gfloat weight;
+      /* On-going animation. */
+      const gfloat diff_time = current_time - priv->start_time;
+      const gfloat weight = diff_time / priv->duration;
 
-      if (current_time < end_time)
-        {
-          weight = (gfloat) (current_time - animation->start_time) / animation->duration;
-          animation->update_func (weight, animation->user_data);
-        }
-      else
-        {
-          weight = 1.0f;
-          animation->update_func (weight, animation->user_data);
+      priv->update_func (weight, priv->user_data);
 
-          if (animation->end_func != NULL)
-            animation->end_func (animation->user_data);
-
-          stopped = TRUE;
-        }
-    }
-
-  /* Clean up the animation and remove the source from the mainloop if the
-   * animation ended or has been stopped. */
-  if (stopped == TRUE)
-    {
-      g_slice_free (OsAnimation, animation);
-      return FALSE;
+      return TRUE;
     }
   else
-    return TRUE;
+    {
+      /* Animation ended. */
+      priv->update_func (1.0f, priv->user_data);
+      priv->source_id = 0;
+
+      if (priv->end_func != NULL)
+        priv->end_func (priv->user_data);
+
+      return FALSE;
+    }
+}
+
+/* Type definition. */
+
+G_DEFINE_TYPE (OsAnimation, os_animation, G_TYPE_OBJECT);
+
+static void
+os_animation_class_init (OsAnimationClass *class)
+{
+  GObjectClass *gobject_class;
+
+  gobject_class = G_OBJECT_CLASS (class);
+
+  gobject_class->dispose  = os_animation_dispose;
+  gobject_class->finalize = os_animation_finalize;
+
+  g_type_class_add_private (gobject_class, sizeof (OsAnimationPrivate));
+}
+
+static void
+os_animation_init (OsAnimation *animation)
+{
+  OsAnimationPrivate *priv;
+
+  animation->priv = G_TYPE_INSTANCE_GET_PRIVATE (animation,
+                                                 OS_TYPE_ANIMATION,
+                                                 OsAnimationPrivate);
+  priv = animation->priv;
+
+  priv->source_id = 0;
+}
+
+static void
+os_animation_dispose (GObject* object)
+{
+  OsAnimation *animation;
+  OsAnimationPrivate *priv;
+
+  animation = OS_ANIMATION (object);
+  priv = animation->priv;
+
+  if (priv->source_id != 0)
+    g_source_remove (priv->source_id);
+
+  G_OBJECT_CLASS (os_animation_parent_class)->dispose (object);
+}
+
+static void
+os_animation_finalize (GObject* object)
+{
+  G_OBJECT_CLASS (os_animation_parent_class)->finalize (object);
 }
 
 /* Public functions. */
 
 /**
- * os_animation_spawn:
+ * os_animation_new:
  * @rate: rate of the update
  * @duration: duration of the animation
  * @update_func: function to call on update
  * @end_func: function to call at the end
  * @user_data: pointer to the user data
  *
- * Spawns a new animation
+ * Creates a new OsAnimation
  *
  * Returns: the pointer to the #OsAnimation
  */
 OsAnimation*
-os_animation_spawn (gint32 rate,
-                    gint32 duration,
-                    OsAnimationUpdateFunc update_func,
-                    OsAnimationEndFunc end_func,
-                    gpointer user_data)
+os_animation_new (gint32 rate,
+                  gint32 duration,
+                  OsAnimationUpdateFunc update_func,
+                  OsAnimationEndFunc end_func,
+                  gpointer user_data)
 {
   OsAnimation* animation;
+  OsAnimationPrivate* priv;
 
   g_return_val_if_fail (rate != 0, NULL);
   g_return_val_if_fail (duration != 0, NULL);
   g_return_val_if_fail (update_func != NULL, NULL);
 
-  animation = g_slice_new (OsAnimation);
-  animation->update_func = update_func;
-  animation->end_func = end_func;
-  animation->user_data = user_data;
-  animation->start_time = g_get_monotonic_time ();
-  animation->duration = duration * 1000;
-  animation->stopped = FALSE;
-  g_timeout_add (rate, os_animation_cb, animation);
+  animation = g_object_new (OS_TYPE_ANIMATION, NULL);
+  priv = animation->priv;
 
-  animation->update_func (0.0f, animation->user_data);
+  priv->update_func = update_func;
+  priv->end_func = end_func;
+  priv->user_data = user_data;
+  priv->duration = (gint64) duration * G_GINT64_CONSTANT (1000);
+  priv->rate = 1000 / rate;
 
   return animation;
+}
+
+/**
+ * os_animation_start:
+ * @animation: a #OsAnimation
+ *
+ * Starts the animation
+ **/
+void
+os_animation_start (OsAnimation* animation)
+{
+  OsAnimationPrivate* priv;
+
+  g_return_if_fail (animation != NULL);
+
+  priv = animation->priv;
+
+  if (priv->source_id == 0)
+    {
+      priv->start_time = g_get_monotonic_time ();
+      priv->source_id = g_timeout_add (priv->rate, os_animation_update_cb, animation);
+    }
 }
 
 /**
@@ -119,7 +196,17 @@ os_animation_spawn (gint32 rate,
 void
 os_animation_stop (OsAnimation* animation)
 {
+  OsAnimationPrivate* priv;
+
   g_return_if_fail (animation != NULL);
 
-  animation->stopped = TRUE;
+  priv = animation->priv;
+
+  if (priv->source_id != 0)
+    {
+      if (priv->end_func != NULL)
+        priv->end_func (priv->user_data);
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
 }
