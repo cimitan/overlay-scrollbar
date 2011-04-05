@@ -291,7 +291,6 @@ os_thumb_button_release_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* Assertion to check if priv->source_id is always 0. */
   OS_DCHECK (priv->source_id == 0);
 
   /* priv->source_id should be always 0 here,
