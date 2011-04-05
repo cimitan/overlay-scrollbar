@@ -587,9 +587,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
         {
           g_source_remove (priv->source_id);
           priv->source_id = 0;
-        }
 
-      os_animation_stop (priv->animation);
+          os_animation_stop (priv->animation);
+        }
     }
 
   return FALSE;
