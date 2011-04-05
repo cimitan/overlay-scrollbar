@@ -782,19 +782,15 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
     }
 
   if (priv->source_deactivate_pager_id != 0)
-    {
-      g_source_remove (priv->source_deactivate_pager_id);
-      priv->source_deactivate_pager_id = 0;
-    }
+    g_source_remove (priv->source_deactivate_pager_id);
+
   priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
                                                     os_scrollbar_deactivate_pager_cb,
                                                     scrollbar);
 
   if (priv->source_hide_thumb_id != 0)
-    {
-      g_source_remove (priv->source_hide_thumb_id);
-      priv->source_hide_thumb_id = 0;
-    }
+    g_source_remove (priv->source_hide_thumb_id);
+
   priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
                                               os_scrollbar_hide_thumb_cb,
                                               scrollbar);
@@ -1254,28 +1250,22 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   priv->can_hide = TRUE;
 
   if (priv->source_deactivate_pager_id != 0)
-    {
-      g_source_remove (priv->source_deactivate_pager_id);
-      priv->source_deactivate_pager_id = 0;
-    }
+    g_source_remove (priv->source_deactivate_pager_id);
+
   priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
                                                     os_scrollbar_deactivate_pager_cb,
                                                     scrollbar);
 
   if (priv->source_hide_thumb_id != 0)
-    {
-      g_source_remove (priv->source_hide_thumb_id);
-      priv->source_hide_thumb_id = 0;
-    }
+    g_source_remove (priv->source_hide_thumb_id);
+
   priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
                                               os_scrollbar_hide_thumb_cb,
                                               scrollbar);
 
   if (priv->source_unlock_thumb_id != 0)
-    {
-      g_source_remove (priv->source_unlock_thumb_id);
-      priv->source_unlock_thumb_id = 0;
-    }
+    g_source_remove (priv->source_unlock_thumb_id);
+
   priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
                                                 os_scrollbar_unlock_thumb_cb,
                                                 scrollbar);
