@@ -68,6 +68,9 @@ struct _OsScrollbarPrivate
   gint slide_initial_coordinate;
   gint pointer_x;
   gint pointer_y;
+  guint32 source_deactivate_pager_id;
+  guint32 source_hide_thumb_id;
+  guint32 source_unlock_thumb_id;
 };
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
@@ -353,10 +356,14 @@ os_scrollbar_deactivate_pager (OsScrollbar *scrollbar)
 static gboolean
 os_scrollbar_deactivate_pager_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
 
   os_scrollbar_deactivate_pager (scrollbar);
-  g_object_unref (scrollbar);
+  priv->source_deactivate_pager_id = 0;
 
   return FALSE;
 }
@@ -379,10 +386,14 @@ os_scrollbar_hide_thumb (OsScrollbar *scrollbar)
 static gboolean
 os_scrollbar_hide_thumb_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
 
   os_scrollbar_hide_thumb (scrollbar);
-  g_object_unref (scrollbar);
+  priv->source_hide_thumb_id = 0;
 
   return FALSE;
 }
@@ -390,16 +401,16 @@ os_scrollbar_hide_thumb_cb (gpointer user_data)
 static gboolean
 os_scrollbar_unlock_thumb_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
-
+  OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
+  scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
   if (priv->can_hide)
     priv->lock_position = FALSE;
 
-  g_object_unref (scrollbar);
+  priv->source_unlock_thumb_id = 0;
 
   return FALSE;
 }
@@ -770,10 +781,23 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
       priv->can_hide = TRUE;
     }
 
-  g_timeout_add (TIMEOUT_THUMB_HIDE, os_scrollbar_deactivate_pager_cb,
-                 g_object_ref (scrollbar));
-  g_timeout_add (TIMEOUT_THUMB_HIDE, os_scrollbar_hide_thumb_cb,
-                 g_object_ref (scrollbar));
+  if (priv->source_deactivate_pager_id != 0)
+    {
+      g_source_remove (priv->source_deactivate_pager_id);
+      priv->source_deactivate_pager_id = 0;
+    }
+  priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                    os_scrollbar_deactivate_pager_cb,
+                                                    scrollbar);
+
+  if (priv->source_hide_thumb_id != 0)
+    {
+      g_source_remove (priv->source_hide_thumb_id);
+      priv->source_hide_thumb_id = 0;
+    }
+  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                              os_scrollbar_hide_thumb_cb,
+                                              scrollbar);
 
   return FALSE;
 }
@@ -1229,12 +1253,32 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   priv->can_deactivate_pager = TRUE;
   priv->can_hide = TRUE;
 
-  g_timeout_add (TIMEOUT_TOPLEVEL_HIDE, os_scrollbar_deactivate_pager_cb,
-                 g_object_ref (scrollbar));
-  g_timeout_add (TIMEOUT_TOPLEVEL_HIDE, os_scrollbar_hide_thumb_cb,
-                 g_object_ref (scrollbar));
-  g_timeout_add (TIMEOUT_TOPLEVEL_HIDE, os_scrollbar_unlock_thumb_cb,
-                 g_object_ref (scrollbar));
+  if (priv->source_deactivate_pager_id != 0)
+    {
+      g_source_remove (priv->source_deactivate_pager_id);
+      priv->source_deactivate_pager_id = 0;
+    }
+  priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                    os_scrollbar_deactivate_pager_cb,
+                                                    scrollbar);
+
+  if (priv->source_hide_thumb_id != 0)
+    {
+      g_source_remove (priv->source_hide_thumb_id);
+      priv->source_hide_thumb_id = 0;
+    }
+  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                              os_scrollbar_hide_thumb_cb,
+                                              scrollbar);
+
+  if (priv->source_unlock_thumb_id != 0)
+    {
+      g_source_remove (priv->source_unlock_thumb_id);
+      priv->source_unlock_thumb_id = 0;
+    }
+  priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                os_scrollbar_unlock_thumb_cb,
+                                                scrollbar);
 
   return FALSE;
 }
@@ -1285,6 +1329,9 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->internal = FALSE;
   priv->lock_position = FALSE;
   priv->proximity = FALSE;
+  priv->source_deactivate_pager_id = 0;
+  priv->source_hide_thumb_id = 0;
+  priv->source_unlock_thumb_id = 0;
 
   priv->pager = os_pager_new ();
 
@@ -1303,6 +1350,24 @@ os_scrollbar_dispose (GObject *object)
 
   scrollbar = OS_SCROLLBAR (object);
   priv = scrollbar->priv;
+
+  if (priv->source_deactivate_pager_id != 0)
+    {
+      g_source_remove (priv->source_deactivate_pager_id);
+      priv->source_deactivate_pager_id = 0;
+    }
+
+  if (priv->source_hide_thumb_id != 0)
+    {
+      g_source_remove (priv->source_hide_thumb_id);
+      priv->source_hide_thumb_id = 0;
+    }
+
+  if (priv->source_unlock_thumb_id != 0)
+    {
+      g_source_remove (priv->source_unlock_thumb_id);
+      priv->source_unlock_thumb_id = 0;
+    }
 
   if (priv->pager != NULL)
     {
