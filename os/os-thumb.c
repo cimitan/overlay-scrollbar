@@ -291,7 +291,7 @@ os_thumb_button_release_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* priv->source_id should be always != 0 here,
+  /* priv->source_id should be always 0 here,
    * because it's set to 0 in both motion_notify_event
    * and button_press_event.
    * Add the fade-out timeout only if the pointer is inside,
