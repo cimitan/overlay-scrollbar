@@ -66,20 +66,20 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 /* Macro conditionally logging a message to stderr using the given level. */
 #define OS_LOG_IF(level,cond,...)                                          \
   G_STMT_START {                                                           \
-    if (level >= threshold) && (cond == true)) {                           \
+    if (level >= threshold) && (cond == TRUE)) {                           \
       os_log_message ((level), __func__, __FILE__, __LINE__, __VA_ARGS__); \
     }                                                                      \
   } G_STMT_END
 
 /* Macro loggging an error message to stderr and breaking the program execution
  * if the assertion fails. */
-#define OS_CHECK(cond)                                            \
-  G_STMT_START {                                                  \
-    if (G_UNLIKELY((cond) == false)) {                            \
-      os_log_message (OS_LOG_ERROR, __func__, __FILE__, __LINE__, \
-                      "assertion `"#cond"' failed");              \
-      G_BREAKPOINT ();                                            \
-    }                                                             \
+#define OS_CHECK(cond)                                        \
+  G_STMT_START {                                              \
+    if (G_UNLIKELY((cond) == FALSE)) {                        \
+      os_log_message (OS_ERROR, __func__, __FILE__, __LINE__, \
+                      "assertion `"#cond"' failed");          \
+      G_BREAKPOINT ();                                        \
+    }                                                         \
   } G_STMT_END
 
 /* Debug mode logging macros, compiled away to nothing for release builds. */
