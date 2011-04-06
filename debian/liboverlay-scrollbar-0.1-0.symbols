@@ -1,0 +1,5 @@
+liboverlay-scrollbar-0.1.so.0 liboverlay-scrollbar-0.1-0 #MINVER#
+ os_scrollbar_get_type@Base 0.1.5
+ os_scrollbar_new@Base 0.1.5
+ os_utils_is_blacklisted@Base 0.1.5
+ os_utils_is_whitelisted@Base 0.1.5
