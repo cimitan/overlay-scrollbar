@@ -48,6 +48,7 @@ struct _OsPagerPrivate {
   gfloat weight;
   gint width;
   gint height;
+  gulong handler_id;
 };
 
 static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
@@ -57,6 +58,7 @@ static void os_pager_change_state_cb (gfloat weight, gpointer user_data);
 static void os_pager_create (OsPager *pager);
 static void os_pager_draw (OsPager *pager);
 static void os_pager_mask (OsPager *pager);
+static void os_pager_notify_gtk_theme_name_cb (GObject *object, GParamSpec* pspec, gpointer user_data);
 
 /* Private functions */
 
@@ -159,11 +161,11 @@ os_pager_draw (OsPager *pager)
 
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
 
-  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
-
   gdk_window_set_background (priv->pager_window, &color);
 
   gdk_window_clear (priv->pager_window);
+
+  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
 /* Mask the pager. */
@@ -179,6 +181,21 @@ os_pager_mask (OsPager *pager)
                                    0, 0);
 
   gdk_window_clear (priv->pager_window);
+}
+
+static void
+os_pager_notify_gtk_theme_name_cb (GObject*    gobject,
+                                   GParamSpec* pspec,
+                                   gpointer    user_data)
+{
+  OsPager *pager;
+  OsPagerPrivate *priv;
+
+  pager = OS_PAGER (user_data);
+  priv = pager->priv;
+
+  if (priv->pager_window != NULL)
+    os_pager_draw (pager);
 }
 
 /* Type definition. */
@@ -228,6 +245,9 @@ os_pager_init (OsPager *pager)
 
   priv->animation = os_animation_new (RATE_FADE, DURATION_FADE_OUT,
                                       os_pager_change_state_cb, NULL, pager);
+
+  priv->handler_id = g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
+                                       G_CALLBACK (os_pager_notify_gtk_theme_name_cb), pager);
 }
 
 static void
@@ -244,6 +264,9 @@ os_pager_dispose (GObject *object)
       g_object_unref (priv->animation);
       priv->animation = NULL;
     }
+
+  g_signal_handler_disconnect (gtk_settings_get_default (),
+                               priv->handler_id);
 
   G_OBJECT_CLASS (os_pager_parent_class)->dispose (object);
 }
