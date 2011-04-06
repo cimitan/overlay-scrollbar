@@ -591,6 +591,8 @@ os_thumb_map (GtkWidget *widget)
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+
   priv->grabbed_widget = gtk_grab_get_current ();
 
   if (priv->grabbed_widget != NULL)
