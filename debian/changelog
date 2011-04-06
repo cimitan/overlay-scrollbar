@@ -1,3 +1,12 @@
+overlay-scrollbar (0.1.5-0ubuntu3) natty; urgency=low
+
+  * debian/control
+    - Make overlay-scrollbar Break/Replace 
+      liboverlay-scrollbar-0.1-0 << 0.1.5-0ubuntu2
+    - Fixed overlay-scrollbar package description 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 06 Apr 2011 10:40:58 -0400
+
 overlay-scrollbar (0.1.5-0ubuntu2) natty; urgency=low
 
   [ Ken VanDine ]
