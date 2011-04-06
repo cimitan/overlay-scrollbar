@@ -37,3 +37,15 @@ Description: Scrollbar overlayed widget - dev files
  This package contains files that are needed to build applications.
 
 
+Package: overlay-scrollbar
+Section: libs
+Architecture: all
+Depends: liboverlay-scrollbar-0.1-0,
+         ${misc:Depends}
+Description: Scrollbar overlayed widget 
+ Overlay scrollbar is a library implementing a new GTK Widget enabling
+ a dynamic overlay behavior.
+ .
+ This package contains files that are needed to build applications.
+
+

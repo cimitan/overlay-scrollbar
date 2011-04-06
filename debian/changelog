@@ -1,14 +1,17 @@
-overlay-scrollbar (0.1.5-0ubuntu2) UNRELEASED; urgency=low
+overlay-scrollbar (0.1.5-0ubuntu2) natty; urgency=low
 
   [ Ken VanDine ]
   * debian/control
     - Fixed Vcs-Bzr
     - Bumped depends for gtk to >= 2.24.3-0ubuntu5
+    - New binary package overlay-scrollbar
+  * debian/overlay-scrollbar.install
+    - Moved the apport hook to non-soname specific binary
 
   [ Martin Pitt ]
   * debian/control: Fix Homepage. (LP: #750572)
 
- -- Ken VanDine <ken.vandine@canonical.com>  Wed, 30 Mar 2011 19:33:23 -0400
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 06 Apr 2011 09:57:51 -0400
 
 overlay-scrollbar (0.1.5-0ubuntu1) natty; urgency=low
 

@@ -1,2 +1,1 @@
 usr/lib/lib*.so.*
-debian/ayatana-scrollbar.py /usr/share/apport/general-hooks/
