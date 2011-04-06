@@ -297,9 +297,10 @@ os_thumb_button_release_event (GtkWidget      *widget,
    * because it's set to 0 in both motion_notify_event
    * and button_press_event.
    * Add the fade-out timeout only
-   * if the pointer is inside. */
-  if (event->x <= allocation.width &&
-      event->y <= allocation.height)
+   * if the pointer is inside the thumb.
+   * allocation.x and allocation.y are always 0. */
+  if ((event->x >= 0 && event->x <= allocation.width) &&
+      (event->y >= 0 && event->y <= allocation.height))
     priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                      os_thumb_timeout_fade_out_cb,
                                      thumb);
