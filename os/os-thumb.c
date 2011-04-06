@@ -64,6 +64,7 @@ static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
+static gboolean os_thumb_scroll_event (GtkWidget *widget, GdkEventScroll *event);
 static void os_thumb_unmap (GtkWidget *widget);
 static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
 static void os_thumb_dispose (GObject *object);
@@ -156,6 +157,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
+  widget_class->scroll_event         = os_thumb_scroll_event;
   widget_class->unmap                = os_thumb_unmap;
 
   gobject_class->constructor  = os_thumb_constructor;
@@ -652,6 +654,33 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
+}
+
+static gboolean
+os_thumb_scroll_event (GtkWidget      *widget,
+                       GdkEventScroll *event)
+{
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  /* if started, stop the fade-out. */
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+
+      os_animation_stop (priv->animation);
+      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+    }
+
+  priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
+                                   os_thumb_timeout_fade_out_cb,
+                                   thumb);
+
+  return FALSE;
 }
 
 static void
