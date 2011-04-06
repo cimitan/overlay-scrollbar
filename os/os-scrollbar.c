@@ -1151,6 +1151,9 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   gtk_widget_get_pointer (widget, &x, &y);
 
+  /* when the window is resized (maximize/restore),
+   * check the position of the pointer
+   * and set the state accordingly. */
   pager_set_state_from_pointer (scrollbar, x, y);
 
   if (!priv->enter_notify_event)
@@ -1188,14 +1191,20 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
   if (!priv->fullsize)
     {
-      /* after a scroll-event, without motion, pager becomes inactive,
-       * this call sets it active, if needed. */
+      /* after a scroll-event, without motion,
+       * pager becomes inactive because the timeout in
+       * leave-notify-event starts,
+       * this call checks the pointer after the scroll-event,
+       * because it enters the window,
+       * then sets the state accordingly. */
       if (xevent->type == EnterNotify)
         pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
 
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
+          /* react to motion_notify_event
+           * and set the state accordingly. */
           pager_set_state_from_pointer (scrollbar, xevent->xmotion.x, xevent->xmotion.y);
 
           /* proximity area */
@@ -1467,6 +1476,10 @@ os_scrollbar_map (GtkWidget *widget)
 
   gtk_widget_get_pointer (gtk_widget_get_toplevel (widget), &x, &y);
 
+  /* when the scrollbar appears on screen (mapped),
+   * for example when switching notebook page,
+   * check the position of the pointer
+   * and set the state accordingly. */
   pager_set_state_from_pointer (scrollbar, x, y);
 
   if (priv->fullsize == FALSE)
