@@ -27,6 +27,7 @@
 #include "os-scrollbar.h"
 #include "os-private.h"
 #include <gdk/gdkx.h>
+#include "math.h"
 
 /* Default size of the pager in pixels. */
 #define DEFAULT_PAGER_WIDTH 3
@@ -89,6 +90,7 @@ static void os_scrollbar_calc_layout_slider (OsScrollbar *scrollbar, gdouble adj
 static gdouble os_scrollbar_coord_to_value (OsScrollbar *scrollbar, gint coord);
 static void os_scrollbar_deactivate_pager (OsScrollbar *scrollbar);
 static gboolean os_scrollbar_deactivate_pager_cb (gpointer user_data);
+static gdouble os_scrollbar_get_wheel_delta (OsScrollbar *scrollbar, GdkScrollDirection direction);
 static void os_scrollbar_hide_thumb (OsScrollbar *scrollbar);
 static gboolean os_scrollbar_hide_thumb_cb (gpointer user_data);
 static gboolean os_scrollbar_unlock_thumb_cb (gpointer user_data);
@@ -107,6 +109,7 @@ static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
+static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 static void pager_move (OsScrollbar *scrollbar);
 static void pager_set_state_from_pointer (OsScrollbar *scrollbar, gint x, gint y);
@@ -366,6 +369,24 @@ os_scrollbar_deactivate_pager_cb (gpointer user_data)
   priv->source_deactivate_pager_id = 0;
 
   return FALSE;
+}
+
+static gdouble
+os_scrollbar_get_wheel_delta (OsScrollbar       *scrollbar,
+                              GdkScrollDirection direction)
+{
+  OsScrollbarPrivate *priv;
+  gdouble delta;
+
+  priv = scrollbar->priv;
+
+  delta = pow (priv->adjustment->page_size, 2.0 / 3.0);
+
+  if (direction == GDK_SCROLL_UP ||
+      direction == GDK_SCROLL_LEFT)
+    delta = - delta;
+
+  return delta;
 }
 
 /* Hide if it's ok to hide. */
@@ -628,6 +649,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_motion_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            thumb_scroll_event_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_unmap_cb, scrollbar);
 
       gtk_widget_destroy (priv->thumb);
@@ -653,6 +676,8 @@ os_scrollbar_swap_thumb (OsScrollbar *scrollbar,
                         G_CALLBACK (thumb_map_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
                         G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "scroll-event",
+                        G_CALLBACK (thumb_scroll_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "unmap",
                         G_CALLBACK (thumb_unmap_cb), scrollbar);
     }
@@ -961,6 +986,25 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
       os_scrollbar_move_thumb (scrollbar, x, y);
     }
+
+  return FALSE;
+}
+
+static gboolean
+thumb_scroll_event_cb (GtkWidget      *widget,
+                       GdkEventScroll *event,
+                       gpointer        user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+  gdouble delta;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  delta = os_scrollbar_get_wheel_delta (scrollbar, event->direction);
+
+  gtk_adjustment_set_value (priv->adjustment, priv->adjustment->value + delta);
 
   return FALSE;
 }
