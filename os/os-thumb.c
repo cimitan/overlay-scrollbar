@@ -41,7 +41,6 @@ struct _OsThumbPrivate {
   GtkWidget *grabbed_widget;
   OsAnimation *animation;
   gboolean button_press_event;
-  gboolean enter_notify_event;
   gboolean motion_notify_event;
   gboolean can_rgba;
   gint pointer_x;
@@ -60,7 +59,6 @@ static gboolean os_thumb_timeout_fade_out_cb (gpointer user_data);
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
-static gboolean os_thumb_enter_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
@@ -153,7 +151,6 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-  widget_class->enter_notify_event   = os_thumb_enter_notify_event;
   widget_class->expose_event         = os_thumb_expose;
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
@@ -285,6 +282,7 @@ static gboolean
 os_thumb_button_release_event (GtkWidget      *widget,
                                GdkEventButton *event)
 {
+  GtkAllocation allocation;
   OsThumb *thumb;
   OsThumbPrivate *priv;
 
@@ -293,12 +291,16 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
   OS_DCHECK (priv->source_id == 0);
 
+  gtk_widget_get_allocation (widget, &allocation);
+
   /* priv->source_id should be always 0 here,
    * because it's set to 0 in both motion_notify_event
    * and button_press_event.
-   * Add the fade-out timeout only if the pointer is inside,
-   * so if priv->enter_notify_event is TRUE. */
-  if (priv->enter_notify_event)
+   * Add the fade-out timeout only
+   * if the pointer is inside the thumb.
+   * allocation.x and allocation.y are always 0. */
+  if ((event->x >= 0 && event->x <= allocation.width) &&
+      (event->y >= 0 && event->y <= allocation.height))
     priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                      os_thumb_timeout_fade_out_cb,
                                      thumb);
@@ -343,21 +345,6 @@ os_thumb_composited_changed (GtkWidget *widget)
     }
 
   gtk_widget_queue_draw (widget);
-}
-
-static gboolean
-os_thumb_enter_notify_event (GtkWidget        *widget,
-                             GdkEventCrossing *event)
-{
-  OsThumb *thumb;
-  OsThumbPrivate *priv;
-
-  thumb = OS_THUMB (widget);
-  priv = thumb->priv;
-
-  priv->enter_notify_event = TRUE;
-
-  return FALSE;
 }
 
 static gboolean
@@ -577,8 +564,6 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  priv->enter_notify_event = FALSE;
-
   /* If we exit the thumb when a button is pressed,
    * there's no need to stop the animation, it should
    * already be stopped.
@@ -605,6 +590,8 @@ os_thumb_map (GtkWidget *widget)
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
+
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   priv->grabbed_widget = gtk_grab_get_current ();
 
@@ -677,7 +664,6 @@ os_thumb_unmap (GtkWidget *widget)
   priv = thumb->priv;
 
   priv->button_press_event = FALSE;
-  priv->enter_notify_event = FALSE;
   priv->motion_notify_event = FALSE;
 
   if (priv->grabbed_widget != NULL)
