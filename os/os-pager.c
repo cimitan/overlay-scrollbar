@@ -269,10 +269,12 @@ os_pager_dispose (GObject *object)
 
   if (priv->pager_window != NULL)
     {
-      /* FIXME(Cimi) g_object_destroy doesn't seem
-       * to clear the background.
-       * Maybe I need to clear it using cairo,
-       * but gdk_window_destroy() does this for me. */
+      /* From the Gdk documentation:
+       * "Note that a window will not be destroyed
+       *  automatically when its reference count
+       *  reaches zero. You must call
+       *  gdk_window_destroy ()
+       *  yourself before that happens". */
       gdk_window_destroy (priv->pager_window);
 
       g_object_unref (priv->pager_window);
