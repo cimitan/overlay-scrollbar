@@ -1,3 +1,27 @@
+overlay-scrollbar (0.1.6-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - if the window is unfocused and you click on one of its scrollbars, 
+      the scrollbar disappear (LP: #737518)
+    - Black Background on Overlay Scrollbar in Banshee (LP: #746189)
+    - hide the thumb after a timeout, with a fade-out animation (LP: #751444)
+    - Thumb blocks the right side of a maximized window (LP: #731653)
+    - in wxWidgets, pager is not colored properly (LP: #737661)
+    - animate the pager's colorization (LP: #746862)
+    - colorize the pager following mouse movement (LP: #746864)
+    - Add mouse-wheel functionality to the thumb (LP: #750879)
+    - use g_source_remove instead g_object_ref/unref for 
+      g_timeout_add (LP: #751440)
+    - lock position of the thumb when it's internal (LP: #751442)
+    - Thumb doesn't fade-out after click (and no motion after 
+      release) (LP: #751652)
+    - pager should immediately change color when changing gtk+ 
+      theme (LP: #752705)
+    - wrong colorization on restacking (LP: #752836)
+    - Panel's scrollbar is left behind (LP: #753440)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 07 Apr 2011 13:44:04 -0400
+
 overlay-scrollbar (0.1.5-0ubuntu4) natty; urgency=low
 
   * debian/liboverlay-scrollbar-0.1-0.symbols

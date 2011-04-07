@@ -25,15 +25,27 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "os-private.h"
+#include "math.h"
+
+/* Rate of the fade-out */
+#define RATE_FADE_OUT 30
+
+/* Duration of the fade-out */
+#define DURATION_FADE_OUT 2000
+
+/* Timeout before the fade-out */
+#define TIMEOUT_FADE_OUT 250
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
+  OsAnimation *animation;
   gboolean button_press_event;
   gboolean motion_notify_event;
   gboolean can_rgba;
   gint pointer_x;
   gint pointer_y;
+  guint32 source_id;
 };
 
 enum {
@@ -42,13 +54,17 @@ enum {
   LAST_ARG
 };
 
+static void os_thumb_fade_out_cb (gfloat weight, gpointer user_data);
+static gboolean os_thumb_timeout_fade_out_cb (gpointer user_data);
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
+static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
 static void os_thumb_screen_changed (GtkWidget *widget, GdkScreen *old_screen);
+static gboolean os_thumb_scroll_event (GtkWidget *widget, GdkEventScroll *event);
 static void os_thumb_unmap (GtkWidget *widget);
 static GObject* os_thumb_constructor (GType type, guint n_construct_properties, GObjectConstructParam *construct_properties);
 static void os_thumb_dispose (GObject *object);
@@ -83,6 +99,43 @@ os_cairo_draw_rounded_rect (cairo_t *cr,
   cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
 }
 
+static void
+os_thumb_fade_out_cb (gfloat weight,
+                      gpointer user_data)
+{
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (user_data);
+
+  priv = thumb->priv;
+
+  if (weight < 1.0f)
+    gtk_window_set_opacity (GTK_WINDOW (thumb), fabs (weight - 1.0f));
+  else
+    {
+      /* Animation ended. */
+      priv->source_id = 0;
+
+      gtk_widget_hide (GTK_WIDGET (thumb));
+    }
+}
+
+static gboolean
+os_thumb_timeout_fade_out_cb (gpointer user_data)
+{
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (user_data);
+
+  priv = thumb->priv;
+
+  os_animation_start (priv->animation);
+
+  return FALSE;
+}
+
 /* Type definition. */
 
 G_DEFINE_TYPE (OsThumb, os_thumb, GTK_TYPE_WINDOW);
@@ -100,16 +153,18 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
   widget_class->expose_event         = os_thumb_expose;
+  widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
   widget_class->screen_changed       = os_thumb_screen_changed;
+  widget_class->scroll_event         = os_thumb_scroll_event;
   widget_class->unmap                = os_thumb_unmap;
 
   gobject_class->constructor  = os_thumb_constructor;
+  gobject_class->dispose      = os_thumb_dispose;
+  gobject_class->finalize     = os_thumb_finalize;
   gobject_class->get_property = os_thumb_get_property;
   gobject_class->set_property = os_thumb_set_property;
-  gobject_class->dispose = os_thumb_dispose;
-  gobject_class->finalize = os_thumb_finalize;
 
   g_object_class_install_property
       (gobject_class, PROP_ORIENTATION,
@@ -134,6 +189,10 @@ os_thumb_init (OsThumb *thumb)
 
   priv->can_rgba = FALSE;
 
+  priv->source_id = 0;
+  priv->animation = os_animation_new (RATE_FADE_OUT, DURATION_FADE_OUT,
+                                      os_thumb_fade_out_cb, NULL, thumb);
+
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
   gtk_window_set_skip_taskbar_hint (GTK_WINDOW (thumb), TRUE);
   /* gtk_window_set_has_resize_grip (GTK_WINDOW (thumb), FALSE); */
@@ -143,7 +202,7 @@ os_thumb_init (OsThumb *thumb)
   gtk_widget_set_app_paintable (GTK_WIDGET (thumb), TRUE);
   gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
                                              GDK_BUTTON_RELEASE_MASK |
-                                             GDK_BUTTON_MOTION_MASK |
+                                             GDK_POINTER_MOTION_MASK |
                                              GDK_POINTER_MOTION_HINT_MASK);
 
   os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
@@ -153,6 +212,30 @@ os_thumb_init (OsThumb *thumb)
 static void
 os_thumb_dispose (GObject *object)
 {
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (object);
+  priv = thumb->priv;
+
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
+
+  if (priv->animation != NULL)
+    {
+      g_object_unref (priv->animation);
+      priv->animation = NULL;
+    }
+
+  if (priv->grabbed_widget != NULL)
+    {
+      g_object_unref (priv->grabbed_widget);
+      priv->grabbed_widget = NULL;
+    }
+
   G_OBJECT_CLASS (os_thumb_parent_class)->dispose (object);
 }
 
@@ -167,16 +250,27 @@ static gboolean
 os_thumb_button_press_event (GtkWidget      *widget,
                              GdkEventButton *event)
 {
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  /* Stop the animation on user interaction,
+   * the button_press_event. */
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+
+      os_animation_stop (priv->animation);
+      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+    }
+
   if (event->type == GDK_BUTTON_PRESS)
     {
       if (event->button == 1)
         {
-          OsThumb *thumb;
-          OsThumbPrivate *priv;
-
-          thumb = OS_THUMB (widget);
-          priv = thumb->priv;
-
           gtk_grab_add (widget);
 
           priv->pointer_x = event->x;
@@ -196,16 +290,34 @@ static gboolean
 os_thumb_button_release_event (GtkWidget      *widget,
                                GdkEventButton *event)
 {
+  GtkAllocation allocation;
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  gtk_widget_get_allocation (widget, &allocation);
+
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
+
+  /* Add the fade-out timeout only
+   * if the pointer is inside the thumb.
+   * allocation.x and allocation.y are always 0. */
+  if ((event->x >= 0 && event->x <= allocation.width) &&
+      (event->y >= 0 && event->y <= allocation.height))
+    priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
+                                     os_thumb_timeout_fade_out_cb,
+                                     thumb);
+
   if (event->type == GDK_BUTTON_RELEASE)
     {
       if (event->button == 1)
         {
-          OsThumb *thumb;
-          OsThumbPrivate *priv;
-
-          thumb = OS_THUMB (widget);
-          priv = thumb->priv;
-
           gtk_grab_remove (widget);
 
           priv->button_press_event = FALSE;
@@ -221,19 +333,25 @@ os_thumb_button_release_event (GtkWidget      *widget,
 static void
 os_thumb_composited_changed (GtkWidget *widget)
 {
-  GdkScreen *screen;
   OsThumb *thumb;
   OsThumbPrivate *priv;
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  screen = gtk_widget_get_screen (widget);
+  priv->can_rgba = FALSE;
 
-  if (gdk_screen_is_composited (screen))
-    priv->can_rgba = TRUE;
-  else
-    priv->can_rgba = FALSE;
+  if (gdk_screen_is_composited (gtk_widget_get_screen (widget)))
+    {
+      GdkVisual *visual;
+
+      visual = gtk_widget_get_visual (widget);
+
+      if (visual->depth == 32 && (visual->red_mask   == 0xff0000 &&
+                                  visual->green_mask == 0x00ff00 &&
+                                  visual->blue_mask  == 0x0000ff))
+        priv->can_rgba = TRUE;
+    }
 
   gtk_widget_queue_draw (widget);
 }
@@ -445,6 +563,34 @@ os_thumb_expose (GtkWidget      *widget,
   return FALSE;
 }
 
+static gboolean
+os_thumb_leave_notify_event (GtkWidget        *widget,
+                             GdkEventCrossing *event)
+{
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  /* If we exit the thumb when a button is pressed,
+   * there's no need to stop the animation, it should
+   * already be stopped.
+   * Stop it only if priv->button_press_event is FALSE. */
+  if (!priv->button_press_event)
+    {
+      if (priv->source_id != 0)
+        {
+          g_source_remove (priv->source_id);
+          priv->source_id = 0;
+
+          os_animation_stop (priv->animation);
+        }
+    }
+
+  return FALSE;
+}
+
 static void
 os_thumb_map (GtkWidget *widget)
 {
@@ -454,10 +600,19 @@ os_thumb_map (GtkWidget *widget)
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+
+  if (priv->grabbed_widget != NULL)
+    g_object_unref (priv->grabbed_widget);
+
   priv->grabbed_widget = gtk_grab_get_current ();
 
   if (priv->grabbed_widget != NULL)
-    gtk_grab_remove (priv->grabbed_widget);
+    {
+      g_object_ref_sink (priv->grabbed_widget);
+
+      gtk_grab_remove (priv->grabbed_widget);
+    }
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
 }
@@ -471,6 +626,24 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
+
+  /* On motion, stop the fade-out. */
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+
+      os_animation_stop (priv->animation);
+      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+    }
+
+  /* If you're not dragging, enable the fade-out.
+   * priv->motion_notify_event is TRUE only on dragging,
+   * see code few lines below. */
+  if (!priv->motion_notify_event)
+    priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
+                                     os_thumb_timeout_fade_out_cb,
+                                     thumb);
 
   if (priv->button_press_event)
     {
@@ -495,6 +668,33 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
+}
+
+static gboolean
+os_thumb_scroll_event (GtkWidget      *widget,
+                       GdkEventScroll *event)
+{
+  OsThumb *thumb;
+  OsThumbPrivate *priv;
+
+  thumb = OS_THUMB (widget);
+  priv = thumb->priv;
+
+  /* if started, stop the fade-out. */
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+
+      os_animation_stop (priv->animation);
+      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+    }
+
+  priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
+                                   os_thumb_timeout_fade_out_cb,
+                                   thumb);
+
+  return FALSE;
 }
 
 static void
