@@ -1438,21 +1438,15 @@ os_scrollbar_dispose (GObject *object)
       priv->pager = NULL;
     }
 
+  os_scrollbar_swap_adjustment (scrollbar, NULL);
+  os_scrollbar_swap_thumb (scrollbar, NULL);
+
   G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
 }
 
 static void
 os_scrollbar_finalize (GObject *object)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (object);
-  priv = scrollbar->priv;
-
-  os_scrollbar_swap_adjustment (scrollbar, NULL);
-  os_scrollbar_swap_thumb (scrollbar, NULL);
-
   G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
 }
 
