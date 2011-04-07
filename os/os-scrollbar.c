@@ -1154,7 +1154,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
       GdkWindow *parent;
-      gboolean found = FALSE;
 
       /* loop through parent windows until it reaches
        * either an unknown GdkWindow (NULL),
@@ -1163,15 +1162,12 @@ toplevel_configure_event_cb (GtkWidget         *widget,
       while (parent != NULL)
         {
           if (event->window == parent)
-            {
-              found = TRUE;
-              break;
-            }
+            break;
 
           parent = gdk_window_get_parent (parent);
         }
 
-      if (found)
+      if (parent != NULL)
         {
           gint x, y;
 
