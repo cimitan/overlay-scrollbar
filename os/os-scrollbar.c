@@ -1148,7 +1148,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  /* if the widget is mapped see if the pointer
+  /* if the widget is mapped see if the mouse pointer
    * is over this window, if TRUE,
    * proceed with pager_set_state_from_pointer. */
   if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
@@ -1156,7 +1156,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
       GdkWindow *parent;
       gboolean found = FALSE;
 
-      /* loop through parent windows until it reaaches
+      /* loop through parent windows until it reaches
        * either an unknown GdkWindow (NULL),
        * or the toplevel window. */
       parent = gdk_window_at_pointer (NULL, NULL);
