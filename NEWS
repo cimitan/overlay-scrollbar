@@ -1,3 +1,24 @@
+overlay-scrollbar 0.1.6 (April 7, 2011)
+----------------------------------------
+
+* Bugs fixed:
+ 737518 with compiz: if the window is unfocused and you click on one of its...
+ 746189 Black Background on Overlay Scrollbar in Banshee
+ 751444 hide the thumb after a timeout, with a fade-out animation
+ 750572 Package gives wrong website
+ 731653 Thumb blocks the right side of a maximized window
+ 737661 in wxWidgets, pager is not colored properly
+ 746862 animate the pager's colorization
+ 746864 colorize the pager following mouse movement
+ 750879 Add mouse-wheel functionality to the thumb
+ 751440 use g_source_remove instead g_object_ref/unref for g_timeout_add in...
+ 751442 lock position of the thumb when it's internal
+ 751652 Thumb doesn't fade-out after click (and no motion after release) in...
+ 752705 pager should immediately change color when changing gtk+ theme
+ 752836 wrong colorization on restacking
+ 753440 Panel's scrollbar is left behind
+
+
 overlay-scrollbar 0.1.5 (March 30, 2011)
 ----------------------------------------
 

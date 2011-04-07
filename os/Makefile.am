@@ -9,6 +9,7 @@ source_h = \
 source_c = \
 	$(srcdir)/os-log.c \
 	$(srcdir)/os-utils.c \
+	$(srcdir)/os-animation.c \
 	$(srcdir)/os-pager.c \
 	$(srcdir)/os-thumb.c \
 	$(srcdir)/os-scrollbar.c

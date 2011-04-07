@@ -82,6 +82,7 @@ liboverlay_scrollbar_@OS_MAJORMINOR@_la_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_1)
 am__objects_1 = liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-log.lo \
 	liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-utils.lo \
+	liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo \
 	liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.lo \
 	liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-thumb.lo \
 	liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-scrollbar.lo
@@ -277,6 +278,7 @@ source_h = \
 source_c = \
 	$(srcdir)/os-log.c \
 	$(srcdir)/os-utils.c \
+	$(srcdir)/os-animation.c \
 	$(srcdir)/os-pager.c \
 	$(srcdir)/os-thumb.c \
 	$(srcdir)/os-scrollbar.c
@@ -377,6 +379,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-scrollbar.Plo@am__quote@
@@ -422,6 +425,14 @@ liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-utils.lo: $(srcdir)/os-utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-utils.c' object='liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-utils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-utils.lo `test -f '$(srcdir)/os-utils.c' || echo '$(srcdir)/'`$(srcdir)/os-utils.c
+
+liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo: $(srcdir)/os-animation.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.Tpo -c -o liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo `test -f '$(srcdir)/os-animation.c' || echo '$(srcdir)/'`$(srcdir)/os-animation.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.Tpo $(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-animation.c' object='liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.lo `test -f '$(srcdir)/os-animation.c' || echo '$(srcdir)/'`$(srcdir)/os-animation.c
 
 liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.lo: $(srcdir)/os-pager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.Tpo -c -o liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.lo `test -f '$(srcdir)/os-pager.c' || echo '$(srcdir)/'`$(srcdir)/os-pager.c
