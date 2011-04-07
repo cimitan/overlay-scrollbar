@@ -1144,14 +1144,41 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
-  gint x, y;
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  gtk_widget_get_pointer (widget, &x, &y);
+  /* if the widget is mapped see if the mouse pointer
+   * is over this window, if TRUE,
+   * proceed with pager_set_state_from_pointer. */
+  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+    {
+      GdkWindow *parent;
 
-  pager_set_state_from_pointer (scrollbar, x, y);
+      /* loop through parent windows until it reaches
+       * either an unknown GdkWindow (NULL),
+       * or the toplevel window. */
+      parent = gdk_window_at_pointer (NULL, NULL);
+      while (parent != NULL)
+        {
+          if (event->window == parent)
+            break;
+
+          parent = gdk_window_get_parent (parent);
+        }
+
+      if (parent != NULL)
+        {
+          gint x, y;
+
+          gtk_widget_get_pointer (widget, &x, &y);
+
+          /* when the window is resized (maximize/restore),
+           * check the position of the pointer
+           * and set the state accordingly. */
+          pager_set_state_from_pointer (scrollbar, x, y);
+        }
+    }
 
   if (!priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
@@ -1191,6 +1218,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
+          /* react to motion_notify_event
+           * and set the state accordingly. */
           pager_set_state_from_pointer (scrollbar, xevent->xmotion.x, xevent->xmotion.y);
 
           /* proximity area */
@@ -1462,6 +1491,10 @@ os_scrollbar_map (GtkWidget *widget)
 
   gtk_widget_get_pointer (gtk_widget_get_toplevel (widget), &x, &y);
 
+  /* when the scrollbar appears on screen (mapped),
+   * for example when switching notebook page,
+   * check the position of the pointer
+   * and set the state accordingly. */
   pager_set_state_from_pointer (scrollbar, x, y);
 
   if (priv->fullsize == FALSE)
