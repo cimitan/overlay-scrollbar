@@ -104,6 +104,8 @@ os_pager_create (OsPager *pager)
                                            &attributes,
                                            GDK_WA_VISUAL | GDK_WA_COLORMAP);
 
+      g_object_ref_sink (priv->pager_window);
+
       gdk_window_set_transient_for (priv->pager_window,
                                     gtk_widget_get_window (priv->parent));
 
@@ -264,6 +266,20 @@ os_pager_dispose (GObject *object)
       g_object_unref (priv->animation);
       priv->animation = NULL;
     }
+
+  if (priv->pager_window != NULL)
+    {
+      /* FIXME(Cimi) g_object_destroy doesn't seem
+       * to clear the background.
+       * Maybe I need to clear it using cairo,
+       * but gdk_window_destroy() does this for me. */
+      gdk_window_destroy (priv->pager_window);
+
+      g_object_unref (priv->pager_window);
+      priv->pager_window = NULL;
+    }
+
+  os_pager_set_parent (pager, NULL);
 
   g_signal_handler_disconnect (gtk_settings_get_default (),
                                priv->handler_id);

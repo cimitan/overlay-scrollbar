@@ -161,10 +161,10 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->unmap                = os_thumb_unmap;
 
   gobject_class->constructor  = os_thumb_constructor;
+  gobject_class->dispose      = os_thumb_dispose;
+  gobject_class->finalize     = os_thumb_finalize;
   gobject_class->get_property = os_thumb_get_property;
   gobject_class->set_property = os_thumb_set_property;
-  gobject_class->dispose = os_thumb_dispose;
-  gobject_class->finalize = os_thumb_finalize;
 
   g_object_class_install_property
       (gobject_class, PROP_ORIENTATION,
@@ -230,6 +230,12 @@ os_thumb_dispose (GObject *object)
       priv->animation = NULL;
     }
 
+  if (priv->grabbed_widget != NULL)
+    {
+      g_object_unref (priv->grabbed_widget);
+      priv->grabbed_widget = NULL;
+    }
+
   G_OBJECT_CLASS (os_thumb_parent_class)->dispose (object);
 }
 
@@ -291,14 +297,15 @@ os_thumb_button_release_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  OS_DCHECK (priv->source_id == 0);
-
   gtk_widget_get_allocation (widget, &allocation);
 
-  /* priv->source_id should be always 0 here,
-   * because it's set to 0 in both motion_notify_event
-   * and button_press_event.
-   * Add the fade-out timeout only
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
+
+  /* Add the fade-out timeout only
    * if the pointer is inside the thumb.
    * allocation.x and allocation.y are always 0. */
   if ((event->x >= 0 && event->x <= allocation.width) &&
@@ -595,10 +602,17 @@ os_thumb_map (GtkWidget *widget)
 
   gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
+  if (priv->grabbed_widget != NULL)
+    g_object_unref (priv->grabbed_widget);
+
   priv->grabbed_widget = gtk_grab_get_current ();
 
   if (priv->grabbed_widget != NULL)
-    gtk_grab_remove (priv->grabbed_widget);
+    {
+      g_object_ref_sink (priv->grabbed_widget);
+
+      gtk_grab_remove (priv->grabbed_widget);
+    }
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
 }
