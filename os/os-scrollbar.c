@@ -56,6 +56,7 @@ struct _OsScrollbarPrivate
   gboolean enter_notify_event;
   gboolean motion_notify_event;
   gboolean value_changed_event;
+  gboolean present_window;
   gboolean can_deactivate_pager;
   gboolean can_hide;
   gboolean filter;
@@ -698,7 +699,10 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           scrollbar = OS_SCROLLBAR (user_data);
           priv = scrollbar->priv;
 
-          gtk_window_set_transient_for (GTK_WINDOW (widget), GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
+          gtk_window_set_transient_for (GTK_WINDOW (widget),
+                                        GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
+
+          priv->present_window = TRUE;
           os_present_gdk_window_with_timestamp (GTK_WIDGET (scrollbar), event->time);
 
           priv->button_press_event = TRUE;
@@ -838,7 +842,7 @@ thumb_map_cb (GtkWidget *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  xid = GDK_WINDOW_XID (gtk_widget_get_window (priv->thumb));
+  xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
 
@@ -1026,6 +1030,8 @@ thumb_unmap_cb (GtkWidget *widget,
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
   priv->enter_notify_event = FALSE;
+
+  priv->present_window = FALSE;
 }
 
 /* Move the pager to the right position. */
@@ -1184,8 +1190,10 @@ toplevel_configure_event_cb (GtkWidget         *widget,
         }
     }
 
-  if (!priv->enter_notify_event)
+  if (!priv->present_window)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
+
+  priv->present_window = FALSE;
 
   priv->lock_position = FALSE;
 
