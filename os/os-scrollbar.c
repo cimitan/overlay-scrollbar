@@ -1004,7 +1004,11 @@ thumb_scroll_event_cb (GtkWidget      *widget,
 
   delta = os_scrollbar_get_wheel_delta (scrollbar, event->direction);
 
-  gtk_adjustment_set_value (priv->adjustment, priv->adjustment->value + delta);
+  gtk_adjustment_set_value (priv->adjustment,
+                            CLAMP (priv->adjustment->value + delta,
+                                   priv->adjustment->lower,
+                                   (priv->adjustment->upper -
+                                    priv->adjustment->page_size)));
 
   return FALSE;
 }
