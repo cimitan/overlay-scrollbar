@@ -1,3 +1,13 @@
+overlay-scrollbar (0.1.6-0ubuntu2) natty; urgency=low
+
+  * debian/ayatana-scrollbar.py
+    - Don't use "_" in tag names, they are invalid
+  * os/os-pager.c
+    - Cherry picked crasher fix from trunk for SIGSEGV in 
+      os_pager_draw() (LP: #754717)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 11 Apr 2011 10:42:51 -0400
+
 overlay-scrollbar (0.1.6-0ubuntu1) natty; urgency=low
 
   * New upstream release.

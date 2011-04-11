@@ -196,7 +196,7 @@ os_pager_notify_gtk_theme_name_cb (GObject*    gobject,
   pager = OS_PAGER (user_data);
   priv = pager->priv;
 
-  if (priv->pager_window != NULL)
+  if (priv->parent != NULL && priv->pager_window != NULL)
     os_pager_draw (pager);
 }
 
