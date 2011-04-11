@@ -1219,6 +1219,15 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
   if (!priv->fullsize)
     {
+      /* after a scroll-event, without motion,
+       * pager becomes inactive because the timeout in
+       * leave-notify-event starts,
+       * this call checks the pointer after the scroll-event,
+       * since it enters the window,
+       * then sets the state accordingly. */
+      if (xevent->type == EnterNotify)
+        pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
+
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
