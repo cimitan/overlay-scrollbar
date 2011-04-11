@@ -35,6 +35,9 @@
 /* Width of the proximity effect in pixels. */
 #define PROXIMITY_WIDTH 30
 
+/* Timeout before setting priv->present_window to FALSE. */
+#define TIMEOUT_PRESENT_WINDOW 400
+
 /* Timeout before hiding in ms, after leaving the thumb. */
 #define TIMEOUT_THUMB_HIDE 1000
 
@@ -72,6 +75,7 @@ struct _OsScrollbarPrivate
   gint pointer_y;
   guint32 source_deactivate_pager_id;
   guint32 source_hide_thumb_id;
+  guint32 source_present_window_id;
   guint32 source_unlock_thumb_id;
 };
 
@@ -94,6 +98,7 @@ static gboolean os_scrollbar_deactivate_pager_cb (gpointer user_data);
 static gdouble os_scrollbar_get_wheel_delta (OsScrollbar *scrollbar, GdkScrollDirection direction);
 static void os_scrollbar_hide_thumb (OsScrollbar *scrollbar);
 static gboolean os_scrollbar_hide_thumb_cb (gpointer user_data);
+static gboolean os_scrollbar_present_window_cb (gpointer user_data);
 static gboolean os_scrollbar_unlock_thumb_cb (gpointer user_data);
 static void os_scrollbar_move (OsScrollbar *scrollbar, gint mouse_x, gint mouse_y);
 static void os_scrollbar_move_thumb (OsScrollbar *scrollbar, gint x, gint y);
@@ -421,6 +426,21 @@ os_scrollbar_hide_thumb_cb (gpointer user_data)
 }
 
 static gboolean
+os_scrollbar_present_window_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  priv->present_window = FALSE;
+  priv->source_present_window_id = 0;
+
+  return FALSE;
+}
+
+static gboolean
 os_scrollbar_unlock_thumb_cb (gpointer user_data)
 {
   OsScrollbar *scrollbar;
@@ -743,6 +763,21 @@ thumb_button_release_event_cb (GtkWidget      *widget,
           priv = scrollbar->priv;
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
+
+          if (priv->source_present_window_id != 0)
+            g_source_remove (priv->source_present_window_id);
+
+          /* metacity does not emit the configure-event
+           * on changes in stacking (focus/unfocus),
+           * so we need to manually set
+           * priv->present_window to FALSE,
+           * assuming the window is presented.
+           * In X11 event FocusOut and in
+           * toplevel_configure_event_cb the thumb
+           * is hidden only if priv->present_window is FALSE. */
+          priv->source_present_window_id = g_timeout_add (TIMEOUT_PRESENT_WINDOW,
+                                                          os_scrollbar_present_window_cb,
+                                                          scrollbar);
 
           if (!priv->motion_notify_event)
             {
@@ -1193,8 +1228,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   if (!priv->present_window)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
 
-  priv->present_window = FALSE;
-
   priv->lock_position = FALSE;
 
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
@@ -1314,6 +1347,18 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                 }
             }
         }
+      
+      /* this is not properly "nice":
+       * hide the thumb if the window gets a
+       * FocusOut event (X11 "kbd focus" removed).
+       * This is the only way, afaics,
+       * I could easily know that
+       * a window with metacity was unfocused. */
+      if (xevent->type == FocusOut)
+        {
+          if (!priv->present_window)
+            gtk_widget_hide (GTK_WIDGET (priv->thumb));
+        }
     }
 
   return GDK_FILTER_CONTINUE;
@@ -1406,6 +1451,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->proximity = FALSE;
   priv->source_deactivate_pager_id = 0;
   priv->source_hide_thumb_id = 0;
+  priv->source_present_window_id = 0;
   priv->source_unlock_thumb_id = 0;
 
   priv->pager = os_pager_new ();
@@ -1436,6 +1482,12 @@ os_scrollbar_dispose (GObject *object)
     {
       g_source_remove (priv->source_hide_thumb_id);
       priv->source_hide_thumb_id = 0;
+    }
+
+  if (priv->source_present_window_id != 0)
+    {
+      g_source_remove (priv->source_present_window_id);
+      priv->source_present_window_id = 0;
     }
 
   if (priv->source_unlock_thumb_id != 0)
