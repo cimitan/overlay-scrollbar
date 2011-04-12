@@ -579,6 +579,8 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
         }
     }
 
+  priv->use_tolerance = FALSE;
+
   return FALSE;
 }
 
@@ -708,6 +710,8 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
+
+  priv->use_tolerance = FALSE;
 
   if (priv->grabbed_widget != NULL)
     gtk_grab_add (priv->grabbed_widget);
