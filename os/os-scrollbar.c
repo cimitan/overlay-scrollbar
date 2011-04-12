@@ -35,7 +35,7 @@
 /* Width of the proximity effect in pixels. */
 #define PROXIMITY_WIDTH 30
 
-/* Timeout before setting priv->present_window to FALSE. */
+/* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
 
 /* Timeout before hiding in ms, after leaving the thumb. */
@@ -1254,10 +1254,12 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   const gint64 current_time = g_get_monotonic_time ();
   const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
 
-  /* if the widget is mapped see if the mouse pointer
-   * is over this window, if TRUE,
+  /* if the widget is mapped and the configure-event happens
+   * after the PropertyNotify _NET_ACTIVE_WINDOW event,
+   * see if the mouse pointer is over this window, if TRUE,
    * proceed with pager_set_state_from_pointer. */
-  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+  if ((current_time > end_time) &&
+      gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
       if (!priv->active_window)
         {
