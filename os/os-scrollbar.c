@@ -1098,14 +1098,8 @@ pager_set_state_from_pointer (OsScrollbar *scrollbar,
     }
   else
     {
-      const gint64 current_time = g_get_monotonic_time ();
-      const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
-
       priv->can_deactivate_pager = TRUE;
       os_scrollbar_deactivate_pager (scrollbar);
-
-      if (current_time > end_time)
-        gtk_widget_hide (priv->thumb);
     }
 }
 
@@ -1210,6 +1204,8 @@ root_ghfunc (gpointer key,
         }
       else if (priv->active_window)
         {
+          const gint64 current_time = g_get_monotonic_time ();
+          const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
           gint x, y;
 
           priv->active_window = FALSE;
@@ -1219,6 +1215,9 @@ root_ghfunc (gpointer key,
            * check the mouse position and
            * set the state accordingly. */
           pager_set_state_from_pointer (scrollbar, x, y);
+
+          if (current_time > end_time)
+            gtk_widget_hide (priv->thumb);
         }
     }
 }
