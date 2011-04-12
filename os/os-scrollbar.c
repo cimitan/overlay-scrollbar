@@ -1203,11 +1203,6 @@ root_ghfunc (gpointer key,
               g_source_remove (priv->source_deactivate_pager_id);
               priv->source_deactivate_pager_id = 0;
             }
-          if (priv->source_hide_thumb_id != 0)
-            {
-              g_source_remove (priv->source_hide_thumb_id);
-              priv->source_hide_thumb_id = 0;
-            }
 
           priv->active_window = TRUE;
 
@@ -1226,11 +1221,6 @@ root_ghfunc (gpointer key,
             {
               g_source_remove (priv->source_deactivate_pager_id);
               priv->source_deactivate_pager_id = 0;
-            }
-          if (priv->source_hide_thumb_id != 0)
-            {
-              g_source_remove (priv->source_hide_thumb_id);
-              priv->source_hide_thumb_id = 0;
             }
 
           priv->active_window = FALSE;
