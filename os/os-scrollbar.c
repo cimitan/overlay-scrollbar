@@ -1192,7 +1192,9 @@ root_ghfunc (gpointer key,
   scrollbar = OS_SCROLLBAR (key);
   priv = scrollbar->priv;
 
-  if (scrollbar != NULL && gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+  OS_DCHECK (scrollbar != NULL);
+
+  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
       if (gtk_widget_get_window (GTK_WIDGET (scrollbar)) ==
           gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
