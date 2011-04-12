@@ -1216,7 +1216,7 @@ root_ghfunc (gpointer key,
            * set the state accordingly. */
           pager_set_state_from_pointer (scrollbar, x, y);
 
-          if (current_time > end_time)
+          if ((current_time > end_time) && priv->thumb != NULL)
             gtk_widget_hide (priv->thumb);
         }
     }
