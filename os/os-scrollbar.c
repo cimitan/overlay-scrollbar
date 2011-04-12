@@ -362,11 +362,6 @@ os_scrollbar_deactivate_pager (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  /* either return or 
-   * os_pager_set_active (OS_PAGER (priv->pager), TRUE). */
-  if (priv->active_window)
-    return;
-
   if (priv->pager != NULL && priv->can_deactivate_pager)
     os_pager_set_active (OS_PAGER (priv->pager), FALSE);
 }
@@ -824,12 +819,15 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
       priv->can_hide = TRUE;
     }
 
-  if (priv->source_deactivate_pager_id != 0)
-    g_source_remove (priv->source_deactivate_pager_id);
+  if (!priv->active_window)
+    {
+      if (priv->source_deactivate_pager_id != 0)
+        g_source_remove (priv->source_deactivate_pager_id);
 
-  priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
-                                                    os_scrollbar_deactivate_pager_cb,
-                                                    scrollbar);
+      priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                        os_scrollbar_deactivate_pager_cb,
+                                                        scrollbar);
+    }
 
   if (priv->source_hide_thumb_id != 0)
     g_source_remove (priv->source_hide_thumb_id);
@@ -1193,7 +1191,20 @@ root_ghfunc (gpointer key,
       if (gtk_widget_get_window (GTK_WIDGET (scrollbar)) ==
           gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
         {
+          /* stops running timeouts. */
+          if (priv->source_deactivate_pager_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_pager_id);
+              priv->source_deactivate_pager_id = 0;
+            }
+          if (priv->source_hide_thumb_id != 0)
+            {
+              g_source_remove (priv->source_hide_thumb_id);
+              priv->source_hide_thumb_id = 0;
+            }
+
           priv->active_window = TRUE;
+
           priv->can_deactivate_pager = FALSE;
           os_pager_set_active (OS_PAGER (priv->pager), TRUE);
         }
@@ -1203,7 +1214,18 @@ root_ghfunc (gpointer key,
           GdkWindow *window;
           const gint64 current_time = g_get_monotonic_time ();
           const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
-          gint x, y;
+
+          /* stops running timeouts. */
+          if (priv->source_deactivate_pager_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_pager_id);
+              priv->source_deactivate_pager_id = 0;
+            }
+          if (priv->source_hide_thumb_id != 0)
+            {
+              g_source_remove (priv->source_hide_thumb_id);
+              priv->source_hide_thumb_id = 0;
+            }
 
           priv->active_window = FALSE;
 
@@ -1439,12 +1461,15 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   priv->can_deactivate_pager = TRUE;
   priv->can_hide = TRUE;
 
-  if (priv->source_deactivate_pager_id != 0)
-    g_source_remove (priv->source_deactivate_pager_id);
+  if (!priv->active_window)
+    {
+      if (priv->source_deactivate_pager_id != 0)
+        g_source_remove (priv->source_deactivate_pager_id);
 
-  priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                    os_scrollbar_deactivate_pager_cb,
-                                                    scrollbar);
+      priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                        os_scrollbar_deactivate_pager_cb,
+                                                        scrollbar);
+    }
 
   if (priv->source_hide_thumb_id != 0)
     g_source_remove (priv->source_hide_thumb_id);
