@@ -375,6 +375,8 @@ os_scrollbar_deactivate_pager_cb (gpointer user_data)
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  OS_DCHECK (priv->active_window);
+
   os_scrollbar_deactivate_pager (scrollbar);
   priv->source_deactivate_pager_id = 0;
 
@@ -422,6 +424,8 @@ os_scrollbar_hide_thumb_cb (gpointer user_data)
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
+
+  OS_DCHECK (priv->active_window);
 
   os_scrollbar_hide_thumb (scrollbar);
   priv->source_hide_thumb_id = 0;
@@ -1081,6 +1085,8 @@ pager_set_state_from_pointer (OsScrollbar *scrollbar,
 
   priv = scrollbar->priv;
 
+  OS_DCHECK (priv->active_window);
+
   gtk_widget_get_allocation (gtk_widget_get_parent (GTK_WIDGET (scrollbar)), &allocation);
 
   if ((x > allocation.x && x < allocation.x + allocation.width) &&
@@ -1092,7 +1098,7 @@ pager_set_state_from_pointer (OsScrollbar *scrollbar,
   else
     {
       priv->can_deactivate_pager = TRUE;
-      os_scrollbar_deactivate_pager (scrollbar);
+      os_pager_set_active (OS_PAGER (priv->pager), FALSE);
     }
 }
 
