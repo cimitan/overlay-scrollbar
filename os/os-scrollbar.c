@@ -425,8 +425,6 @@ os_scrollbar_hide_thumb_cb (gpointer user_data)
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  OS_DCHECK (!priv->active_window);
-
   os_scrollbar_hide_thumb (scrollbar);
   priv->source_hide_thumb_id = 0;
 
