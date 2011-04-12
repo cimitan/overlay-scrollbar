@@ -330,6 +330,9 @@ os_pager_hide (OsPager *pager)
   if (priv->parent == NULL)
     return;
 
+  /* if there's an animation currently running, stop it. */
+  os_animation_stop (priv->animation);
+
   gdk_window_hide (priv->pager_window);
 }
 
@@ -385,12 +388,22 @@ os_pager_set_active (OsPager *pager,
       if (priv->parent == NULL)
         return;
 
-      os_animation_stop (priv->animation);
+      /* only start the animation if the pager is visible. */
+      if (gdk_window_is_visible (priv->pager_window))
+        {
+          os_animation_stop (priv->animation);
 
-      os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
-                                                                 DURATION_FADE_OUT);
+          os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
+                                                                     DURATION_FADE_OUT);
 
-      os_animation_start (priv->animation);
+          os_animation_start (priv->animation);
+        }
+      else
+        {
+          priv->weight = 1.0f;
+
+          os_pager_draw (pager);
+        }
     }
 }
 
