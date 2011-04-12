@@ -33,7 +33,7 @@ os_utils_is_blacklisted (const gchar* program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
   static const gchar *const blacklist[] = {
-    "Fill me with blacklisted programs"
+    "vinagre"
   };
 
   gint32 i;
@@ -91,7 +91,6 @@ os_utils_is_whitelisted (const gchar* program)
     "palimpsest",
     "rhythmbox",
     "shotwell",
-    "synaptic",
     "Tomboy",
     "totem",
     "ubuntuone-control-panel-gtk",
