@@ -1548,6 +1548,12 @@ os_scrollbar_dispose (GObject *object)
 
   if (priv->pager != NULL)
     {
+      /* remove the object in the hash table and unref.
+       * I've put this here cause the pager is called
+       * in the root_filter_func. */
+      g_hash_table_remove (os_root_hash_table, scrollbar);
+      g_hash_table_unref (os_root_hash_table);
+
       g_object_unref (priv->pager);
       priv->pager = NULL;
     }
@@ -1561,18 +1567,6 @@ os_scrollbar_dispose (GObject *object)
 static void
 os_scrollbar_finalize (GObject *object)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (object);
-  priv = scrollbar->priv;
-
-  /* remove the object in the hash table and unref.
-   * I've put this in finalize so
-   * I'm sure it's called only once. */
-  g_hash_table_remove (os_root_hash_table, scrollbar);
-  g_hash_table_unref (os_root_hash_table);
-
   G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
 }
 
