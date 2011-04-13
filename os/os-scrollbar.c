@@ -1600,24 +1600,29 @@ os_scrollbar_dispose (GObject *object)
       priv->source_unlock_thumb_id = 0;
     }
 
+  /* FIXME(Cimi) that is not really nice,
+   * cause it may get called multiple times.
+   * Adding a gboolean that tells
+   * the element was already removed? */
+  os_root_list = g_list_remove (os_root_list, scrollbar);
+
+  /* FIXME(Cimi) same for this,
+   * it is called a lot of times.
+   * Maybe in finalize? */
+  if (g_list_length (os_root_list) == 0)
+    {
+      gdk_window_remove_filter (gdk_get_default_root_window (),
+                                root_filter_func, os_root_list);
+
+      g_list_free (os_root_list);
+      os_root_list = NULL;
+    }
+
   if (priv->pager != NULL)
     {
-      /* remove the object in the list.
-       * I've put this here cause the pager is called
-       * in the root_filter_func. */
-      os_root_list = g_list_remove (os_root_list, scrollbar);
-
       g_object_unref (priv->pager);
       priv->pager = NULL;
     }
-
-  if (g_list_length (os_root_list) == 0)
-  {
-    gdk_window_remove_filter (gdk_get_default_root_window (),
-                              root_filter_func, os_root_list);
-    g_list_free (os_root_list);
-    os_root_list = NULL;
-  }
 
   os_scrollbar_swap_adjustment (scrollbar, NULL);
   os_scrollbar_swap_thumb (scrollbar, NULL);
@@ -1667,7 +1672,16 @@ os_scrollbar_map (GtkWidget *widget)
   /* on map, check for the active window. */
   if (gtk_widget_get_window (widget) ==
       gdk_screen_get_active_window (gtk_widget_get_screen (widget)))
-    priv->active_window = TRUE;
+    {
+      /* stops potential running timeout. */
+      if (priv->source_deactivate_pager_id != 0)
+        {
+          g_source_remove (priv->source_deactivate_pager_id);
+          priv->source_deactivate_pager_id = 0;
+        }
+
+      priv->active_window = TRUE;
+    }
   else
     priv->active_window = FALSE;
 
