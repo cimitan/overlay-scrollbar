@@ -637,8 +637,8 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   if (!priv->motion_notify_event)
   {
     if (!priv->use_tolerance ||
-        (fabs (priv->pointer_x - event->x) > TOLERANCE_PIXELS ||
-         fabs (priv->pointer_y - event->y) > TOLERANCE_PIXELS))
+        (abs (priv->pointer_x - event->x) > TOLERANCE_PIXELS ||
+         abs (priv->pointer_y - event->y) > TOLERANCE_PIXELS))
       {
         priv->use_tolerance = FALSE;
         priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
