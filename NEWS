@@ -1,5 +1,19 @@
-overlay-scrollbar 0.1.6 (April 7, 2011)
+overlay-scrollbar 0.1.7 (April 13, 2011)
 ----------------------------------------
+
+* Active windows have focused overlay/bar/pager, inactive windows follow mouse.
+
+* Bugs fixed:
+ 754717 ccsm crashed with SIGSEGV in os_pager_draw()
+ 754927 Banshee.exe crashed with SIGABRT in g_main_context_dispatch()
+ 754306 The last line of files in a directory is being 'duplicated' when...
+ 754736 should not stay on screen when alt-tabbing to another application
+ 758581 Scrollbar does not work with vinagre
+ 758046 Cannot use the thumb to PgUp/PgDown multiple times, because it fades...
+ 756243 Enabling Desktop-based Viewport Switching can cause fade on scroll...
+
+overlay-scrollbar 0.1.6 (April 7, 2011)
+---------------------------------------
 
 * Bugs fixed:
  737518 with compiz: if the window is unfocused and you click on one of its...
