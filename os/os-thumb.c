@@ -26,15 +26,19 @@
 
 #include "os-private.h"
 #include "math.h"
+#include <stdlib.h>
 
-/* Rate of the fade-out */
+/* Rate of the fade-out. */
 #define RATE_FADE_OUT 30
 
-/* Duration of the fade-out */
+/* Duration of the fade-out. */
 #define DURATION_FADE_OUT 2000
 
-/* Timeout before the fade-out */
+/* Timeout before the fade-out. */
 #define TIMEOUT_FADE_OUT 250
+
+/* Number of tolerance pixels. */
+#define TOLERANCE_PIXELS 3
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
@@ -43,6 +47,7 @@ struct _OsThumbPrivate {
   gboolean button_press_event;
   gboolean motion_notify_event;
   gboolean can_rgba;
+  gboolean use_tolerance;
   gint pointer_x;
   gint pointer_y;
   guint32 source_id;
@@ -279,6 +284,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
 
+          priv->use_tolerance = TRUE;
+
           gtk_widget_queue_draw (widget);
         }
     }
@@ -298,21 +305,6 @@ os_thumb_button_release_event (GtkWidget      *widget,
   priv = thumb->priv;
 
   gtk_widget_get_allocation (widget, &allocation);
-
-  if (priv->source_id != 0)
-    {
-      g_source_remove (priv->source_id);
-      priv->source_id = 0;
-    }
-
-  /* Add the fade-out timeout only
-   * if the pointer is inside the thumb.
-   * allocation.x and allocation.y are always 0. */
-  if ((event->x >= 0 && event->x <= allocation.width) &&
-      (event->y >= 0 && event->y <= allocation.height))
-    priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
-                                     os_thumb_timeout_fade_out_cb,
-                                     thumb);
 
   if (event->type == GDK_BUTTON_RELEASE)
     {
@@ -588,6 +580,8 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
         }
     }
 
+  priv->use_tolerance = FALSE;
+
   return FALSE;
 }
 
@@ -637,13 +631,22 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
       gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
 
-  /* If you're not dragging, enable the fade-out.
+  /* If you're not dragging, and you're outside
+   * the tolerance pixels, enable the fade-out.
    * priv->motion_notify_event is TRUE only on dragging,
    * see code few lines below. */
   if (!priv->motion_notify_event)
-    priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
-                                     os_thumb_timeout_fade_out_cb,
-                                     thumb);
+  {
+    if (!priv->use_tolerance ||
+        (abs (priv->pointer_x - event->x) > TOLERANCE_PIXELS ||
+         abs (priv->pointer_y - event->y) > TOLERANCE_PIXELS))
+      {
+        priv->use_tolerance = FALSE;
+        priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
+                                         os_thumb_timeout_fade_out_cb,
+                                         thumb);
+      }
+  }
 
   if (priv->button_press_event)
     {
@@ -708,6 +711,8 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
+
+  priv->use_tolerance = FALSE;
 
   if (priv->grabbed_widget != NULL)
     gtk_grab_add (priv->grabbed_widget);

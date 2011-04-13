@@ -1,3 +1,18 @@
+overlay-scrollbar (0.1.7-0ubuntu1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - ccsm crashed with SIGSEGV in os_pager_draw() (LP: #754717)
+    - Banshee crashed with SIGABRT in g_main_context_dispatch() (LP: #754927)
+    - The last line of files in a directory is being 'duplicated' (LP: #754306)
+    - should not stay on screen when switching applications (LP: #754736)
+    - Scrollbar does not work with vinagre (LP: #758581)
+    - Cannot use the thumb to PgUp/PgDown multiple times, because it 
+      fades (LP: #758581)
+    - Enabling Desktop-based Viewport Switching can cause fade on 
+      scroll (LP: #756243)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 13 Apr 2011 13:31:10 -0400
+
 overlay-scrollbar (0.1.6-0ubuntu2) natty; urgency=low
 
   * debian/ayatana-scrollbar.py
