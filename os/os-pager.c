@@ -417,7 +417,8 @@ os_pager_set_parent (OsPager   *pager,
   priv = pager->priv;
 
   /* stop currently running animation. */
-  os_animation_stop (priv->animation);
+  if (priv->animation != NULL)
+    os_animation_stop (priv->animation);
 
   if (priv->parent != NULL)
     {
