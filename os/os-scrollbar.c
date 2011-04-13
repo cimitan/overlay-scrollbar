@@ -1539,16 +1539,18 @@ os_scrollbar_init (OsScrollbar *scrollbar)
       /* used in the root_filter_func to match the right property. */
       net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
 
+      /* append the object to the static linked list. */
       os_root_list = g_list_append (os_root_list, scrollbar);
 
       /* apply the root_filter_func. */
       root = gdk_get_default_root_window ();
       gdk_window_set_events (root, gdk_window_get_events (root) |
                                    GDK_PROPERTY_CHANGE_MASK);
-      gdk_window_add_filter (root, root_filter_func, os_root_list);
+      gdk_window_add_filter (root, root_filter_func, NULL);
     }
   else
     {
+      /* append the object to the static linked list. */
       os_root_list = g_list_append (os_root_list, scrollbar);
     }
 
@@ -1600,23 +1602,11 @@ os_scrollbar_dispose (GObject *object)
       priv->source_unlock_thumb_id = 0;
     }
 
-  /* FIXME(Cimi) that is not really nice,
-   * cause it may get called multiple times.
-   * Adding a gboolean that tells
-   * the element was already removed? */
   os_root_list = g_list_remove (os_root_list, scrollbar);
 
-  /* FIXME(Cimi) same for this,
-   * it is called a lot of times.
-   * Maybe in finalize? */
-  if (g_list_length (os_root_list) == 0)
-    {
-      gdk_window_remove_filter (gdk_get_default_root_window (),
-                                root_filter_func, os_root_list);
-
-      g_list_free (os_root_list);
-      os_root_list = NULL;
-    }
+  if (os_root_list == NULL)
+    gdk_window_remove_filter (gdk_get_default_root_window (),
+                              root_filter_func, NULL);
 
   if (priv->pager != NULL)
     {
