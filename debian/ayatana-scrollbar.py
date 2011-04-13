@@ -1,4 +1,6 @@
 def add_info(report):
+    if report.has_key("Stacktrace") and "/usr/lib/liboverlay-scrollbar" in report["Stacktrace"]: 
+        report.add_package_info("overlay-scrollbar")
     if report.has_key("ProcMaps") and "liboverlay-scrollbar" in report["ProcMaps"]:
         report['Tags'] = report.get('Tags', '') + ' ayatana-scrollbar'
     if report.has_key("Stacktrace") and "os-scrollbar.c" in report["Stacktrace"]:
