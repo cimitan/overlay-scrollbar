@@ -815,28 +815,32 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  /* add the timeouts only if you are
+   * not interacting with the thumb. */
   if (!priv->button_press_event)
     {
-      priv->can_deactivate_pager = TRUE;
+      /* never deactivate the pager in an active window. */
+      if (!priv->active_window)
+        {
+          priv->can_deactivate_pager = TRUE;
+
+          if (priv->source_deactivate_pager_id != 0)
+            g_source_remove (priv->source_deactivate_pager_id);
+
+          priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                            os_scrollbar_deactivate_pager_cb,
+                                                            scrollbar);
+        }
+
       priv->can_hide = TRUE;
+
+      if (priv->source_hide_thumb_id != 0)
+        g_source_remove (priv->source_hide_thumb_id);
+
+      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                  os_scrollbar_hide_thumb_cb,
+                                                  scrollbar);
     }
-
-  if (!priv->active_window)
-    {
-      if (priv->source_deactivate_pager_id != 0)
-        g_source_remove (priv->source_deactivate_pager_id);
-
-      priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
-                                                        os_scrollbar_deactivate_pager_cb,
-                                                        scrollbar);
-    }
-
-  if (priv->source_hide_thumb_id != 0)
-    g_source_remove (priv->source_hide_thumb_id);
-
-  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
-                                              os_scrollbar_hide_thumb_cb,
-                                              scrollbar);
 
   return FALSE;
 }
@@ -1197,7 +1201,7 @@ root_ghfunc (gpointer key,
       if (gtk_widget_get_window (GTK_WIDGET (scrollbar)) ==
           gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
         {
-          /* stops running timeouts. */
+          /* stops potential running timeout. */
           if (priv->source_deactivate_pager_id != 0)
             {
               g_source_remove (priv->source_deactivate_pager_id);
@@ -1215,13 +1219,6 @@ root_ghfunc (gpointer key,
           GdkWindow *window;
           const gint64 current_time = g_get_monotonic_time ();
           const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
-
-          /* stops running timeouts. */
-          if (priv->source_deactivate_pager_id != 0)
-            {
-              g_source_remove (priv->source_deactivate_pager_id);
-              priv->source_deactivate_pager_id = 0;
-            }
 
           priv->active_window = FALSE;
 
@@ -1463,11 +1460,11 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  priv->can_deactivate_pager = TRUE;
-  priv->can_hide = TRUE;
-
+  /* never deactivate the pager in an active window. */
   if (!priv->active_window)
     {
+      priv->can_deactivate_pager = TRUE;
+
       if (priv->source_deactivate_pager_id != 0)
         g_source_remove (priv->source_deactivate_pager_id);
 
@@ -1475,6 +1472,8 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
                                                         os_scrollbar_deactivate_pager_cb,
                                                         scrollbar);
     }
+
+  priv->can_hide = TRUE;
 
   if (priv->source_hide_thumb_id != 0)
     g_source_remove (priv->source_hide_thumb_id);
