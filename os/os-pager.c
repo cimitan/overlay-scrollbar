@@ -128,6 +128,9 @@ os_pager_change_state_cb (gfloat weight,
 
   priv->weight = weight;
 
+  if (priv->parent == NULL)
+    return;
+
   os_pager_draw (pager);
 }
 
@@ -196,8 +199,10 @@ os_pager_notify_gtk_theme_name_cb (GObject*    gobject,
   pager = OS_PAGER (user_data);
   priv = pager->priv;
 
-  if (priv->parent != NULL && priv->pager_window != NULL)
-    os_pager_draw (pager);
+  if (priv->parent == NULL || priv->pager_window == NULL)
+    return;
+
+  os_pager_draw (pager);
 }
 
 /* Type definition. */
@@ -410,6 +415,9 @@ os_pager_set_parent (OsPager   *pager,
   g_return_if_fail (OS_PAGER (pager));
 
   priv = pager->priv;
+
+  /* stop currently running animation. */
+  os_animation_stop (priv->animation);
 
   if (priv->parent != NULL)
     {
