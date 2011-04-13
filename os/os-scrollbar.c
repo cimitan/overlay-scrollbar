@@ -1620,6 +1620,10 @@ os_scrollbar_dispose (GObject *object)
       priv->pager = NULL;
     }
 
+  if (g_hash_table_size (os_root_hash_table) == 0)
+    gdk_window_remove_filter (gdk_get_default_root_window (),
+                              root_filter_func, os_root_hash_table);
+
   os_scrollbar_swap_adjustment (scrollbar, NULL);
   os_scrollbar_swap_thumb (scrollbar, NULL);
 
