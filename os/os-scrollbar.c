@@ -80,7 +80,7 @@ struct _OsScrollbarPrivate
 };
 
 static Atom net_active_window_atom = None;
-static GHashTable *os_root_hash_table = NULL;
+static GList *os_root_list = NULL;
 
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
 static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
@@ -124,7 +124,7 @@ static void pager_set_state_from_pointer (OsScrollbar *scrollbar, gint x, gint y
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static GdkFilterReturn root_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
-static void root_ghfunc (gpointer key, gpointer value, gpointer user_data);
+static void root_gfunc (gpointer data, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
 static gboolean toplevel_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
@@ -1177,21 +1177,20 @@ root_filter_func (GdkXEvent *gdkxevent,
   if (xevent->xany.type == PropertyNotify &&
       xevent->xproperty.atom == net_active_window_atom)
     {
-      g_hash_table_foreach (os_root_hash_table, root_ghfunc, NULL);
+      g_list_foreach (os_root_list, root_gfunc, NULL);
     }
 
   return GDK_FILTER_CONTINUE;
 }
 
 static void
-root_ghfunc (gpointer key,
-             gpointer value,
-             gpointer user_data)
+root_gfunc (gpointer data,
+            gpointer user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (key);
+  scrollbar = OS_SCROLLBAR (data);
   priv = scrollbar->priv;
 
   OS_DCHECK (scrollbar != NULL);
@@ -1533,31 +1532,24 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->present_time = 0;
 
-  if (os_root_hash_table == NULL)
+  if (os_root_list == NULL)
     {
       GdkWindow *root;
 
       /* used in the root_filter_func to match the right property. */
       net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
 
-      /* initialize the hash table. */
-      os_root_hash_table = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-      /* insert the object in the hash table and ref. */
-      g_hash_table_insert (os_root_hash_table, scrollbar, scrollbar);
-      g_hash_table_ref (os_root_hash_table);
+      os_root_list = g_list_append (os_root_list, scrollbar);
 
       /* apply the root_filter_func. */
       root = gdk_get_default_root_window ();
       gdk_window_set_events (root, gdk_window_get_events (root) |
                                    GDK_PROPERTY_CHANGE_MASK);
-      gdk_window_add_filter (root, root_filter_func, os_root_hash_table);
+      gdk_window_add_filter (root, root_filter_func, os_root_list);
     }
   else
     {
-      /* insert the object in the hash table and ref. */
-      g_hash_table_insert (os_root_hash_table, scrollbar, scrollbar);
-      g_hash_table_ref (os_root_hash_table);
+      os_root_list = g_list_append (os_root_list, scrollbar);
     }
 
   priv->active_window = FALSE;
@@ -1610,19 +1602,22 @@ os_scrollbar_dispose (GObject *object)
 
   if (priv->pager != NULL)
     {
-      /* remove the object in the hash table and unref.
+      /* remove the object in the list.
        * I've put this here cause the pager is called
        * in the root_filter_func. */
-      g_hash_table_remove (os_root_hash_table, scrollbar);
-      g_hash_table_unref (os_root_hash_table);
+      os_root_list = g_list_remove (os_root_list, scrollbar);
 
       g_object_unref (priv->pager);
       priv->pager = NULL;
     }
 
-  if (g_hash_table_size (os_root_hash_table) == 0)
+  if (g_list_length (os_root_list) == 0)
+  {
     gdk_window_remove_filter (gdk_get_default_root_window (),
-                              root_filter_func, os_root_hash_table);
+                              root_filter_func, os_root_list);
+    g_list_free (os_root_list);
+    os_root_list = NULL;
+  }
 
   os_scrollbar_swap_adjustment (scrollbar, NULL);
   os_scrollbar_swap_thumb (scrollbar, NULL);
