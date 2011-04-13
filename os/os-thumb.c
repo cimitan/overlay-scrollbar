@@ -26,6 +26,7 @@
 
 #include "os-private.h"
 #include "math.h"
+#include <stdlib.h>
 
 /* Rate of the fade-out. */
 #define RATE_FADE_OUT 30
