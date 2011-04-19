@@ -1351,8 +1351,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           gtk_widget_hide (priv->thumb);
         }
 
-      if (priv->toplevel_button_press &&
-          xev->type == ButtonRelease)
+      if (priv->toplevel_button_press && xev->type == ButtonRelease)
         {
           priv->toplevel_button_press = FALSE;
 
