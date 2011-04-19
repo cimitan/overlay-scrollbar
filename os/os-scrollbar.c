@@ -1435,9 +1435,11 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       if (!priv->active_window && xev->type == EnterNotify)
         pager_set_state_from_pointer (scrollbar, xev->xcrossing.x, xev->xcrossing.y);
 
+      if (priv->toplevel_button_press && xev->type == LeaveNotify)
+        priv->toplevel_button_press = FALSE;
+
       /* get the motion_notify_event trough XEvent */
-      if (!priv->toplevel_button_press &&
-          xev->type == MotionNotify)
+      if (!priv->toplevel_button_press && xev->type == MotionNotify)
         {
           /* react to motion_notify_event
            * and set the state accordingly. */
@@ -1554,7 +1556,6 @@ toplevel_leave_notify_event_cb (GtkWidget        *widget,
                                                         scrollbar);
     }
 
-  priv->toplevel_button_press = FALSE;
   priv->can_hide = TRUE;
 
   if (priv->source_hide_thumb_id != 0)
