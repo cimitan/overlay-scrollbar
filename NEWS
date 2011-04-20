@@ -1,3 +1,9 @@
+overlay-scrollbar 0.1.8 (April 20, 2011)
+----------------------------------------
+
+* Few stability fixes, blacklist apps that expose functionality issues.
+
+
 overlay-scrollbar 0.1.7 (April 13, 2011)
 ----------------------------------------
 
