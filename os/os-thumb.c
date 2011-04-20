@@ -118,12 +118,7 @@ os_thumb_fade_out_cb (gfloat weight,
   if (weight < 1.0f)
     gtk_window_set_opacity (GTK_WINDOW (thumb), fabs (weight - 1.0f));
   else
-    {
-      /* Animation ended. */
-      priv->source_id = 0;
-
-      gtk_widget_hide (GTK_WIDGET (thumb));
-    }
+    gtk_widget_hide (GTK_WIDGET (thumb));
 }
 
 static gboolean
@@ -137,6 +132,7 @@ os_thumb_timeout_fade_out_cb (gpointer user_data)
   priv = thumb->priv;
 
   os_animation_start (priv->animation);
+  priv->source_id = 0;
 
   return FALSE;
 }
@@ -261,16 +257,16 @@ os_thumb_button_press_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* Stop the animation on user interaction,
-   * the button_press_event. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* Stop the animation on user interaction,
+   * the button_press_event. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -575,9 +571,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
         {
           g_source_remove (priv->source_id);
           priv->source_id = 0;
-
-          os_animation_stop (priv->animation);
         }
+
+      os_animation_stop (priv->animation);
     }
 
   priv->use_tolerance = FALSE;
@@ -621,15 +617,15 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* On motion, stop the fade-out. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* On motion, stop the fade-out. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   /* If you're not dragging, and you're outside
    * the tolerance pixels, enable the fade-out.
@@ -683,15 +679,15 @@ os_thumb_scroll_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* if started, stop the fade-out. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* if started, stop the fade-out. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                    os_thumb_timeout_fade_out_cb,

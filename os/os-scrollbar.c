@@ -1354,6 +1354,12 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       if (!priv->active_window && xevent->type == EnterNotify)
         pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
 
+      /* FIXME(Cimi) this is not nice.
+       * Next time, just copy and paste
+       * the code here. */
+      if (xevent->type == LeaveNotify)
+        toplevel_leave_notify_event_cb (NULL, NULL, scrollbar);
+
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
         {
@@ -1723,8 +1729,6 @@ os_scrollbar_realize (GtkWidget *widget)
 
   g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                     G_CALLBACK (toplevel_configure_event_cb), scrollbar);
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "leave-notify-event",
-                    G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
 
   os_scrollbar_calc_layout_pager (scrollbar, priv->adjustment->value);
 
@@ -1842,8 +1846,6 @@ os_scrollbar_unrealize (GtkWidget *widget)
 
   g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
                                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
-  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
-                                        G_CALLBACK (toplevel_leave_notify_event_cb), scrollbar);
 
   os_pager_set_parent (OS_PAGER (priv->pager), NULL);
 
