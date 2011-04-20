@@ -33,6 +33,16 @@ os_utils_is_blacklisted (const gchar* program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
   static const gchar *const blacklist[] = {
+    "apport-gtk",
+    "Banshee",
+    "deja-dup",
+    "eclipse",
+    "inkscape",
+    "liferea",
+    "lshw-gtk",
+    "meld",
+    "synaptic",
+    "update-manager",
     "vinagre"
   };
 
@@ -55,7 +65,6 @@ os_utils_is_whitelisted (const gchar* program)
 {
   /* White-list of program names retrieved with g_get_prgname(). */
   static const gchar *const whitelist[] = {
-    "Banshee",
     "baobab",
     "ccsm",
     "cheese",

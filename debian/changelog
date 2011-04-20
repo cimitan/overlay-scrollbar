@@ -1,3 +1,16 @@
+overlay-scrollbar (0.1.8-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - stop the animation *after* calling g_source_remove
+    - Call the toplevel_leave_notify_event in the filter func
+    - Use a blacklist instead of a whitelist (LP: #766660)
+    - Add more apps to the blacklist: apport-gtk, Banshee, deja-dup eclipse,
+      inkscape, liferea, lshw-gtk, meld, synaptic, and update-manager
+  * debian/ayatana-scrollbar.py
+    - Don't add ayatana-scrollbar tag
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 20 Apr 2011 15:48:49 -0400
+
 overlay-scrollbar (0.1.7-0ubuntu1) natty; urgency=low
 
   * New upstream release.
