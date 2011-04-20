@@ -1170,12 +1170,12 @@ root_filter_func (GdkXEvent *gdkxevent,
                   GdkEvent  *event,
                   gpointer   user_data)
 {
-  XEvent* xev;
+  XEvent* xevent;
 
-  xev = gdkxevent;
+  xevent = gdkxevent;
 
-  if (xev->xany.type == PropertyNotify &&
-      xev->xproperty.atom == net_active_window_atom)
+  if (xevent->xany.type == PropertyNotify &&
+      xevent->xproperty.atom == net_active_window_atom)
     {
       g_list_foreach (os_root_list, root_gfunc, NULL);
     }
@@ -1331,37 +1331,37 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
-  XEvent *xev;
+  XEvent *xevent;
 
   g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
   scrollbar = OS_SCROLLBAR (user_data);
 
   priv = scrollbar->priv;
-  xev = gdkxevent;
+  xevent = gdkxevent;
 
   g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
   g_return_val_if_fail (priv->thumb != NULL, GDK_FILTER_CONTINUE);
 
   if (!priv->fullsize)
     {
-      if (xev->type == ButtonPress)
+      if (xevent->type == ButtonPress)
         {
           priv->toplevel_button_press = TRUE;
           gtk_widget_hide (priv->thumb);
         }
 
-      if (priv->toplevel_button_press && xev->type == ButtonRelease)
+      if (priv->toplevel_button_press && xevent->type == ButtonRelease)
         {
           priv->toplevel_button_press = FALSE;
 
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xev->xbutton.x <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.x - xev->xbutton.x >= 0) &&
-                  (xev->xbutton.y >= priv->thumb_all.y + priv->overlay.y &&
-                   xev->xbutton.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+              if ((priv->thumb_all.x - xevent->xbutton.x <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.x - xevent->xbutton.x >= 0) &&
+                  (xevent->xbutton.y >= priv->thumb_all.y + priv->overlay.y &&
+                   xevent->xbutton.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
                 {
                   priv->can_hide = FALSE;
 
@@ -1375,7 +1375,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                       gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                       x = priv->thumb_all.x;
-                      y = CLAMP (xev->xbutton.y - priv->slider.height / 2,
+                      y = CLAMP (xevent->xbutton.y - priv->slider.height / 2,
                                  priv->thumb_all.y + priv->overlay.y,
                                  priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
@@ -1391,10 +1391,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xev->xbutton.y <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.y - xev->xbutton.y >= 0) &&
-                  (xev->xbutton.x >= priv->thumb_all.x + priv->overlay.x &&
-                   xev->xbutton.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+              if ((priv->thumb_all.y - xevent->xbutton.y <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.y - xevent->xbutton.y >= 0) &&
+                  (xevent->xbutton.x >= priv->thumb_all.x + priv->overlay.x &&
+                   xevent->xbutton.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
                 {
                   priv->can_hide = FALSE;
 
@@ -1407,7 +1407,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
                       gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      x = CLAMP (xev->xbutton.x - priv->slider.width / 2,
+                      x = CLAMP (xevent->xbutton.x - priv->slider.width / 2,
                                  priv->thumb_all.x + priv->overlay.x,
                                  priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
                       y = priv->thumb_all.y;
@@ -1430,10 +1430,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
        * this call checks the pointer after the scroll-event,
        * since it enters the window,
        * then sets the state accordingly. */
-      if (!priv->active_window && xev->type == EnterNotify)
-        pager_set_state_from_pointer (scrollbar, xev->xcrossing.x, xev->xcrossing.y);
+      if (!priv->active_window && xevent->type == EnterNotify)
+        pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
 
-      if (xev->type == LeaveNotify)
+      if (xevent->type == LeaveNotify)
         {
           /* never deactivate the pager in an active window. */
           if (!priv->active_window)
@@ -1467,20 +1467,20 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
         }
 
       /* get the motion_notify_event trough XEvent */
-      if (!priv->toplevel_button_press && xev->type == MotionNotify)
+      if (!priv->toplevel_button_press && xevent->type == MotionNotify)
         {
           /* react to motion_notify_event
            * and set the state accordingly. */
           if (!priv->active_window)
-            pager_set_state_from_pointer (scrollbar, xev->xmotion.x, xev->xmotion.y);
+            pager_set_state_from_pointer (scrollbar, xevent->xmotion.x, xevent->xmotion.y);
 
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xev->xmotion.x <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.x - xev->xmotion.x >= 0) &&
-                  (xev->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
-                   xev->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+              if ((priv->thumb_all.x - xevent->xmotion.x <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.x - xevent->xmotion.x >= 0) &&
+                  (xevent->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
+                   xevent->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
                 {
                   priv->can_hide = FALSE;
 
@@ -1494,7 +1494,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                       gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                       x = priv->thumb_all.x;
-                      y = CLAMP (xev->xmotion.y - priv->slider.height / 2,
+                      y = CLAMP (xevent->xmotion.y - priv->slider.height / 2,
                                  priv->thumb_all.y + priv->overlay.y,
                                  priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
@@ -1516,10 +1516,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xev->xmotion.y <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.y - xev->xmotion.y >= 0) &&
-                  (xev->xmotion.x >= priv->thumb_all.x + priv->overlay.x &&
-                   xev->xmotion.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+              if ((priv->thumb_all.y - xevent->xmotion.y <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.y - xevent->xmotion.y >= 0) &&
+                  (xevent->xmotion.x >= priv->thumb_all.x + priv->overlay.x &&
+                   xevent->xmotion.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
                 {
                   priv->can_hide = FALSE;
 
@@ -1532,7 +1532,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
                       gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      x = CLAMP (xev->xmotion.x - priv->slider.width / 2,
+                      x = CLAMP (xevent->xmotion.x - priv->slider.width / 2,
                                  priv->thumb_all.x + priv->overlay.x,
                                  priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
                       y = priv->thumb_all.y;
