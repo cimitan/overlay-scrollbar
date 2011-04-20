@@ -257,16 +257,16 @@ os_thumb_button_press_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* Stop the animation on user interaction,
-   * the button_press_event. */
-  os_animation_stop (priv->animation);
-  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
-
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
     }
+
+  /* Stop the animation on user interaction,
+   * the button_press_event. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -567,13 +567,13 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
    * Stop it only if priv->button_press_event is FALSE. */
   if (!priv->button_press_event)
     {
-      os_animation_stop (priv->animation);
-
       if (priv->source_id != 0)
         {
           g_source_remove (priv->source_id);
           priv->source_id = 0;
         }
+
+      os_animation_stop (priv->animation);
     }
 
   priv->use_tolerance = FALSE;
@@ -617,15 +617,15 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* On motion, stop the fade-out. */
-  os_animation_stop (priv->animation);
-  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
-
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
     }
+
+  /* On motion, stop the fade-out. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   /* If you're not dragging, and you're outside
    * the tolerance pixels, enable the fade-out.
@@ -679,12 +679,15 @@ os_thumb_scroll_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
+  if (priv->source_id != 0)
+    {
+      g_source_remove (priv->source_id);
+      priv->source_id = 0;
+    }
+
   /* if started, stop the fade-out. */
   os_animation_stop (priv->animation);
   gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
-
-  if (priv->source_id != 0)
-    g_source_remove (priv->source_id);
 
   priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                    os_thumb_timeout_fade_out_cb,
