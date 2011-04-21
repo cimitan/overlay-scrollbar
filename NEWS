@@ -1,3 +1,12 @@
+overlay-scrollbar 0.1.9 (April 21, 2011)
+----------------------------------------
+
+* Install a xsession script to enable the scrollbars globally.
+
+* Contributors:
+ Ken VanDine <ken.vandine@canonical.com>
+
+
 overlay-scrollbar 0.1.8 (April 20, 2011)
 ----------------------------------------
 
