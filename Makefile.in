@@ -166,6 +166,7 @@ OBJEXT = @OBJEXT@
 OS_CFLAGS = @OS_CFLAGS@
 OS_LDFLAGS = @OS_LDFLAGS@
 OS_LIBADD = @OS_LIBADD@
+OS_LT_CURRENT = @OS_LT_CURRENT@
 OS_MAJORMINOR = @OS_MAJORMINOR@
 OS_TRUNK = @OS_TRUNK@
 OTOOL = @OTOOL@
@@ -250,6 +251,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = \
 	misc \
+	data \
 	build \
 	pkgconfig \
 	os \
