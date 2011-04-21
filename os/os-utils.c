@@ -112,5 +112,5 @@ os_utils_is_whitelisted (const gchar* program)
     if (g_strcmp0 (whitelist[i], program) == 0)
       return TRUE;
 
-  return FALSE;
+  return TRUE;
 }

@@ -9,4 +9,5 @@
 
 override_dh_install:
 	rm debian/tmp/usr/lib/*a
+	rm debian/tmp/etc/X11/Xsession.d/81overlay-scrollbar
 	dh_install --fail-missing
