@@ -1842,6 +1842,7 @@ os_scrollbar_unrealize (GtkWidget *widget)
 
   gtk_widget_hide (priv->thumb);
 
+  priv->filter = FALSE;
   gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
 
   g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
