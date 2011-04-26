@@ -1721,6 +1721,10 @@ os_scrollbar_realize (GtkWidget *widget)
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
 
+  gdk_window_set_events (gtk_widget_get_window (widget),
+                         gdk_window_get_events (gtk_widget_get_window (widget)) |
+                         GDK_POINTER_MOTION_MASK);
+
   if (priv->filter == FALSE && priv->proximity == TRUE)
     {
       priv->filter =  TRUE;
