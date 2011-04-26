@@ -38,7 +38,6 @@ os_utils_is_blacklisted (const gchar* program)
     "deja-dup",
     "eclipse",
     "inkscape",
-    "liferea",
     "lshw-gtk",
     "meld",
     "synaptic",
