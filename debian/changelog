@@ -1,3 +1,17 @@
+overlay-scrollbar (0.1.10-0ubuntu1) natty-proposed; urgency=low
+
+  * New upstream release.
+    - Updated blacklist:
+      * vmware (LP: #770625)
+      * gnucash (LP: #770304)
+      * pgadmin3, codeblocks and codelite (LP: #769232)
+    - liferea and cardapio requires 
+      GDK_POINTER_MOTION_MASK (LP: #769217) (LP: #769460)
+    - liboverlay doesn't work in detached tabs (LP: #769427)
+    - Scrollbar's slider appears away from the mouse (LP: #763707)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 26 Apr 2011 14:21:57 -0400
+
 overlay-scrollbar (0.1.9-0ubuntu1) natty; urgency=low
 
   * New upstream release.
