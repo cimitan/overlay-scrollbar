@@ -1197,7 +1197,7 @@ root_gfunc (gpointer data,
 
   if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
-      if (gtk_widget_get_window (GTK_WIDGET (scrollbar)) ==
+      if (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))) ==
           gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
         {
           /* stops potential running timeout. */
@@ -1666,7 +1666,7 @@ os_scrollbar_map (GtkWidget *widget)
   priv->proximity = TRUE;
 
   /* on map, check for the active window. */
-  if (gtk_widget_get_window (widget) ==
+  if (gtk_widget_get_window (gtk_widget_get_toplevel (widget)) ==
       gdk_screen_get_active_window (gtk_widget_get_screen (widget)))
     {
       /* stops potential running timeout. */
