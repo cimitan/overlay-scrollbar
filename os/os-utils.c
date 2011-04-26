@@ -47,6 +47,7 @@ os_utils_is_blacklisted (const gchar* program)
     "synaptic",
     "update-manager",
     "vinagre",
+    "vmplayer",
     "vmware"
   };
 
