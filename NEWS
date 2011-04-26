@@ -1,3 +1,14 @@
+overlay-scrollbar 0.1.10 (April 26, 2011)
+-----------------------------------------
+
+* Bugs fixed:
+ 763707 Scrollbar's slider appears away from the mouse
+ 769427 liboverlay doesn't work in detached tabs
+ 769460 scrollbar doesn't work in liferea
+ 770625 overlay-scrollbar_0.1.9-0ubuntu1 update causes vmware workstation to...
+ 769217 Cardapio doesn't work propely with new scrollbars (Ubuntu 11.04)
+
+
 overlay-scrollbar 0.1.9 (April 21, 2011)
 ----------------------------------------
 
