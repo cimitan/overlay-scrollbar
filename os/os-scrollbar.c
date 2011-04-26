@@ -1435,7 +1435,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     }
                   else
                     {
-                      os_scrollbar_move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
+                      os_scrollbar_move_thumb (scrollbar, priv->win_x + priv->slider.x, priv->win_y);
                     }
 
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
