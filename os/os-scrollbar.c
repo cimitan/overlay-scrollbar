@@ -1435,7 +1435,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                     }
                   else
                     {
-                      os_scrollbar_move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
+                      os_scrollbar_move_thumb (scrollbar, priv->win_x + priv->slider.x, priv->win_y);
                     }
 
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
@@ -1721,6 +1721,10 @@ os_scrollbar_realize (GtkWidget *widget)
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
 
+  gdk_window_set_events (gtk_widget_get_window (widget),
+                         gdk_window_get_events (gtk_widget_get_window (widget)) |
+                         GDK_POINTER_MOTION_MASK);
+
   if (priv->filter == FALSE && priv->proximity == TRUE)
     {
       priv->filter =  TRUE;
@@ -1842,6 +1846,7 @@ os_scrollbar_unrealize (GtkWidget *widget)
 
   gtk_widget_hide (priv->thumb);
 
+  priv->filter = FALSE;
   gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
 
   g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
