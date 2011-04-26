@@ -35,14 +35,19 @@ os_utils_is_blacklisted (const gchar* program)
   static const gchar *const blacklist[] = {
     "apport-gtk",
     "Banshee",
+    "codeblocks",
+    "codelite",
     "deja-dup",
     "eclipse",
+    "gnucash",
     "inkscape",
     "lshw-gtk",
     "meld",
+    "pgadmin3",
     "synaptic",
     "update-manager",
-    "vinagre"
+    "vinagre",
+    "vmware"
   };
 
   gint32 i;
