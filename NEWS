@@ -1,3 +1,10 @@
+overlay-scrollbar 0.1.12 (April 27, 2011)
+-----------------------------------------
+
+* Bugs fixed:
+ 771563 anjuta doesn't display scrollbar after resetting the layout
+
+
 overlay-scrollbar 0.1.11 (April 27, 2011)
 -----------------------------------------
 
