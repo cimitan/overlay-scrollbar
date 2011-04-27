@@ -78,41 +78,47 @@ rectangle_changed (GdkRectangle rectangle1,
 static void
 os_pager_create (OsPager *pager)
 {
+  GdkWindowAttr attributes;
   OsPagerPrivate *priv;
 
   priv = pager->priv;
 
+  /* Instead reparenting,
+   * which doesn't seem to work well,
+   * destroy the window. */
   if (priv->pager_window != NULL)
     {
-      gdk_window_reparent (priv->pager_window,
-                           gtk_widget_get_window (priv->parent),
-                           priv->allocation.x,
-                           priv->allocation.y);
+      /* From the Gdk documentation:
+       * "Note that a window will not be destroyed
+       *  automatically when its reference count
+       *  reaches zero. You must call
+       *  gdk_window_destroy ()
+       *  yourself before that happens". */
+      gdk_window_destroy (priv->pager_window);
+
+      g_object_unref (priv->pager_window);
+      priv->pager_window = NULL;
     }
-  else
-    {
-      GdkWindowAttr attributes;
 
-      attributes.width = priv->allocation.width;
-      attributes.height = priv->allocation.height;
-      attributes.wclass = GDK_INPUT_OUTPUT;
-      attributes.window_type = GDK_WINDOW_CHILD;
-      attributes.visual = gtk_widget_get_visual (priv->parent);
-      attributes.colormap = gtk_widget_get_colormap (priv->parent);
+  attributes.width = priv->allocation.width;
+  attributes.height = priv->allocation.height;
+  attributes.wclass = GDK_INPUT_OUTPUT;
+  attributes.window_type = GDK_WINDOW_CHILD;
+  attributes.visual = gtk_widget_get_visual (priv->parent);
+  attributes.colormap = gtk_widget_get_colormap (priv->parent);
 
-      priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                           &attributes,
-                                           GDK_WA_VISUAL | GDK_WA_COLORMAP);
+  priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+                                       &attributes,
+                                       GDK_WA_VISUAL | GDK_WA_COLORMAP);
 
-      g_object_ref_sink (priv->pager_window);
+  g_object_ref_sink (priv->pager_window);
 
-      gdk_window_set_transient_for (priv->pager_window,
-                                    gtk_widget_get_window (priv->parent));
+  gdk_window_set_transient_for (priv->pager_window,
+                                gtk_widget_get_window (priv->parent));
 
-      gdk_window_input_shape_combine_region (priv->pager_window,
-                                             gdk_region_new (),
-                                             0, 0);
-    }
+  gdk_window_input_shape_combine_region (priv->pager_window,
+                                         gdk_region_new (),
+                                         0, 0);
 }
 
 static void
