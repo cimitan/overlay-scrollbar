@@ -37,16 +37,14 @@ os_utils_is_blacklisted (const gchar* program)
     "Banshee",
     "codeblocks",
     "codelite",
-    "deja-dup",
     "eclipse",
     "gnucash",
-    "inkscape",
-    "lshw-gtk",
     "meld",
     "pgadmin3",
     "synaptic",
     "update-manager",
     "vinagre",
+    "vmplayer",
     "vmware"
   };
 

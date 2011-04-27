@@ -1,3 +1,20 @@
+overlay-scrollbar 0.1.12 (April 27, 2011)
+-----------------------------------------
+
+* Bugs fixed:
+ 771563 anjuta doesn't display scrollbar after resetting the layout
+
+
+overlay-scrollbar 0.1.11 (April 27, 2011)
+-----------------------------------------
+
+* Un-blacklisted apps:
+ deja-dup, inkscape, lshw-gtk
+
+* Bugs fixed:
+ 771511 some apps show grey overlay instead orange even if the window is focused
+
+
 overlay-scrollbar 0.1.10 (April 26, 2011)
 -----------------------------------------
 
