@@ -1,6 +1,6 @@
 Source: overlay-scrollbar
 Priority: optional
-Maintainer: Didier Roche <didrocks@ubuntu.com>
+Maintainer: Ubuntu Desktop Team <ubuntu-desktop@lists.ubuntu.com>
 Build-Depends: debhelper (>= 7.0.50~),
                autotools-dev,
                libglib2.0-dev (>= 2.26.0),

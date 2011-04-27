@@ -1,3 +1,19 @@
+overlay-scrollbar (0.1.12-0ubuntu1) natty-proposed; urgency=low
+
+  * New upstream release.
+    - Updated blacklist:
+      * -deja-dup
+      * -inkscape
+      * -lshw-gtk 
+      * +vmplayer
+    - some apps show grey overlay instead orange even if the window is 
+      focused (LP: #771511)
+    - anjuta doesn't display scrollbar after resetting the layout (LP: #771563)
+  * debian/control
+    - Changed maintainer to ~ubuntu-desktop 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 27 Apr 2011 10:23:24 -0400
+
 overlay-scrollbar (0.1.10-0ubuntu1) natty-proposed; urgency=low
 
   * New upstream release.
