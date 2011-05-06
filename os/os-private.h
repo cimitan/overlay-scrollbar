@@ -31,8 +31,8 @@
 #endif /* __GNUC__ */
 
 /* Default size of the thumb in pixels. */
-#define DEFAULT_THUMB_WIDTH  15
-#define DEFAULT_THUMB_HEIGHT 67
+#define DEFAULT_THUMB_WIDTH  17
+#define DEFAULT_THUMB_HEIGHT 69
 
 G_BEGIN_DECLS
 
@@ -167,9 +167,12 @@ struct _OsThumbClass {
   GtkWindowClass parent_class;
 };
 
-GType      os_thumb_get_type (void) G_GNUC_CONST;
+GType      os_thumb_get_type     (void) G_GNUC_CONST;
 
-GtkWidget* os_thumb_new      (GtkOrientation orientation);
+GtkWidget* os_thumb_new          (GtkOrientation orientation);
+
+void       os_thumb_set_detached (OsThumb *thumb,
+                                  gboolean detached);
 
 /* os-pager.c */
 
