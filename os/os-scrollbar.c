@@ -1167,24 +1167,30 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
 
   if (gtk_widget_get_mapped (GTK_WIDGET (priv->thumb)))
     {
-      gint x_pos, y_pos;
-      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (priv->thumb)), &x_pos, &y_pos);
-
-      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-        {
-          if ((priv->win_y + priv->overlay.y > y_pos + priv->slider.height) ||
-              (priv->win_y + priv->overlay.y + priv->overlay.height < y_pos))
-            os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-          else
-            os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);        
-        }
+      /* if we're dragging the thumb, it can't be detached. */
+      if (priv->motion_notify_event)
+        os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
       else
         {
-          if ((priv->win_x + priv->overlay.x > x_pos + priv->slider.width) ||
-              (priv->win_x + priv->overlay.x + priv->overlay.width < x_pos))
-            os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+          gint x_pos, y_pos;
+          gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (priv->thumb)), &x_pos, &y_pos);
+
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              if ((priv->win_y + priv->overlay.y > y_pos + priv->slider.height) ||
+                  (priv->win_y + priv->overlay.y + priv->overlay.height < y_pos))
+                os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+              else
+                os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+            }
           else
-            os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);        
+            {
+              if ((priv->win_x + priv->overlay.x > x_pos + priv->slider.width) ||
+                  (priv->win_x + priv->overlay.x + priv->overlay.width < x_pos))
+                os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+              else
+                os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+            }
         }
     }
 

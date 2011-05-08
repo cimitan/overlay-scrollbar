@@ -91,21 +91,21 @@ os_cairo_draw_arrow (cairo_t *cr,
                      gdouble  width,
                      gdouble  height)
 {
-	cairo_save (cr);
+  cairo_save (cr);
 
   cairo_translate (cr, x, y);
-	cairo_move_to (cr, -width / 2, -height / 2);
-	cairo_line_to (cr, 0, height / 2);
-	cairo_line_to (cr, width / 2, -height / 2);
-	cairo_close_path (cr);
+  cairo_move_to (cr, -width / 2, -height / 2);
+  cairo_line_to (cr, 0, height / 2);
+  cairo_line_to (cr, width / 2, -height / 2);
+  cairo_close_path (cr);
 
-	cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 0.75);
-	cairo_fill_preserve (cr);
+  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 0.75);
+  cairo_fill_preserve (cr);
 
-	cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 1.0);
-	cairo_stroke (cr);
+  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 1.0);
+  cairo_stroke (cr);
 
-	cairo_restore (cr);
+  cairo_restore (cr);
 }
 
 /* Draw a rounded rectangle. */
@@ -532,15 +532,15 @@ os_thumb_expose (GtkWidget      *widget,
     {
       /* direction UP. */
       cairo_save (cr);
-  		cairo_translate (cr, 8.5, 8.5);
-	    cairo_rotate (cr, G_PI);  
+      cairo_translate (cr, 8.5, 8.5);
+      cairo_rotate (cr, G_PI);  
       os_cairo_draw_arrow (cr, 0.5, 0, 4, 3);
       cairo_restore (cr);
 
       /* direction DOWN. */
       cairo_save (cr);
-  		cairo_translate (cr, 8.5, height - 8.5);
-	    cairo_rotate (cr, 0);
+      cairo_translate (cr, 8.5, height - 8.5);
+      cairo_rotate (cr, 0);
       os_cairo_draw_arrow (cr, -0.5, 0, 4, 3);
       cairo_restore (cr);
     }
@@ -548,15 +548,15 @@ os_thumb_expose (GtkWidget      *widget,
     {
       /* direction LEFT. */
       cairo_save (cr);
-  		cairo_translate (cr, 8.5, 8.5);
-	    cairo_rotate (cr, G_PI * 0.5);  
+      cairo_translate (cr, 8.5, 8.5);
+      cairo_rotate (cr, G_PI * 0.5);  
       os_cairo_draw_arrow (cr, -0.5, 0, 4, 3);
       cairo_restore (cr);
 
       /* direction RIGHT. */
       cairo_save (cr);
-  		cairo_translate (cr, width - 8.5, 8.5);
-	    cairo_rotate (cr, G_PI * 1.5);
+      cairo_translate (cr, width - 8.5, 8.5);
+      cairo_rotate (cr, G_PI * 1.5);
       os_cairo_draw_arrow (cr, 0.5, 0, 4, 3);
       cairo_restore (cr);
     }
@@ -840,8 +840,8 @@ os_thumb_set_detached (OsThumb *thumb,
   priv = thumb->priv;
 
   if (priv->detached != detached)
-  {
-    priv->detached = detached;
-    gtk_widget_queue_draw (GTK_WIDGET (thumb));
-  }
+    {
+      priv->detached = detached;
+      gtk_widget_queue_draw (GTK_WIDGET (thumb));
+    }
 }
