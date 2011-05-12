@@ -494,10 +494,8 @@ os_scrollbar_notify_adjustment_cb (GObject *object,
                                    gpointer user_data)
 {
   OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
 
   scrollbar = OS_SCROLLBAR (object);
-  priv = scrollbar->priv;
 
   os_scrollbar_swap_adjustment (scrollbar, gtk_range_get_adjustment (GTK_RANGE (object)));
 }
@@ -854,14 +852,12 @@ thumb_map_cb (GtkWidget *widget,
 {
   Display *display;
   OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
   XWindowChanges changes;
   guint32 xid, xid_parent;
   unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
   scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
@@ -1027,6 +1023,8 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  priv->value_changed_event = TRUE;
+
   delta = os_scrollbar_get_wheel_delta (scrollbar, event->direction);
 
   gtk_adjustment_set_value (priv->adjustment,
@@ -1051,6 +1049,8 @@ thumb_unmap_cb (GtkWidget *widget,
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
   priv->enter_notify_event = FALSE;
+
+  os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
 }
 
 /* Move the pager to the right position. */
@@ -1169,7 +1169,10 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
     {
       /* if we're dragging the thumb, it can't be detached. */
       if (priv->motion_notify_event)
-        os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+        {
+          os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
+          os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+        }
       else
         {
           gint x_pos, y_pos;
@@ -1177,19 +1180,73 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
 
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->win_y + priv->overlay.y > y_pos + priv->slider.height) ||
-                  (priv->win_y + priv->overlay.y + priv->overlay.height < y_pos))
-                os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-              else
-                os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+              if (priv->win_y + priv->overlay.y > y_pos + priv->slider.height)
+                {
+                  GdkRectangle mask;
+
+                  mask.x = 0;
+                  mask.y = y_pos + priv->slider.height / 2 - priv->win_y;
+                  mask.width = DEFAULT_PAGER_WIDTH;
+                  mask.height = priv->overlay.y - mask.y;
+
+                  os_pager_connect (OS_PAGER (priv->pager), mask);
+                  os_pager_set_detached (OS_PAGER (priv->pager), TRUE);
+
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+                }
+              else if (priv->win_y + priv->overlay.y + priv->overlay.height < y_pos)
+                {
+                  GdkRectangle mask;
+
+                  mask.x = 0;
+                  mask.y = priv->overlay.y + priv->overlay.height;
+                  mask.width = DEFAULT_PAGER_WIDTH;
+                  mask.height = y_pos + priv->slider.height / 2 - priv->win_y - mask.y;
+
+                  os_pager_connect (OS_PAGER (priv->pager), mask);
+                  os_pager_set_detached (OS_PAGER (priv->pager), TRUE);
+
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+                }
+              else 
+                {
+                  os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+                }
             }
           else
             {
-              if ((priv->win_x + priv->overlay.x > x_pos + priv->slider.width) ||
-                  (priv->win_x + priv->overlay.x + priv->overlay.width < x_pos))
-                os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+              if (priv->win_x + priv->overlay.x > x_pos + priv->slider.width)
+                {
+                  GdkRectangle mask;
+
+                  mask.x = x_pos + priv->slider.width / 2 - priv->win_x;
+                  mask.y = 0;
+                  mask.width = priv->overlay.x - mask.x;
+                  mask.height = DEFAULT_PAGER_WIDTH;
+
+                  os_pager_connect (OS_PAGER (priv->pager), mask);
+                  os_pager_set_detached (OS_PAGER (priv->pager), TRUE);
+
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+                }
+              else if (priv->win_x + priv->overlay.x + priv->overlay.width < x_pos)
+                {
+                  GdkRectangle mask;
+
+                  mask.x = priv->overlay.y + priv->overlay.height;
+                  mask.y = 0;
+                  mask.width = x_pos + priv->slider.width / 2 - priv->win_x - mask.x;
+                  mask.height = DEFAULT_PAGER_WIDTH;
+
+                  os_pager_connect (OS_PAGER (priv->pager), mask);
+                  os_pager_set_detached (OS_PAGER (priv->pager), TRUE);                
+                }
               else
-                os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+                {
+                  os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
+                }
             }
         }
     }
@@ -1431,6 +1488,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                       os_scrollbar_move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
                     }
 
+                  os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
                   os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
                 }
@@ -1471,6 +1529,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                       os_scrollbar_move_thumb (scrollbar, priv->win_x + priv->slider.x, priv->win_y);
                     }
 
+                  os_pager_set_detached (OS_PAGER (priv->pager), FALSE);
                   os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                   gtk_widget_show (GTK_WIDGET (priv->thumb));
                 }

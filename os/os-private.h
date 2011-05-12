@@ -208,11 +208,17 @@ GObject* os_pager_new           (void);
 
 void     os_pager_hide          (OsPager *overlay);
 
+void     os_pager_connect       (OsPager     *overlay,
+                                 GdkRectangle mask);
+
 void     os_pager_move_resize   (OsPager     *overlay,
                                  GdkRectangle mask);
 
 void     os_pager_set_active    (OsPager *overlay,
                                  gboolean active);
+
+void     os_pager_set_detached  (OsPager *overlay,
+                                 gboolean detached);
 
 void     os_pager_set_parent    (OsPager   *pager,
                                  GtkWidget *parent);
