@@ -1,3 +1,46 @@
+overlay-scrollbar 0.1.12 (April 27, 2011)
+-----------------------------------------
+
+* Bugs fixed:
+ 771563 anjuta doesn't display scrollbar after resetting the layout
+
+
+overlay-scrollbar 0.1.11 (April 27, 2011)
+-----------------------------------------
+
+* Un-blacklisted apps:
+ deja-dup, inkscape, lshw-gtk
+
+* Bugs fixed:
+ 771511 some apps show grey overlay instead orange even if the window is focused
+
+
+overlay-scrollbar 0.1.10 (April 26, 2011)
+-----------------------------------------
+
+* Bugs fixed:
+ 763707 Scrollbar's slider appears away from the mouse
+ 769427 liboverlay doesn't work in detached tabs
+ 769460 scrollbar doesn't work in liferea
+ 770625 overlay-scrollbar_0.1.9-0ubuntu1 update causes vmware workstation to...
+ 769217 Cardapio doesn't work propely with new scrollbars (Ubuntu 11.04)
+
+
+overlay-scrollbar 0.1.9 (April 21, 2011)
+----------------------------------------
+
+* Install a xsession script to enable the scrollbars globally.
+
+* Contributors:
+ Ken VanDine <ken.vandine@canonical.com>
+
+
+overlay-scrollbar 0.1.8 (April 20, 2011)
+----------------------------------------
+
+* Few stability fixes, blacklist apps that expose functionality issues.
+
+
 overlay-scrollbar 0.1.7 (April 13, 2011)
 ----------------------------------------
 

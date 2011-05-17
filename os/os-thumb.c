@@ -40,6 +40,9 @@
 /* Number of tolerance pixels. */
 #define TOLERANCE_PIXELS 3
 
+/* Thumb radius in pixels (higher values are automatically clamped). */
+#define THUMB_RADIUS 9
+
 struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
@@ -48,6 +51,7 @@ struct _OsThumbPrivate {
   gboolean motion_notify_event;
   gboolean can_rgba;
   gboolean use_tolerance;
+  gboolean detached;
   gint pointer_x;
   gint pointer_y;
   guint32 source_id;
@@ -79,6 +83,31 @@ static void os_thumb_set_property (GObject *object, guint prop_id, const GValue 
 
 /* Private functions. */
 
+/* Draw an arror. */
+static void
+os_cairo_draw_arrow (cairo_t *cr,
+                     gdouble  x,
+                     gdouble  y,
+                     gdouble  width,
+                     gdouble  height)
+{
+  cairo_save (cr);
+
+  cairo_translate (cr, x, y);
+  cairo_move_to (cr, -width / 2, -height / 2);
+  cairo_line_to (cr, 0, height / 2);
+  cairo_line_to (cr, width / 2, -height / 2);
+  cairo_close_path (cr);
+
+  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 0.75);
+  cairo_fill_preserve (cr);
+
+  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 1.0);
+  cairo_stroke (cr);
+
+  cairo_restore (cr);
+}
+
 /* Draw a rounded rectangle. */
 static void
 os_cairo_draw_rounded_rect (cairo_t *cr,
@@ -109,21 +138,13 @@ os_thumb_fade_out_cb (gfloat weight,
                       gpointer user_data)
 {
   OsThumb *thumb;
-  OsThumbPrivate *priv;
 
   thumb = OS_THUMB (user_data);
-
-  priv = thumb->priv;
 
   if (weight < 1.0f)
     gtk_window_set_opacity (GTK_WINDOW (thumb), fabs (weight - 1.0f));
   else
-    {
-      /* Animation ended. */
-      priv->source_id = 0;
-
-      gtk_widget_hide (GTK_WIDGET (thumb));
-    }
+    gtk_widget_hide (GTK_WIDGET (thumb));
 }
 
 static gboolean
@@ -137,6 +158,7 @@ os_thumb_timeout_fade_out_cb (gpointer user_data)
   priv = thumb->priv;
 
   os_animation_start (priv->animation);
+  priv->source_id = 0;
 
   return FALSE;
 }
@@ -193,6 +215,7 @@ os_thumb_init (OsThumb *thumb)
   priv = thumb->priv;
 
   priv->can_rgba = FALSE;
+  priv->detached = FALSE;
 
   priv->source_id = 0;
   priv->animation = os_animation_new (RATE_FADE_OUT, DURATION_FADE_OUT,
@@ -261,16 +284,16 @@ os_thumb_button_press_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* Stop the animation on user interaction,
-   * the button_press_event. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* Stop the animation on user interaction,
+   * the button_press_event. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -353,7 +376,7 @@ os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
-  GtkStateType state_type_down, state_type_up;
+  GtkStyle *style;
   OsThumb *thumb;
   OsThumbPrivate *priv;
   cairo_pattern_t *pat;
@@ -361,11 +384,10 @@ os_thumb_expose (GtkWidget      *widget,
   gint x, y, width, height;
   gint radius;
 
+  style = gtk_widget_get_style (widget);
+
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
-
-  state_type_down = GTK_STATE_NORMAL;
-  state_type_up = GTK_STATE_NORMAL;
 
   gtk_widget_get_allocation (widget, &allocation);
 
@@ -373,9 +395,11 @@ os_thumb_expose (GtkWidget      *widget,
   y = 0;
   width = allocation.width;
   height = allocation.height;
-  radius = priv->can_rgba ? 18 : 0;
+  radius = priv->can_rgba ? THUMB_RADIUS : 0;
 
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
+
+  cairo_save (cr);
 
   cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
   cairo_set_source_rgba (cr, 0, 0, 0, 0);
@@ -414,7 +438,6 @@ os_thumb_expose (GtkWidget      *widget,
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
         {
-          state_type_up = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.8, 0.8, 0.8, 0.8);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
@@ -422,7 +445,6 @@ os_thumb_expose (GtkWidget      *widget,
         }
       else
         {
-          state_type_down = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 1.0, 1.0, 1.0, 0.8);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
@@ -438,117 +460,101 @@ os_thumb_expose (GtkWidget      *widget,
     }
   cairo_set_source (cr, pat);
   cairo_pattern_destroy (pat);
-  cairo_fill_preserve (cr);
 
-  cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0);
 
   if (priv->motion_notify_event)
     {
-      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
       cairo_fill_preserve (cr);
-      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 1.0);
+      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
+      cairo_fill (cr);
+    }
+  else
+    cairo_fill (cr);
+
+  cairo_set_line_width (cr, 2.0);
+  os_cairo_draw_rounded_rect (cr, x + 0.5, y + 0.5, width - 1, height - 1, radius - 1);
+  if (!priv->detached)
+    cairo_set_source_rgba (cr, style->bg[GTK_STATE_SELECTED].red/65535.0,
+                               style->bg[GTK_STATE_SELECTED].green/65535.0,
+                               style->bg[GTK_STATE_SELECTED].blue/65535.0, 1.0f);
+  else
+    cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0f);
+  cairo_stroke (cr);
+
+  cairo_set_line_width (cr, 1.0);
+  os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius - 1);
+  cairo_set_source_rgba (cr, 0.1, 0.1, 0.1, 0.1);
+  cairo_stroke (cr);
+
+  os_cairo_draw_rounded_rect (cr, x + 2, y + 2, width - 4, height - 4, radius - 3);
+  cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.5);
+  cairo_stroke (cr);
+
+  os_cairo_draw_rounded_rect (cr, x + 3, y + 3, width - 6, height - 6, radius - 4);
+  cairo_set_source_rgba (cr, 1, 1, 1, 0.2);
+  cairo_stroke (cr);
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      cairo_move_to (cr, x + 2.5, y - 1 + height / 2);
+      cairo_line_to (cr, width - 2.5, y - 1 + height / 2);
+      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
       cairo_stroke (cr);
 
-      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
+      cairo_move_to (cr, x + 2.5, y + height / 2);
+      cairo_line_to (cr, width - 2.5, y + height / 2);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
   else
     {
+      cairo_move_to (cr, x - 1 + width / 2, y + 2.5);
+      cairo_line_to (cr, x - 1 + width / 2, height - 2.5);
+      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
       cairo_stroke (cr);
 
-      os_cairo_draw_rounded_rect (cr, x + 1, y + 1, width - 2, height - 2, radius + 1);
+      cairo_move_to (cr, x + width / 2, y + 2.5);
+      cairo_line_to (cr, x + width / 2, height - 2.5);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      cairo_move_to (cr, x + 0.5, y - 1 + height / 2);
-      cairo_line_to (cr, width - 0.5, y - 1 + height / 2);
-      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
-      cairo_stroke (cr);
+      /* direction UP. */
+      cairo_save (cr);
+      cairo_translate (cr, 8.5, 8.5);
+      cairo_rotate (cr, G_PI);  
+      os_cairo_draw_arrow (cr, 0.5, 0, 4, 3);
+      cairo_restore (cr);
 
-      cairo_move_to (cr, x + 0.5, y + height / 2);
-      cairo_line_to (cr, width - 0.5, y + height / 2);
-      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
-      cairo_stroke (cr);
+      /* direction DOWN. */
+      cairo_save (cr);
+      cairo_translate (cr, 8.5, height - 8.5);
+      cairo_rotate (cr, 0);
+      os_cairo_draw_arrow (cr, -0.5, 0, 4, 3);
+      cairo_restore (cr);
     }
   else
     {
-      cairo_move_to (cr, x - 1 + width / 2, y + 0.5);
-      cairo_line_to (cr, x - 1 + width / 2, height - 0.5);
-      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
-      cairo_stroke (cr);
+      /* direction LEFT. */
+      cairo_save (cr);
+      cairo_translate (cr, 8.5, 8.5);
+      cairo_rotate (cr, G_PI * 0.5);  
+      os_cairo_draw_arrow (cr, -0.5, 0, 4, 3);
+      cairo_restore (cr);
 
-      cairo_move_to (cr, x + width / 2, y + 0.5);
-      cairo_line_to (cr, x + width / 2, height - 0.5);
-      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
-      cairo_stroke (cr);
+      /* direction RIGHT. */
+      cairo_save (cr);
+      cairo_translate (cr, width - 8.5, 8.5);
+      cairo_rotate (cr, G_PI * 1.5);
+      os_cairo_draw_arrow (cr, 0.5, 0, 4, 3);
+      cairo_restore (cr);
     }
 
   cairo_restore (cr);
 
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      gtk_paint_arrow (gtk_widget_get_style (widget),
-                       gtk_widget_get_window (widget),
-                       state_type_up,
-                       GTK_SHADOW_IN,
-                       NULL,
-                       widget,
-                       "arrow",
-                       GTK_ARROW_UP,
-                       FALSE,
-                       4,
-                       4,
-                       width - 8,
-                       width - 8);
-
-      gtk_paint_arrow (gtk_widget_get_style (widget),
-                       gtk_widget_get_window (widget),
-                       state_type_down,
-                       GTK_SHADOW_NONE,
-                       NULL,
-                       widget,
-                       "arrow",
-                       GTK_ARROW_DOWN,
-                       FALSE,
-                       4,
-                       height - (width - 8) - 4,
-                       width - 8,
-                       width - 8);
-    }
-  else
-    {
-      gtk_paint_arrow (gtk_widget_get_style (widget),
-                       gtk_widget_get_window (widget),
-                       state_type_up,
-                       GTK_SHADOW_IN,
-                       NULL,
-                       widget,
-                       "arrow",
-                       GTK_ARROW_LEFT,
-                       FALSE,
-                       4,
-                       4,
-                       height - 8,
-                       height - 8);
-
-      gtk_paint_arrow (gtk_widget_get_style (widget),
-                       gtk_widget_get_window (widget),
-                       state_type_down,
-                       GTK_SHADOW_NONE,
-                       NULL,
-                       widget,
-                       "arrow",
-                       GTK_ARROW_RIGHT,
-                       FALSE,
-                       width - (height - 8) - 4,
-                       4,
-                       height - 8,
-                       height - 8);
-    }
+  cairo_restore (cr);
 
   cairo_destroy (cr);
 
@@ -575,9 +581,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
         {
           g_source_remove (priv->source_id);
           priv->source_id = 0;
-
-          os_animation_stop (priv->animation);
         }
+
+      os_animation_stop (priv->animation);
     }
 
   priv->use_tolerance = FALSE;
@@ -621,15 +627,15 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* On motion, stop the fade-out. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* On motion, stop the fade-out. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   /* If you're not dragging, and you're outside
    * the tolerance pixels, enable the fade-out.
@@ -683,15 +689,15 @@ os_thumb_scroll_event (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  /* if started, stop the fade-out. */
   if (priv->source_id != 0)
     {
       g_source_remove (priv->source_id);
       priv->source_id = 0;
-
-      os_animation_stop (priv->animation);
-      gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
     }
+
+  /* if started, stop the fade-out. */
+  os_animation_stop (priv->animation);
+  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
 
   priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                    os_thumb_timeout_fade_out_cb,
@@ -805,4 +811,28 @@ GtkWidget*
 os_thumb_new (GtkOrientation orientation)
 {
   return g_object_new (OS_TYPE_THUMB, "orientation", orientation, NULL);
+}
+
+/**
+ * os_thumb_set_detached:
+ * @thumb: a #OsThumb
+ * @detached: a gboolean
+ *
+ * Sets the thumb to be detached.
+ **/
+void
+os_thumb_set_detached (OsThumb *thumb,
+                       gboolean detached)
+{
+  OsThumbPrivate *priv;
+
+  g_return_if_fail (OS_THUMB (thumb));
+
+  priv = thumb->priv;
+
+  if (priv->detached != detached)
+    {
+      priv->detached = detached;
+      gtk_widget_queue_draw (GTK_WIDGET (thumb));
+    }
 }
