@@ -960,7 +960,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                          priv->win_y + priv->overlay.y,
                          priv->win_y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-              if (priv->overlay.y == 0)
+              if (priv->adjustment->value == 0)
                 {
                   priv->slide_initial_slider_position = 0;
                   priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
@@ -986,7 +986,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                          priv->win_x + priv->overlay.x + priv->overlay.width - priv->slider.width);
               y = priv->win_y;
 
-              if (priv->overlay.x == 0)
+              if (priv->adjustment->value == 0)
                 {
                   priv->slide_initial_slider_position = 0;
                   priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
