@@ -34,7 +34,6 @@ os_utils_is_blacklisted (const gchar* program)
   /* Black-list of program names retrieved with g_get_prgname(). */
   static const gchar *const blacklist[] = {
     "apport-gtk",
-    "Banshee",
     "codeblocks",
     "codelite",
     "eclipse",
