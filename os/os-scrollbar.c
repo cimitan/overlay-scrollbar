@@ -93,6 +93,7 @@ static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
 static void os_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
+static void os_scrollbar_size_request (GtkWidget *widget, GtkRequisition *requisition);
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
@@ -1672,6 +1673,7 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class->realize       = os_scrollbar_realize;
   widget_class->show          = os_scrollbar_show;
   widget_class->size_allocate = os_scrollbar_size_allocate;
+  widget_class->size_request  = os_scrollbar_size_request;
   widget_class->unmap         = os_scrollbar_unmap;
   widget_class->unrealize     = os_scrollbar_unrealize;
 
@@ -1965,6 +1967,24 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
     os_scrollbar_store_window_position (scrollbar);
 
   widget->allocation = *allocation;
+}
+
+static void
+os_scrollbar_size_request (GtkWidget      *widget,
+                           GtkRequisition *requisition)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    requisition->width = 0;
+  else
+    requisition->height = 0;
+
+  widget->requisition = *requisition;
 }
 
 static void
