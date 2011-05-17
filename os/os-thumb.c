@@ -138,11 +138,8 @@ os_thumb_fade_out_cb (gfloat weight,
                       gpointer user_data)
 {
   OsThumb *thumb;
-  OsThumbPrivate *priv;
 
   thumb = OS_THUMB (user_data);
-
-  priv = thumb->priv;
 
   if (weight < 1.0f)
     gtk_window_set_opacity (GTK_WINDOW (thumb), fabs (weight - 1.0f));
@@ -379,7 +376,6 @@ os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
-  GtkStateType state_type_down, state_type_up;
   GtkStyle *style;
   OsThumb *thumb;
   OsThumbPrivate *priv;
@@ -392,9 +388,6 @@ os_thumb_expose (GtkWidget      *widget,
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
-
-  state_type_down = GTK_STATE_NORMAL;
-  state_type_up = GTK_STATE_NORMAL;
 
   gtk_widget_get_allocation (widget, &allocation);
 
@@ -445,7 +438,6 @@ os_thumb_expose (GtkWidget      *widget,
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
         {
-          state_type_up = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.8, 0.8, 0.8, 0.8);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
@@ -453,7 +445,6 @@ os_thumb_expose (GtkWidget      *widget,
         }
       else
         {
-          state_type_down = GTK_STATE_ACTIVE;
           cairo_pattern_add_color_stop_rgba (pat, 0.0, 1.0, 1.0, 1.0, 0.8);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
           cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
