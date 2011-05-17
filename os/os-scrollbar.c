@@ -1522,10 +1522,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       if (!priv->active_window && xevent->type == EnterNotify)
         pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
 
-      if (priv->toplevel_button_press && xevent->type == LeaveNotify)
+      if (xevent->type == LeaveNotify)
         {
-          priv->toplevel_button_press = FALSE;
-
           /* never deactivate the pager in an active window. */
           if (!priv->active_window)
             {
@@ -1539,6 +1537,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                                                                 scrollbar);
             }
 
+          priv->toplevel_button_press = FALSE;
           priv->can_hide = TRUE;
 
           if (priv->source_hide_thumb_id != 0)
