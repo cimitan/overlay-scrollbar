@@ -130,7 +130,6 @@ static GdkFilterReturn root_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, 
 static void root_gfunc (gpointer data, gpointer user_data);
 static gboolean toplevel_configure_event_cb (GtkWidget *widget, GdkEventConfigure *event, gpointer user_data);
 static GdkFilterReturn toplevel_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
-static gboolean toplevel_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 
 /* Private functions. */
 
@@ -1386,11 +1385,37 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
       if (!priv->active_window && xevent->type == EnterNotify)
         pager_set_state_from_pointer (scrollbar, xevent->xcrossing.x, xevent->xcrossing.y);
 
-      /* FIXME(Cimi) this is not nice.
-       * Next time, just copy and paste
-       * the code here. */
       if (xevent->type == LeaveNotify)
-        toplevel_leave_notify_event_cb (NULL, NULL, scrollbar);
+        {
+          /* never deactivate the pager in an active window. */
+          if (!priv->active_window)
+            {
+              priv->can_deactivate_pager = TRUE;
+
+              if (priv->source_deactivate_pager_id != 0)
+                g_source_remove (priv->source_deactivate_pager_id);
+
+              priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                                os_scrollbar_deactivate_pager_cb,
+                                                                scrollbar);
+            }
+
+          priv->can_hide = TRUE;
+
+          if (priv->source_hide_thumb_id != 0)
+            g_source_remove (priv->source_hide_thumb_id);
+
+          priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                      os_scrollbar_hide_thumb_cb,
+                                                      scrollbar);
+
+          if (priv->source_unlock_thumb_id != 0)
+            g_source_remove (priv->source_unlock_thumb_id);
+
+          priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                        os_scrollbar_unlock_thumb_cb,
+                                                        scrollbar);
+        }
 
       /* get the motion_notify_event trough XEvent */
       if (xevent->type == MotionNotify)
@@ -1485,50 +1510,6 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
     }
 
   return GDK_FILTER_CONTINUE;
-}
-
-/* Hide the OsScrollbar, when the pointer leaves the toplevel GtkWindow. */
-static gboolean
-toplevel_leave_notify_event_cb (GtkWidget        *widget,
-                                GdkEventCrossing *event,
-                                gpointer          user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
-
-  /* never deactivate the pager in an active window. */
-  if (!priv->active_window)
-    {
-      priv->can_deactivate_pager = TRUE;
-
-      if (priv->source_deactivate_pager_id != 0)
-        g_source_remove (priv->source_deactivate_pager_id);
-
-      priv->source_deactivate_pager_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                        os_scrollbar_deactivate_pager_cb,
-                                                        scrollbar);
-    }
-
-  priv->can_hide = TRUE;
-
-  if (priv->source_hide_thumb_id != 0)
-    g_source_remove (priv->source_hide_thumb_id);
-
-  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                              os_scrollbar_hide_thumb_cb,
-                                              scrollbar);
-
-  if (priv->source_unlock_thumb_id != 0)
-    g_source_remove (priv->source_unlock_thumb_id);
-
-  priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                os_scrollbar_unlock_thumb_cb,
-                                                scrollbar);
-
-  return FALSE;
 }
 
 /* Type definition. */
