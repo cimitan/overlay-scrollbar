@@ -65,6 +65,7 @@ struct _OsScrollbarPrivate
   gboolean active_window;
   gboolean can_deactivate_pager;
   gboolean can_hide;
+  gboolean toplevel_button_press;
   gboolean filter;
   gboolean fullsize;
   gboolean internal;
@@ -1433,6 +1434,85 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 
   if (!priv->fullsize)
     {
+      if (xevent->type == ButtonPress)
+        {
+          priv->toplevel_button_press = TRUE;
+          gtk_widget_hide (priv->thumb);
+        }
+
+      if (priv->toplevel_button_press && xevent->type == ButtonRelease)
+        {
+          priv->toplevel_button_press = FALSE;
+
+          /* proximity area */
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              if ((priv->thumb_all.x - xevent->xbutton.x <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.x - xevent->xbutton.x >= 0) &&
+                  (xevent->xbutton.y >= priv->thumb_all.y + priv->overlay.y &&
+                   xevent->xbutton.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+                {
+                  priv->can_hide = FALSE;
+
+                  if (priv->lock_position)
+                    return GDK_FILTER_CONTINUE;
+
+                  if (priv->overlay.height > priv->slider.height)
+                    {
+                      gint x, y, x_pos, y_pos;
+
+                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+
+                      x = priv->thumb_all.x;
+                      y = CLAMP (xevent->xbutton.y - priv->slider.height / 2,
+                                 priv->thumb_all.y + priv->overlay.y,
+                                 priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+
+                      os_scrollbar_move_thumb (scrollbar, x_pos + x, y_pos + y);
+                    }
+                  else
+                    {
+                      os_scrollbar_move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
+                    }
+
+                  gtk_widget_show (GTK_WIDGET (priv->thumb));
+                }
+            }
+          else
+            {
+              if ((priv->thumb_all.y - xevent->xbutton.y <= PROXIMITY_WIDTH &&
+                   priv->thumb_all.y - xevent->xbutton.y >= 0) &&
+                  (xevent->xbutton.x >= priv->thumb_all.x + priv->overlay.x &&
+                   xevent->xbutton.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+                {
+                  priv->can_hide = FALSE;
+
+                  if (priv->lock_position)
+                    return GDK_FILTER_CONTINUE;
+
+                  if (priv->overlay.width > priv->slider.width)
+                    {
+                      gint x, y, x_pos, y_pos;
+
+                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+
+                      x = CLAMP (xevent->xbutton.x - priv->slider.width / 2,
+                                 priv->thumb_all.x + priv->overlay.x,
+                                 priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                      y = priv->thumb_all.y;
+
+                      os_scrollbar_move_thumb (scrollbar, x_pos + x, y_pos + y);
+                    }
+                  else
+                    {
+                      os_scrollbar_move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
+                    }
+
+                  gtk_widget_show (GTK_WIDGET (priv->thumb));
+                }
+            }
+        }
+
       /* after a scroll-event, without motion,
        * pager becomes inactive because the timeout in
        * leave-notify-event starts,
@@ -1457,6 +1537,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                                                                 scrollbar);
             }
 
+          priv->toplevel_button_press = FALSE;
           priv->can_hide = TRUE;
 
           if (priv->source_hide_thumb_id != 0)
@@ -1475,7 +1556,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
         }
 
       /* get the motion_notify_event trough XEvent */
-      if (xevent->type == MotionNotify)
+      if (!priv->toplevel_button_press && xevent->type == MotionNotify)
         {
           /* react to motion_notify_event
            * and set the state accordingly. */
@@ -1642,6 +1723,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->internal = FALSE;
   priv->lock_position = FALSE;
   priv->proximity = FALSE;
+  priv->toplevel_button_press = FALSE;
   priv->source_deactivate_pager_id = 0;
   priv->source_hide_thumb_id = 0;
   priv->source_unlock_thumb_id = 0;
