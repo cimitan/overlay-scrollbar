@@ -720,7 +720,7 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->use_tolerance = FALSE;
 
-  if (priv->grabbed_widget != NULL)
+  if (priv->grabbed_widget != NULL && gtk_widget_get_mapped (priv->grabbed_widget))
     gtk_grab_add (priv->grabbed_widget);
 
   GTK_WIDGET_CLASS (os_thumb_parent_class)->unmap (widget);
@@ -754,14 +754,14 @@ os_thumb_get_property (GObject    *object,
   priv = thumb->priv;
 
   switch (prop_id)
-    {
-      case PROP_ORIENTATION:
-        g_value_set_enum (value, priv->orientation);
-        break;
+  {
+    case PROP_ORIENTATION:
+      g_value_set_enum (value, priv->orientation);
+      break;
 
-      default:
-        break;
-    }
+    default:
+      break;
+  }
 }
 
 static void
@@ -777,8 +777,9 @@ os_thumb_set_property (GObject      *object,
   priv = thumb->priv;
 
   switch (prop_id)
-    {
-      case PROP_ORIENTATION: {
+  {
+    case PROP_ORIENTATION:
+      {
         priv->orientation = g_value_get_enum (value);
         if (priv->orientation == GTK_ORIENTATION_VERTICAL)
           {
@@ -793,9 +794,9 @@ os_thumb_set_property (GObject      *object,
         break;
       }
 
-      default:
-        break;
-    }
+    default:
+      break;
+  }
 }
 
 /* Public functions. */
