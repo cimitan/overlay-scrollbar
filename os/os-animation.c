@@ -37,44 +37,8 @@ struct _OsAnimationPrivate {
   guint32 source_id;
 };
 
-static gboolean os_animation_update_cb (gpointer user_data);
 static void os_animation_dispose (GObject* object);
 static void os_animation_finalize (GObject* object);
-
-/* Private functions. */
-
-static gboolean
-os_animation_update_cb (gpointer user_data)
-{
-  OsAnimation *animation = OS_ANIMATION (user_data);
-  OsAnimationPrivate *priv = animation->priv;
-  const gint64 current_time = g_get_monotonic_time ();
-  const gint64 end_time = priv->start_time + priv->duration;
-
-  if (current_time < end_time)
-    {
-      /* On-going animation. */
-      const gfloat diff_time = current_time - priv->start_time;
-      const gfloat weight = diff_time / priv->duration;
-
-      priv->update_func (weight, priv->user_data);
-
-      return TRUE;
-    }
-  else
-    {
-      /* Animation ended. */
-      priv->update_func (1.0f, priv->user_data);
-      priv->source_id = 0;
-
-      if (priv->end_func != NULL)
-        priv->end_func (priv->user_data);
-
-      return FALSE;
-    }
-}
-
-/* Type definition. */
 
 G_DEFINE_TYPE (OsAnimation, os_animation, G_TYPE_OBJECT);
 
@@ -189,6 +153,38 @@ os_animation_set_duration (OsAnimation* animation,
   priv->duration = (gint64) duration * G_GINT64_CONSTANT (1000);
 }
 
+/* callback called by the animation */
+static gboolean
+update_cb (gpointer user_data)
+{
+  OsAnimation *animation = OS_ANIMATION (user_data);
+  OsAnimationPrivate *priv = animation->priv;
+  const gint64 current_time = g_get_monotonic_time ();
+  const gint64 end_time = priv->start_time + priv->duration;
+
+  if (current_time < end_time)
+    {
+      /* On-going animation. */
+      const gfloat diff_time = current_time - priv->start_time;
+      const gfloat weight = diff_time / priv->duration;
+
+      priv->update_func (weight, priv->user_data);
+
+      return TRUE;
+    }
+  else
+    {
+      /* Animation ended. */
+      priv->update_func (1.0f, priv->user_data);
+      priv->source_id = 0;
+
+      if (priv->end_func != NULL)
+        priv->end_func (priv->user_data);
+
+      return FALSE;
+    }
+}
+
 /**
  * os_animation_start:
  * @animation: a #OsAnimation
@@ -207,7 +203,7 @@ os_animation_start (OsAnimation* animation)
   if (priv->source_id == 0)
     {
       priv->start_time = g_get_monotonic_time ();
-      priv->source_id = g_timeout_add (priv->rate, os_animation_update_cb, animation);
+      priv->source_id = g_timeout_add (priv->rate, update_cb, animation);
     }
 }
 
