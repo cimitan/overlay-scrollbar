@@ -49,135 +49,40 @@ struct _OsPagerPrivate {
   gboolean detached;
   gboolean visible;
   gfloat weight;
-  gint width;
-  gint height;
   gulong handler_id;
 };
 
-static gboolean rectangle_changed (GdkRectangle rectangle1, GdkRectangle rectangle2);
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
-static void os_pager_change_state_cb (gfloat weight, gpointer user_data);
-static void os_pager_create (OsPager *pager);
-static void os_pager_draw (OsPager *pager);
-static void os_pager_draw_connection (OsPager *pager);
-static void os_pager_mask (OsPager *pager);
-static void os_pager_notify_gtk_theme_name_cb (GObject *object, GParamSpec* pspec, gpointer user_data);
 
 /* Private functions */
 
-static gboolean
-rectangle_changed (GdkRectangle rectangle1,
-                   GdkRectangle rectangle2)
-{
-  if (rectangle1.x != rectangle2.x) return TRUE;
-  if (rectangle1.y != rectangle2.y) return TRUE;
-  if (rectangle1.width  != rectangle2.width)  return TRUE;
-  if (rectangle1.height != rectangle2.height) return TRUE;
-
-  return FALSE;
-}
-
-/* Create a pager. */
+/* draw on the connection_window */
 static void
-os_pager_create (OsPager *pager)
+draw_connection (OsPager *pager)
 {
-  GdkWindowAttr attributes;
+  GdkColor color;
   OsPagerPrivate *priv;
 
   priv = pager->priv;
 
-  /* Instead reparenting,
-   * which doesn't seem to work well,
-   * destroy the two windows. */
-  if (priv->connection_window != NULL)
-    {
-      /* From the Gdk documentation:
-       * "Note that a window will not be destroyed
-       *  automatically when its reference count
-       *  reaches zero. You must call
-       *  gdk_window_destroy ()
-       *  yourself before that happens". */
-      gdk_window_destroy (priv->connection_window);
+  /* 0.6 is taken from os_thumb_expose. */
+  color.red   = 65535 * 0.6;
+  color.green = 65535 * 0.6;
+  color.blue  = 65535 * 0.6;
 
-      g_object_unref (priv->connection_window);
-      priv->connection_window = NULL;
-    }
+  gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->connection_window), &color, FALSE, TRUE);
 
-  if (priv->pager_window != NULL)
-    {
-      /* From the Gdk documentation:
-       * "Note that a window will not be destroyed
-       *  automatically when its reference count
-       *  reaches zero. You must call
-       *  gdk_window_destroy ()
-       *  yourself before that happens". */
-      gdk_window_destroy (priv->pager_window);
+  gdk_window_set_background (priv->connection_window, &color);
 
-      g_object_unref (priv->pager_window);
-      priv->pager_window = NULL;
-    }
+  gdk_window_clear (priv->connection_window);
 
-  attributes.width = priv->allocation.width;
-  attributes.height = priv->allocation.height;
-  attributes.wclass = GDK_INPUT_OUTPUT;
-  attributes.window_type = GDK_WINDOW_CHILD;
-  attributes.visual = gtk_widget_get_visual (priv->parent);
-  attributes.colormap = gtk_widget_get_colormap (priv->parent);
-
-  /* connection_window */
-  priv->connection_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                            &attributes,
-                                            GDK_WA_VISUAL | GDK_WA_COLORMAP);
-
-  g_object_ref_sink (priv->connection_window);
-
-  gdk_window_set_transient_for (priv->connection_window,
-                                gtk_widget_get_window (priv->parent));
-
-  gdk_window_input_shape_combine_region (priv->connection_window,
-                                         gdk_region_new (),
-                                         0, 0);
-
-  /* pager_window */
-  priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
-                                       &attributes,
-                                       GDK_WA_VISUAL | GDK_WA_COLORMAP);
-
-  g_object_ref_sink (priv->pager_window);
-
-  /* stay above the connection_window */
-  gdk_window_set_transient_for (priv->pager_window,
-                                priv->connection_window);
-
-  gdk_window_input_shape_combine_region (priv->pager_window,
-                                         gdk_region_new (),
-                                         0, 0);
+  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
+/* draw on the pager_window */
 static void
-os_pager_change_state_cb (gfloat weight,
-                          gpointer user_data)
-{
-  OsPager *pager;
-  OsPagerPrivate *priv;
-
-  pager = OS_PAGER (user_data);
-
-  priv = pager->priv;
-
-  priv->weight = weight;
-
-  if (priv->parent == NULL)
-    return;
-
-  os_pager_draw_connection (pager);
-  os_pager_draw (pager);
-}
-
-/* Draw on the pager_window. */
-static void
-os_pager_draw (OsPager *pager)
+draw_pager (OsPager *pager)
 {
   GdkColor c1, c2, color;
   GtkStyle *style;
@@ -214,63 +119,32 @@ os_pager_draw (OsPager *pager)
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
-/* Draw on the connection_window. */
+/* callback called by the change-state animation */
 static void
-os_pager_draw_connection (OsPager *pager)
+change_state_cb (gfloat   weight,
+                 gpointer user_data)
 {
-  GdkColor color;
+  OsPager *pager;
   OsPagerPrivate *priv;
+
+  pager = OS_PAGER (user_data);
 
   priv = pager->priv;
 
-  /* 0.6 is taken from os_thumb_expose. */
-  color.red   = 65535 * 0.6;
-  color.green = 65535 * 0.6;
-  color.blue  = 65535 * 0.6;
+  priv->weight = weight;
 
-  gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->connection_window), &color, FALSE, TRUE);
+  if (priv->parent == NULL)
+    return;
 
-  gdk_window_set_background (priv->connection_window, &color);
-
-  gdk_window_clear (priv->connection_window);
-
-  gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
+  draw_connection (pager);
+  draw_pager (pager);
 }
 
-/* Mask the pager_window. */
+/* callback called when the Gtk+ theme changes */
 static void
-os_pager_mask (OsPager *pager)
-{
-  OsPagerPrivate *priv;
-
-  priv = pager->priv;
-
-  gdk_window_shape_combine_region (priv->pager_window,
-                                   gdk_region_rectangle (&priv->mask),
-                                   0, 0);
-
-  gdk_window_clear (priv->pager_window);
-}
-
-/* Mask the connection_window. */
-static void
-os_pager_mask_connection (OsPager *pager)
-{
-  OsPagerPrivate *priv;
-
-  priv = pager->priv;
-
-  gdk_window_shape_combine_region (priv->connection_window,
-                                   gdk_region_rectangle (&priv->connection_mask),
-                                   0, 0);
-
-  gdk_window_clear (priv->connection_window);
-}
-
-static void
-os_pager_notify_gtk_theme_name_cb (GObject*    gobject,
-                                   GParamSpec* pspec,
-                                   gpointer    user_data)
+notify_gtk_theme_name_cb (GObject*    gobject,
+                          GParamSpec* pspec,
+                          gpointer    user_data)
 {
   OsPager *pager;
   OsPagerPrivate *priv;
@@ -283,11 +157,22 @@ os_pager_notify_gtk_theme_name_cb (GObject*    gobject,
       priv->connection_window == NULL)
     return;
 
-  os_pager_draw_connection (pager);
-  os_pager_draw (pager);
+  draw_connection (pager);
+  draw_pager (pager);
 }
 
-/* Type definition. */
+/* check if two GdkRectangle are different */
+static gboolean
+rectangle_changed (GdkRectangle rectangle1,
+                   GdkRectangle rectangle2)
+{
+  if (rectangle1.x != rectangle2.x) return TRUE;
+  if (rectangle1.y != rectangle2.y) return TRUE;
+  if (rectangle1.width  != rectangle2.width)  return TRUE;
+  if (rectangle1.height != rectangle2.height) return TRUE;
+
+  return FALSE;
+}
 
 G_DEFINE_TYPE (OsPager, os_pager, G_TYPE_OBJECT);
 
@@ -335,10 +220,10 @@ os_pager_init (OsPager *pager)
   priv->weight = 1.0f;
 
   priv->animation = os_animation_new (RATE_FADE, DURATION_FADE_OUT,
-                                      os_pager_change_state_cb, NULL, pager);
+                                      change_state_cb, NULL, pager);
 
   priv->handler_id = g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
-                                       G_CALLBACK (os_pager_notify_gtk_theme_name_cb), pager);
+                                       G_CALLBACK (notify_gtk_theme_name_cb), pager);
 }
 
 static void
@@ -413,6 +298,21 @@ os_pager_new (void)
   return g_object_new (OS_TYPE_PAGER, NULL);
 }
 
+/* move a mask on the connection_window, fake movement */
+static void
+mask_connection (OsPager *pager)
+{
+  OsPagerPrivate *priv;
+
+  priv = pager->priv;
+
+  gdk_window_shape_combine_region (priv->connection_window,
+                                   gdk_region_rectangle (&priv->connection_mask),
+                                   0, 0);
+
+  gdk_window_clear (priv->connection_window);
+}
+
 /**
  * os_pager_connect:
  * @pager: a #OsPager
@@ -438,7 +338,7 @@ os_pager_connect (OsPager      *pager,
   if (priv->parent == NULL)
     return;
 
-  os_pager_mask_connection (pager);
+  mask_connection (pager);
 }
 
 /**
@@ -468,6 +368,21 @@ os_pager_hide (OsPager *pager)
   gdk_window_hide (priv->pager_window);
 }
 
+/* move a mask on the pager_window, fake movement */
+static void
+mask_pager (OsPager *pager)
+{
+  OsPagerPrivate *priv;
+
+  priv = pager->priv;
+
+  gdk_window_shape_combine_region (priv->pager_window,
+                                   gdk_region_rectangle (&priv->mask),
+                                   0, 0);
+
+  gdk_window_clear (priv->pager_window);
+}
+
 /**
  * os_pager_move_resize:
  * @pager: a #OsPager
@@ -493,7 +408,7 @@ os_pager_move_resize (OsPager      *pager,
   if (priv->parent == NULL)
     return;
 
-  os_pager_mask (pager);
+  mask_pager (pager);
 }
 
 /**
@@ -534,7 +449,7 @@ os_pager_set_active (OsPager *pager,
         {
           priv->weight = 1.0f;
 
-          os_pager_draw (pager);
+          draw_pager (pager);
         }
     }
 }
@@ -574,6 +489,83 @@ os_pager_set_detached (OsPager *pager,
     }
 }
 
+/* create connection_window and pager_window */
+static void
+create_windows (OsPager *pager)
+{
+  GdkWindowAttr attributes;
+  OsPagerPrivate *priv;
+
+  priv = pager->priv;
+
+  /* Instead reparenting,
+   * which doesn't seem to work well,
+   * destroy the two windows. */
+  if (priv->connection_window != NULL)
+    {
+      /* From the Gdk documentation:
+       * "Note that a window will not be destroyed
+       *  automatically when its reference count
+       *  reaches zero. You must call
+       *  gdk_window_destroy ()
+       *  yourself before that happens". */
+      gdk_window_destroy (priv->connection_window);
+
+      g_object_unref (priv->connection_window);
+      priv->connection_window = NULL;
+    }
+
+  if (priv->pager_window != NULL)
+    {
+      /* From the Gdk documentation:
+       * "Note that a window will not be destroyed
+       *  automatically when its reference count
+       *  reaches zero. You must call
+       *  gdk_window_destroy ()
+       *  yourself before that happens". */
+      gdk_window_destroy (priv->pager_window);
+
+      g_object_unref (priv->pager_window);
+      priv->pager_window = NULL;
+    }
+
+  attributes.width = priv->allocation.width;
+  attributes.height = priv->allocation.height;
+  attributes.wclass = GDK_INPUT_OUTPUT;
+  attributes.window_type = GDK_WINDOW_CHILD;
+  attributes.visual = gtk_widget_get_visual (priv->parent);
+  attributes.colormap = gtk_widget_get_colormap (priv->parent);
+
+  /* connection_window */
+  priv->connection_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+                                            &attributes,
+                                            GDK_WA_VISUAL | GDK_WA_COLORMAP);
+
+  g_object_ref_sink (priv->connection_window);
+
+  gdk_window_set_transient_for (priv->connection_window,
+                                gtk_widget_get_window (priv->parent));
+
+  gdk_window_input_shape_combine_region (priv->connection_window,
+                                         gdk_region_new (),
+                                         0, 0);
+
+  /* pager_window */
+  priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+                                       &attributes,
+                                       GDK_WA_VISUAL | GDK_WA_COLORMAP);
+
+  g_object_ref_sink (priv->pager_window);
+
+  /* stay above the connection_window */
+  gdk_window_set_transient_for (priv->pager_window,
+                                priv->connection_window);
+
+  gdk_window_input_shape_combine_region (priv->pager_window,
+                                         gdk_region_new (),
+                                         0, 0);
+}
+
 /**
  * os_pager_set_parent:
  * @pager: a #OsPager
@@ -608,10 +600,10 @@ os_pager_set_parent (OsPager   *pager,
 
       priv->weight = 1.0f;
 
-      os_pager_create (pager);
-      os_pager_draw_connection (pager);
-      os_pager_draw (pager);
-      os_pager_mask (pager);
+      create_windows (pager);
+      draw_connection (pager);
+      draw_pager (pager);
+      mask_pager (pager);
 
       gdk_window_move_resize (priv->connection_window,
                               priv->allocation.x,
