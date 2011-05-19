@@ -1,3 +1,19 @@
+overlay-scrollbar 0.2.0 (May 18, 2011)
+--------------------------------------
+
+* Major reshuffle in the code, hopefully easier to read.
+
+* Added a patch which enables the scrollbars almost globally.
+
+* Bugs fixed:
+ 728838 Add visual connection after pageup/down via thumb
+ 773263 scrolling doesn't work at the edge of the screen (fitts' law is broken)
+ 774610 Overlay Scrollbar arrows are off-center for certain themes (e.g....
+ 765719 hide the thumb when selecting text or on general interaction
+ 735867 slowly moving the thumb when it's the the beginning, results in...
+ 783261 Using scrollbar can break windows while list search is taking place
+
+
 overlay-scrollbar 0.1.12 (April 27, 2011)
 -----------------------------------------
 
