@@ -134,9 +134,9 @@ calc_layout_pager (OsScrollbar *scrollbar,
        * total_adjustment_range) times the trough height in pixels
        */
 
-      if (priv->adjustment->upper - priv->adjustment->lower != 0)
-        height = ((bottom - top) * (priv->adjustment->page_size /
-                                 (priv->adjustment->upper - priv->adjustment->lower)));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
+        height = ((bottom - top) * (gtk_adjustment_get_page_size (priv->adjustment) /
+                                 (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment))));
       else
         height = gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
 
@@ -146,9 +146,9 @@ calc_layout_pager (OsScrollbar *scrollbar,
 
       y = top;
 
-      if (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size != 0)
-        y += (bottom - top - height) * ((adjustment_value - priv->adjustment->lower) /
-                                        (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        y += (bottom - top - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                        (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment)));
 
       y = CLAMP (y, top, bottom);
 
@@ -166,9 +166,9 @@ calc_layout_pager (OsScrollbar *scrollbar,
        * total_adjustment_range) times the trough width in pixels
        */
 
-      if (priv->adjustment->upper - priv->adjustment->lower != 0)
-        width = ((right - left) * (priv->adjustment->page_size /
-                                  (priv->adjustment->upper - priv->adjustment->lower)));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
+        width = ((right - left) * (gtk_adjustment_get_page_size (priv->adjustment) /
+                                  (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment))));
       else
         width =  gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
 
@@ -178,9 +178,9 @@ calc_layout_pager (OsScrollbar *scrollbar,
 
       x = left;
 
-      if (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size != 0)
-        x += (right - left - width) * ((adjustment_value - priv->adjustment->lower) /
-                                       (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        x += (right - left - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                       (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment)));
 
       x = CLAMP (x, left, right);
 
@@ -211,9 +211,9 @@ calc_layout_slider (OsScrollbar *scrollbar,
 
       y = top;
 
-      if (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size != 0)
-        y += (bottom - top - height) * ((adjustment_value - priv->adjustment->lower) /
-                                        (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        y += (bottom - top - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                        (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment)));
 
       y = CLAMP (y, top, bottom);
 
@@ -233,9 +233,9 @@ calc_layout_slider (OsScrollbar *scrollbar,
 
       x = left;
 
-      if (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size != 0)
-        x += (right - left - width) * ((adjustment_value - priv->adjustment->lower) /
-                                       (priv->adjustment->upper - priv->adjustment->lower - priv->adjustment->page_size));
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        x += (right - left - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                       (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment)));
 
       x = CLAMP (x, left, right);
 
@@ -571,7 +571,7 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
    * hidden a pager that is meant to be hidden/shown.
    * I don't want to see pagers reappearing because
    * of a change in the adjustment of an invisible pager or viceversa. */
-  if ((adjustment->upper - adjustment->lower) > adjustment->page_size)
+  if ((gtk_adjustment_get_upper (adjustment) - gtk_adjustment_get_lower (adjustment)) > gtk_adjustment_get_page_size (adjustment))
     {
       priv->fullsize = FALSE;
       if (priv->proximity != FALSE)
@@ -588,8 +588,8 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
         }
     }
 
-  calc_layout_pager (scrollbar, adjustment->value);
-  calc_layout_slider (scrollbar, adjustment->value);
+  calc_layout_pager (scrollbar, gtk_adjustment_get_value (adjustment));
+  calc_layout_slider (scrollbar, gtk_adjustment_get_value (adjustment));
 
   if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
@@ -607,8 +607,8 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  calc_layout_pager (scrollbar, adjustment->value);
-  calc_layout_slider (scrollbar, adjustment->value);
+  calc_layout_pager (scrollbar, gtk_adjustment_get_value (adjustment));
+  calc_layout_slider (scrollbar, gtk_adjustment_get_value (adjustment));
 
   if (!priv->motion_notify_event && !priv->enter_notify_event)
     gtk_widget_hide (GTK_WIDGET (priv->thumb));
@@ -1134,11 +1134,11 @@ coord_to_value (OsScrollbar *scrollbar,
     frac = (MAX (0, coord - trough_start) /
             (gdouble) (trough_length - slider_length));
 
-  value = priv->adjustment->lower + frac * (priv->adjustment->upper -
-                                            priv->adjustment->lower -
-                                            priv->adjustment->page_size);
+  value = gtk_adjustment_get_lower (priv->adjustment) + frac * (gtk_adjustment_get_upper (priv->adjustment) -
+                                            gtk_adjustment_get_lower (priv->adjustment) -
+                                            gtk_adjustment_get_page_size (priv->adjustment));
 
-  value = CLAMP (value, priv->adjustment->lower, priv->adjustment->upper - priv->adjustment->page_size);
+  value = CLAMP (value, gtk_adjustment_get_lower (priv->adjustment), gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
   return value;
 }
@@ -1215,7 +1215,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                          priv->win_y + priv->overlay.y,
                          priv->win_y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-              if (priv->adjustment->value == 0)
+              if (gtk_adjustment_get_value (priv->adjustment) == 0)
                 {
                   priv->slide_initial_slider_position = 0;
                   priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
@@ -1241,7 +1241,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                          priv->win_x + priv->overlay.x + priv->overlay.width - priv->slider.width);
               y = priv->win_y;
 
-              if (priv->adjustment->value == 0)
+              if (gtk_adjustment_get_value (priv->adjustment) == 0)
                 {
                   priv->slide_initial_slider_position = 0;
                   priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
@@ -1275,7 +1275,7 @@ get_wheel_delta (OsScrollbar       *scrollbar,
 
   priv = scrollbar->priv;
 
-  delta = pow (priv->adjustment->page_size, 2.0 / 3.0);
+  delta = pow (gtk_adjustment_get_page_size (priv->adjustment), 2.0 / 3.0);
 
   if (direction == GDK_SCROLL_UP ||
       direction == GDK_SCROLL_LEFT)
@@ -1301,10 +1301,10 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   delta = get_wheel_delta (scrollbar, event->direction);
 
   gtk_adjustment_set_value (priv->adjustment,
-                            CLAMP (priv->adjustment->value + delta,
-                                   priv->adjustment->lower,
-                                   (priv->adjustment->upper -
-                                    priv->adjustment->page_size)));
+                            CLAMP (gtk_adjustment_get_value (priv->adjustment) + delta,
+                                   gtk_adjustment_get_lower (priv->adjustment),
+                                   (gtk_adjustment_get_upper (priv->adjustment) -
+                                    gtk_adjustment_get_page_size (priv->adjustment))));
 
   return FALSE;
 }
@@ -1410,8 +1410,8 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
   priv->lock_position = FALSE;
 
-  calc_layout_pager (scrollbar, priv->adjustment->value);
-  calc_layout_slider (scrollbar, priv->adjustment->value);
+  calc_layout_pager (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+  calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
 
   store_toplevel_position (scrollbar);
 
@@ -1900,7 +1900,7 @@ os_scrollbar_realize (GtkWidget *widget)
   g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                     G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
-  calc_layout_pager (scrollbar, priv->adjustment->value);
+  calc_layout_pager (scrollbar, gtk_adjustment_get_value (priv->adjustment));
 
   os_pager_set_parent (OS_PAGER (priv->pager), widget);
 
@@ -1963,8 +1963,8 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
 
   if (priv->adjustment != NULL)
     {
-      calc_layout_pager (scrollbar, priv->adjustment->value);
-      calc_layout_slider (scrollbar, priv->adjustment->value);
+      calc_layout_pager (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+      calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
     }
 
   os_pager_size_allocate (OS_PAGER (priv->pager), rect);
@@ -1974,7 +1974,7 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   if (gtk_widget_get_realized (widget))
     store_toplevel_position (scrollbar);
 
-  widget->allocation = *allocation;
+  gtk_widget_set_allocation (widget, allocation);
 }
 
 static void

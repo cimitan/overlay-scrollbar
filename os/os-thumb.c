@@ -273,12 +273,19 @@ os_thumb_composited_changed (GtkWidget *widget)
   if (gdk_screen_is_composited (gtk_widget_get_screen (widget)))
     {
       GdkVisual *visual;
+      guint32 red_mask;
+      guint32 green_mask;
+      guint32 blue_mask;
 
       visual = gtk_widget_get_visual (widget);
 
-      if (visual->depth == 32 && (visual->red_mask   == 0xff0000 &&
-                                  visual->green_mask == 0x00ff00 &&
-                                  visual->blue_mask  == 0x0000ff))
+      gdk_visual_get_red_pixel_details (visual, &red_mask, NULL, NULL);
+      gdk_visual_get_green_pixel_details (visual, &green_mask, NULL, NULL);
+      gdk_visual_get_blue_pixel_details (visual, &blue_mask, NULL, NULL);
+
+      if (gdk_visual_get_depth (visual) == 32 && (red_mask   == 0xff0000 &&
+                                                  green_mask == 0x00ff00 &&
+                                                  blue_mask  == 0x0000ff))   
         priv->can_rgba = TRUE;
     }
 
