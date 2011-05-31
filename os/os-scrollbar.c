@@ -58,6 +58,7 @@ struct _OsScrollbarPrivate
   GtkWidget *thumb;
   GtkAdjustment *adjustment;
   GtkOrientation orientation;
+  GtkWindowGroup *window_group;
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
@@ -96,6 +97,7 @@ static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing
 static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
 static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
+static void thumb_realize_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
@@ -519,6 +521,8 @@ swap_thumb (OsScrollbar *scrollbar,
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_motion_notify_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
+                                            thumb_realize_cb, scrollbar);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_scroll_event_cb, scrollbar);
       g_signal_handlers_disconnect_by_func (G_OBJECT (priv->thumb),
                                             thumb_unmap_cb, scrollbar);
@@ -546,6 +550,8 @@ swap_thumb (OsScrollbar *scrollbar,
                         G_CALLBACK (thumb_map_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "motion-notify-event",
                         G_CALLBACK (thumb_motion_notify_event_cb), scrollbar);
+      g_signal_connect (G_OBJECT (priv->thumb), "realize",
+                        G_CALLBACK (thumb_realize_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "scroll-event",
                         G_CALLBACK (thumb_scroll_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "unmap",
@@ -1118,6 +1124,19 @@ thumb_map_cb (GtkWidget *widget,
 
       gdk_error_trap_pop ();
     }
+}
+
+static void
+thumb_realize_cb (GtkWidget *widget,
+                  gpointer   user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+//  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (widget));
 }
 
 /* traduce coordinates into GtkRange values */
@@ -1761,6 +1780,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->pager = os_pager_new ();
 
+  priv->window_group = gtk_window_group_new ();
+
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
                     G_CALLBACK (notify_adjustment_cb), NULL);
 
@@ -1844,7 +1865,6 @@ os_scrollbar_map (GtkWidget *widget)
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
@@ -1905,6 +1925,8 @@ os_scrollbar_realize (GtkWidget *widget)
 
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
+
+  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
 
@@ -2058,6 +2080,8 @@ os_scrollbar_unrealize (GtkWidget *widget)
                                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
   os_pager_set_parent (OS_PAGER (priv->pager), NULL);
+
+  gtk_window_group_remove_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
