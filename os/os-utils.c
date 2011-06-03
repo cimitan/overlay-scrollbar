@@ -45,7 +45,6 @@ os_utils_is_blacklisted (const gchar* program)
     "pgadmin3",
     "soffice",
     "synaptic",
-    "system-config-printer.py",
     "thunderbird-bin",
     "update-manager",
     "vinagre",
