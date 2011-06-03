@@ -1828,6 +1828,12 @@ os_scrollbar_dispose (GObject *object)
       priv->pager = NULL;
     }
 
+  if (priv->window_group != NULL)
+    {
+      g_object_unref (priv->window_group);
+      priv->window_group = NULL;
+    }
+
   swap_adjustment (scrollbar, NULL);
   swap_thumb (scrollbar, NULL);
 
