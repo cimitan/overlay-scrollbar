@@ -58,6 +58,7 @@ struct _OsScrollbarPrivate
   GtkWidget *thumb;
   GtkAdjustment *adjustment;
   GtkOrientation orientation;
+  GtkWindowGroup *window_group;
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
@@ -1761,6 +1762,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->pager = os_pager_new ();
 
+  priv->window_group = gtk_window_group_new ();
+
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
                     G_CALLBACK (notify_adjustment_cb), NULL);
 
@@ -1807,6 +1810,12 @@ os_scrollbar_dispose (GObject *object)
       priv->pager = NULL;
     }
 
+  if (priv->window_group != NULL)
+    {
+      g_object_unref (priv->window_group);
+      priv->window_group = NULL;
+    }
+
   swap_adjustment (scrollbar, NULL);
   swap_thumb (scrollbar, NULL);
 
@@ -1843,7 +1852,6 @@ os_scrollbar_map (GtkWidget *widget)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
-
 
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
@@ -1905,6 +1913,8 @@ os_scrollbar_realize (GtkWidget *widget)
 
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
+
+  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
 
@@ -2058,6 +2068,8 @@ os_scrollbar_unrealize (GtkWidget *widget)
                                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
   os_pager_set_parent (OS_PAGER (priv->pager), NULL);
+
+  gtk_window_group_remove_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
