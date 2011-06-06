@@ -71,7 +71,9 @@ draw_connection (OsPager *pager)
   color.green = 65535 * 0.6;
   color.blue  = 65535 * 0.6;
 
+#ifndef USE_GTK3
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->connection_window), &color, FALSE, TRUE);
+#endif
 
   gdk_window_set_background (priv->connection_window, &color);
 
