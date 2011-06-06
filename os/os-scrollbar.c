@@ -98,7 +98,11 @@ static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
+#ifdef USE_GTK3
+static gboolean os_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
+#else
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
+#endif
 
 static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static void os_scrollbar_hide (GtkWidget *widget);
@@ -111,6 +115,11 @@ static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
 static void os_scrollbar_finalize (GObject *object);
+
+#ifdef USE_GTK3
+static void os_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
+static void os_scrollbar_get_preferred_height (GtkWidget *widget, gint *minimal_height, gint *natural_height);
+#endif
 
 /* Private functions. */
 
@@ -888,7 +897,11 @@ present_window_with_timestamp (Screen  *screen,
 
   gdk_flush ();
 
+#ifdef USE_GTK3
+  gdk_error_trap_pop_ignored ();
+#else
   gdk_error_trap_pop ();
+#endif
 }
 
 /* present a Gdk window */
@@ -1116,7 +1129,11 @@ thumb_map_cb (GtkWidget *widget,
 
       gdk_flush ();
 
+#ifdef USE_GTK3
+      gdk_error_trap_pop_ignored ();
+#else
       gdk_error_trap_pop ();
+#endif
     }
 }
 
@@ -1689,15 +1706,23 @@ os_scrollbar_class_init (OsScrollbarClass *class)
 
   gobject_class = G_OBJECT_CLASS (class);
   widget_class = GTK_WIDGET_CLASS (class);
-
+#ifdef USE_GTK3
+  widget_class->draw          = os_scrollbar_draw;
+#else
   widget_class->expose_event  = os_scrollbar_expose_event;
+#endif
   widget_class->grab_notify   = os_scrollbar_grab_notify;
   widget_class->hide          = os_scrollbar_hide;
   widget_class->map           = os_scrollbar_map;
   widget_class->realize       = os_scrollbar_realize;
   widget_class->show          = os_scrollbar_show;
   widget_class->size_allocate = os_scrollbar_size_allocate;
+#ifdef USE_GTK3
+  widget_class->get_preferred_width  = os_scrollbar_get_preferred_width;
+  widget_class->get_preferred_height = os_scrollbar_get_preferred_height;
+#else
   widget_class->size_request  = os_scrollbar_size_request;
+#endif
   widget_class->unmap         = os_scrollbar_unmap;
   widget_class->unrealize     = os_scrollbar_unrealize;
 
@@ -1819,12 +1844,21 @@ os_scrollbar_finalize (GObject *object)
   G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
 }
 
+#ifdef USE_GTK3
+static gboolean
+os_scrollbar_draw (GtkWidget      *widget,
+                   cairo_t        *cr)
+{
+  return TRUE;
+}
+#else
 static gboolean
 os_scrollbar_expose_event (GtkWidget      *widget,
                            GdkEventExpose *event)
 {
   return TRUE;
 }
+#endif
 
 static void
 os_scrollbar_grab_notify (GtkWidget *widget,
@@ -2013,8 +2047,36 @@ os_scrollbar_size_request (GtkWidget      *widget,
   else
     requisition->height = 0;
 
+#ifndef USE_GTK3
   widget->requisition = *requisition;
+#endif
 }
+
+#if USE_GTK3
+static void
+os_scrollbar_get_preferred_width (GtkWidget *widget,
+                                  gint      *minimal_width,
+                                  gint      *natural_width)
+{
+  GtkRequisition requisition;
+
+  os_scrollbar_size_request (widget, &requisition);
+
+  *minimal_width = *natural_width = requisition.width;
+}
+
+static void
+os_scrollbar_get_preferred_height (GtkWidget *widget,
+                                   gint      *minimal_height,
+                                   gint      *natural_height)
+{
+  GtkRequisition requisition;
+
+  os_scrollbar_size_request (widget, &requisition);
+
+  *minimal_height = *natural_height = requisition.height;
+}
+#endif
 
 static void
 os_scrollbar_unmap (GtkWidget *widget)

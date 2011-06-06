@@ -2,3 +2,8 @@ if [ -f @libdir@/liboverlay-scrollbar-@OS_MAJORMINOR@.so.@OS_LT_CURRENT@ ]
 then
 	export LIBOVERLAY_SCROLLBAR=1
 fi
+
+if [ -f @libdir@/liboverlay-scrollbar3-@OS_MAJORMINOR@.so.@OS_LT_CURRENT@ ]
+then
+	export LIBOVERLAY_SCROLLBAR3=1
+fi

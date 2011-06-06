@@ -66,7 +66,11 @@ enum {
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
+#ifdef USE_GTK3
+static gboolean os_thumb_draw (GtkWidget *widget, cairo_t *cr);
+#else
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
+#endif
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
@@ -127,7 +131,11 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
+#if USE_GTK3
+  widget_class->draw                 = os_thumb_draw;
+#else
   widget_class->expose_event         = os_thumb_expose;
+#endif
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
@@ -343,15 +351,21 @@ draw_round_rect (cairo_t *cr,
 }
 
 static gboolean
+#ifdef USE_GTK3
+os_thumb_draw (GtkWidget *widget,
+               cairo_t *cr)
+{
+#else
 os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
+  cairo_t *cr;
+#endif
   GtkStyle *style;
   OsThumb *thumb;
   OsThumbPrivate *priv;
   cairo_pattern_t *pat;
-  cairo_t *cr;
   gint x, y, width, height;
   gint radius;
 
@@ -360,15 +374,25 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  gtk_widget_get_allocation (widget, &allocation);
 
   x = 0;
   y = 0;
+
+#if USE_GTK3
+  width = gtk_widget_get_allocated_width (widget);
+  height = gtk_widget_get_allocated_height (widget);
+#else
+  gtk_widget_get_allocation (widget, &allocation);
+ 
   width = allocation.width;
   height = allocation.height;
+#endif
+
   radius = priv->can_rgba ? THUMB_RADIUS : 0;
 
+#ifndef USE_GTK3
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
+#endif
 
   cairo_save (cr);
 
@@ -635,10 +659,21 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   return FALSE;
 }
 
+
 static void
 os_thumb_screen_changed (GtkWidget *widget,
                          GdkScreen *old_screen)
 {
+#if USE_GTK3
+  GdkScreen *screen;
+  GdkVisual *visual;
+
+  screen = gtk_widget_get_screen (widget);
+  visual = gdk_screen_get_rgba_visual (screen);
+
+ if (visual)
+   gtk_widget_set_visual (widget, visual);
+#else
   GdkScreen *screen;
   GdkColormap *colormap;
 
@@ -647,6 +682,7 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
+#endif
 }
 
 static gboolean
