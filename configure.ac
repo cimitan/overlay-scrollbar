@@ -66,11 +66,27 @@ PKG_PROG_PKG_CONFIG
 
 AC_SUBST(glib_req, 2.26.0)
 AC_SUBST(gtk_req, 2.22.0)
+AC_SUBST(gtk3_req, 3.0.9)
 AC_SUBST(cairo_req, 1.10)
 
-PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req)
-AC_SUBST(DEPS_CFLAGS)
-AC_SUBST(DEPS_LIBS)
+AC_ARG_WITH([gtk],
+  [AS_HELP_STRING([--with-gtk],
+    [Which version of gtk to use @<:@default=2@:>@])],
+  [],
+  [with_gtk=2])
+AS_IF([test "x$with_gtk" = x3],
+        [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-3.0 >= $gtk3_req cairo >= $cairo_req)
+         AC_SUBST(DEPS_CFLAGS)
+         AC_SUBST(DEPS_LIBS)
+        ],
+      [test "x$with_gtk" = x2],
+        [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req)
+         AC_SUBST(DEPS_CFLAGS)
+         AC_SUBST(DEPS_LIBS)
+        ],
+      [AC_MSG_FAILURE([Value for --with-gtk was neither 2 nor 3])]
+)
+AM_CONDITIONAL(USE_GTK3, [test "x$with_gtk" = x3])
 
 # Debug flags
 

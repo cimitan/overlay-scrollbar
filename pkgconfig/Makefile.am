@@ -1,13 +1,19 @@
-pcfiles = overlay-scrollbar-@OS_MAJORMINOR@.pc
+if USE_GTK3
+VER=3
+else
+VER=
+endif
+
+pcfiles = overlay-scrollbar$(VER)-@OS_MAJORMINOR@.pc
 
 all-local: $(pcfiles)
 
-%-@OS_MAJORMINOR@.pc: %.pc
+%$(VER)-@OS_MAJORMINOR@.pc: %.pc
 	cp $< $@
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = $(pcfiles)
 
-EXTRA_DIST = overlay-scrollbar.pc.in
+EXTRA_DIST = overlay-scrollbar$(VER).pc.in
 
 CLEANFILES = $(pcfiles)

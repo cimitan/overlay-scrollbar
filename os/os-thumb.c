@@ -66,7 +66,11 @@ enum {
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
+#ifdef USE_GTK3
+static gboolean os_thumb_draw (GtkWidget *widget, cairo_t *cr);
+#else
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
+#endif
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
@@ -127,7 +131,11 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
+#if USE_GTK3
+  widget_class->draw                 = os_thumb_draw;
+#else
   widget_class->expose_event         = os_thumb_expose;
+#endif
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
@@ -343,16 +351,22 @@ draw_round_rect (cairo_t *cr,
 }
 
 static gboolean
+#ifdef USE_GTK3
+os_thumb_draw (GtkWidget *widget,
+               cairo_t   *cr)
+{
+#else
 os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
+  cairo_t *cr;
+#endif
   GtkStyle *style;
   OsThumb *thumb;
   OsThumbPrivate *priv;
   cairo_pattern_t *pat;
-  cairo_t *cr;
-  gint x, y, width, height;
+  gint width, height;
   gint radius;
 
   style = gtk_widget_get_style (widget);
@@ -360,15 +374,19 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  gtk_widget_get_allocation (widget, &allocation);
-
-  x = 0;
-  y = 0;
-  width = allocation.width;
-  height = allocation.height;
   radius = priv->can_rgba ? THUMB_RADIUS : 0;
 
+#if USE_GTK3
+  width = gtk_widget_get_allocated_width (widget);
+  height = gtk_widget_get_allocated_height (widget);
+#else
+  gtk_widget_get_allocation (widget, &allocation);
+ 
+  width = allocation.width;
+  height = allocation.height;
+
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
+#endif
 
   cairo_save (cr);
 
@@ -384,12 +402,12 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_set_line_width (cr, 1);
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
-  draw_round_rect (cr, x, y, width, height, radius);
+  draw_round_rect (cr, 0, 0, width, height, radius);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    pat = cairo_pattern_create_linear (x, y, width + x, y);
+    pat = cairo_pattern_create_linear (0, 0, width, 0);
   else
-    pat = cairo_pattern_create_linear (x, y, x, height + y);
+    pat = cairo_pattern_create_linear (0, 0, 0, height);
 
   cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.95, 0.95, 0.95, 1.0);
   cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 1.0);
@@ -397,12 +415,12 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_pattern_destroy (pat);
   cairo_fill (cr);
 
-  draw_round_rect (cr, x, y, width, height, radius);
+  draw_round_rect (cr, 0, 0, width, height, radius);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    pat = cairo_pattern_create_linear (x, y, x, height + y);
+    pat = cairo_pattern_create_linear (0, 0, 0, height);
   else
-    pat = cairo_pattern_create_linear (x, y, width + x, y);
+    pat = cairo_pattern_create_linear (0, 0, width, 0);
 
   if (priv->button_press_event && !priv->motion_notify_event)
     {
@@ -442,7 +460,7 @@ os_thumb_expose (GtkWidget      *widget,
     cairo_fill (cr);
 
   cairo_set_line_width (cr, 2.0);
-  draw_round_rect (cr, x + 0.5, y + 0.5, width - 1, height - 1, radius - 1);
+  draw_round_rect (cr, 0.5, 0.5, width - 1, height - 1, radius - 1);
   if (!priv->detached)
     cairo_set_source_rgba (cr, style->bg[GTK_STATE_SELECTED].red/65535.0,
                                style->bg[GTK_STATE_SELECTED].green/65535.0,
@@ -452,39 +470,39 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_stroke (cr);
 
   cairo_set_line_width (cr, 1.0);
-  draw_round_rect (cr, x + 1, y + 1, width - 2, height - 2, radius - 1);
+  draw_round_rect (cr, 1, 1, width - 2, height - 2, radius - 1);
   cairo_set_source_rgba (cr, 0.1, 0.1, 0.1, 0.1);
   cairo_stroke (cr);
 
-  draw_round_rect (cr, x + 2, y + 2, width - 4, height - 4, radius - 3);
+  draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 3);
   cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.5);
   cairo_stroke (cr);
 
-  draw_round_rect (cr, x + 3, y + 3, width - 6, height - 6, radius - 4);
+  draw_round_rect (cr, 3, 3, width - 6, height - 6, radius - 4);
   cairo_set_source_rgba (cr, 1, 1, 1, 0.2);
   cairo_stroke (cr);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      cairo_move_to (cr, x + 2.5, y - 1 + height / 2);
-      cairo_line_to (cr, width - 2.5, y - 1 + height / 2);
+      cairo_move_to (cr, 2.5, - 1 + height / 2);
+      cairo_line_to (cr, width - 2.5, - 1 + height / 2);
       cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, x + 2.5, y + height / 2);
-      cairo_line_to (cr, width - 2.5, y + height / 2);
+      cairo_move_to (cr, 2.5, height / 2);
+      cairo_line_to (cr, width - 2.5, height / 2);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
   else
     {
-      cairo_move_to (cr, x - 1 + width / 2, y + 2.5);
-      cairo_line_to (cr, x - 1 + width / 2, height - 2.5);
+      cairo_move_to (cr, 1 + width / 2, 2.5);
+      cairo_line_to (cr, 1 + width / 2, height - 2.5);
       cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, x + width / 2, y + 2.5);
-      cairo_line_to (cr, x + width / 2, height - 2.5);
+      cairo_move_to (cr, width / 2, 2.5);
+      cairo_line_to (cr, width / 2, height - 2.5);
       cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
       cairo_stroke (cr);
     }
@@ -526,7 +544,9 @@ os_thumb_expose (GtkWidget      *widget,
 
   cairo_restore (cr);
 
+#ifndef USE_GTK3
   cairo_destroy (cr);
+#endif
 
   return FALSE;
 }
@@ -635,10 +655,21 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   return FALSE;
 }
 
+
 static void
 os_thumb_screen_changed (GtkWidget *widget,
                          GdkScreen *old_screen)
 {
+#if USE_GTK3
+  GdkScreen *screen;
+  GdkVisual *visual;
+
+  screen = gtk_widget_get_screen (widget);
+  visual = gdk_screen_get_rgba_visual (screen);
+
+ if (visual)
+   gtk_widget_set_visual (widget, visual);
+#else
   GdkScreen *screen;
   GdkColormap *colormap;
 
@@ -647,6 +678,7 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
+#endif
 }
 
 static gboolean

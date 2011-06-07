@@ -71,11 +71,15 @@ draw_connection (OsPager *pager)
   color.green = 65535 * 0.6;
   color.blue  = 65535 * 0.6;
 
+#ifndef USE_GTK3
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->connection_window), &color, FALSE, TRUE);
+#endif
 
   gdk_window_set_background (priv->connection_window, &color);
 
+#ifndef USE_GTK3
   gdk_window_clear (priv->connection_window);
+#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -110,11 +114,15 @@ draw_pager (OsPager *pager)
   color.green = weight * c1.green + (1.0 - weight) * c2.green;
   color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
 
+#ifndef USE_GTK3
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
+#endif
 
   gdk_window_set_background (priv->pager_window, &color);
 
+#ifndef USE_GTK3
   gdk_window_clear (priv->pager_window);
+#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -307,10 +315,15 @@ mask_connection (OsPager *pager)
   priv = pager->priv;
 
   gdk_window_shape_combine_region (priv->connection_window,
-                                   gdk_region_rectangle (&priv->connection_mask),
+#ifdef USE_GTK3
+                                   cairo_region_create_rectangle (&priv->mask),
+                                   0, 0);
+#else
+                                   gdk_region_rectangle (&priv->mask),
                                    0, 0);
 
   gdk_window_clear (priv->connection_window);
+#endif
 }
 
 /**
@@ -377,10 +390,15 @@ mask_pager (OsPager *pager)
   priv = pager->priv;
 
   gdk_window_shape_combine_region (priv->pager_window,
+#ifdef USE_GTK3
+                                   cairo_region_create_rectangle (&priv->mask),
+                                   0, 0);
+#else
                                    gdk_region_rectangle (&priv->mask),
                                    0, 0);
-
+                                   
   gdk_window_clear (priv->pager_window);
+#endif
 }
 
 /**
@@ -482,7 +500,9 @@ os_pager_set_detached (OsPager *pager,
         {
           gdk_window_show (priv->connection_window);
 
+#ifndef USE_GTK3
           gdk_window_clear (priv->connection_window);
+#endif
         }
       else
         gdk_window_hide (priv->connection_window);
@@ -534,12 +554,19 @@ create_windows (OsPager *pager)
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes.visual = gtk_widget_get_visual (priv->parent);
+
+#ifndef USE_GTK3
   attributes.colormap = gtk_widget_get_colormap (priv->parent);
+#endif
 
   /* connection_window */
   priv->connection_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                             &attributes,
+#ifdef USE_GTK3
+                                            GDK_WA_VISUAL);
+#else
                                             GDK_WA_VISUAL | GDK_WA_COLORMAP);
+#endif                                            
 
   g_object_ref_sink (priv->connection_window);
 
@@ -547,13 +574,21 @@ create_windows (OsPager *pager)
                                 gtk_widget_get_window (priv->parent));
 
   gdk_window_input_shape_combine_region (priv->connection_window,
+#ifdef USE_GTK3
+                                         cairo_region_create (),
+#else
                                          gdk_region_new (),
+#endif
                                          0, 0);
 
   /* pager_window */
   priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                        &attributes,
+#ifdef USE_GTK3
+                                       GDK_WA_VISUAL);
+#else
                                        GDK_WA_VISUAL | GDK_WA_COLORMAP);
+#endif 
 
   g_object_ref_sink (priv->pager_window);
 
@@ -562,7 +597,11 @@ create_windows (OsPager *pager)
                                 priv->connection_window);
 
   gdk_window_input_shape_combine_region (priv->pager_window,
+#ifdef USE_GTK3
+                                         cairo_region_create (),
+#else
                                          gdk_region_new (),
+#endif
                                          0, 0);
 }
 
@@ -621,7 +660,9 @@ os_pager_set_parent (OsPager   *pager,
         {
           gdk_window_show (priv->pager_window);
 
+#ifndef USE_GTK3
           gdk_window_clear (priv->pager_window);
+#endif
         }
     }
 }
@@ -648,7 +689,9 @@ os_pager_show (OsPager *pager)
 
   gdk_window_show (priv->pager_window);
 
+#ifndef USE_GTK3
   gdk_window_clear (priv->pager_window);
+#endif
 }
 
 /**
