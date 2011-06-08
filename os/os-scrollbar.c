@@ -100,12 +100,14 @@ static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
+
 #ifdef USE_GTK3
 static gboolean os_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
+static void os_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
+static void os_scrollbar_get_preferred_height (GtkWidget *widget, gint *minimal_height, gint *natural_height);
 #else
 static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
 #endif
-
 static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
 static void os_scrollbar_hide (GtkWidget *widget);
 static void os_scrollbar_map (GtkWidget *widget);
@@ -117,11 +119,6 @@ static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
 static void os_scrollbar_finalize (GObject *object);
-
-#ifdef USE_GTK3
-static void os_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
-static void os_scrollbar_get_preferred_height (GtkWidget *widget, gint *minimal_height, gint *natural_height);
-#endif
 
 /* Private functions. */
 
@@ -1963,12 +1960,10 @@ os_scrollbar_class_init (OsScrollbarClass *class)
 
 #ifdef USE_GTK3
   widget_class->draw                 = os_scrollbar_draw;
-#else
-  widget_class->expose_event         = os_scrollbar_expose_event;
-#endif
-#ifdef USE_GTK3
   widget_class->get_preferred_width  = os_scrollbar_get_preferred_width;
   widget_class->get_preferred_height = os_scrollbar_get_preferred_height;
+#else
+  widget_class->expose_event         = os_scrollbar_expose_event;
 #endif
   widget_class->grab_notify          = os_scrollbar_grab_notify;
   widget_class->hide                 = os_scrollbar_hide;
