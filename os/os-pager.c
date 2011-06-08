@@ -37,6 +37,12 @@
 /* Duration of the fade-out */
 #define DURATION_FADE_OUT 400
 
+#ifdef USE_GTK3
+#define SHAPE_REGION(x) (cairo_region_create_rectangle (x))
+#else
+#define SHAPE_REGION(x) (gdk_region_rectangle (x))
+#endif
+
 struct _OsPagerPrivate {
   GdkWindow *pager_window;
   GdkWindow *connection_window;
@@ -77,10 +83,6 @@ draw_connection (OsPager *pager)
 
   gdk_window_set_background (priv->connection_window, &color);
 
-#ifndef USE_GTK3
-  gdk_window_clear (priv->connection_window);
-#endif
-
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
@@ -119,10 +121,6 @@ draw_pager (OsPager *pager)
 #endif
 
   gdk_window_set_background (priv->pager_window, &color);
-
-#ifndef USE_GTK3
-  gdk_window_clear (priv->pager_window);
-#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -315,15 +313,8 @@ mask_connection (OsPager *pager)
   priv = pager->priv;
 
   gdk_window_shape_combine_region (priv->connection_window,
-#ifdef USE_GTK3
-                                   cairo_region_create_rectangle (&priv->mask),
+                                   SHAPE_REGION(&priv->connection_mask),
                                    0, 0);
-#else
-                                   gdk_region_rectangle (&priv->mask),
-                                   0, 0);
-
-  gdk_window_clear (priv->connection_window);
-#endif
 }
 
 /**
@@ -390,15 +381,8 @@ mask_pager (OsPager *pager)
   priv = pager->priv;
 
   gdk_window_shape_combine_region (priv->pager_window,
-#ifdef USE_GTK3
-                                   cairo_region_create_rectangle (&priv->mask),
+                                   SHAPE_REGION(&priv->mask),
                                    0, 0);
-#else
-                                   gdk_region_rectangle (&priv->mask),
-                                   0, 0);
-                                   
-  gdk_window_clear (priv->pager_window);
-#endif
 }
 
 /**
@@ -499,10 +483,7 @@ os_pager_set_detached (OsPager *pager,
       if (priv->detached)
         {
           gdk_window_show (priv->connection_window);
-
-#ifndef USE_GTK3
-          gdk_window_clear (priv->connection_window);
-#endif
+          gdk_window_raise (priv->pager_window);
         }
       else
         gdk_window_hide (priv->connection_window);
@@ -549,12 +530,12 @@ create_windows (OsPager *pager)
       priv->pager_window = NULL;
     }
 
+  attributes.event_mask = 0;
   attributes.width = priv->allocation.width;
   attributes.height = priv->allocation.height;
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes.visual = gtk_widget_get_visual (priv->parent);
-
 #ifndef USE_GTK3
   attributes.colormap = gtk_widget_get_colormap (priv->parent);
 #endif
@@ -566,13 +547,14 @@ create_windows (OsPager *pager)
                                             GDK_WA_VISUAL);
 #else
                                             GDK_WA_VISUAL | GDK_WA_COLORMAP);
-#endif                                            
+#endif
 
   g_object_ref_sink (priv->connection_window);
 
   gdk_window_set_transient_for (priv->connection_window,
                                 gtk_widget_get_window (priv->parent));
 
+  /* FIXME(Cimi) maybe this is not required with 0 as event mask */
   gdk_window_input_shape_combine_region (priv->connection_window,
 #ifdef USE_GTK3
                                          cairo_region_create (),
@@ -592,10 +574,10 @@ create_windows (OsPager *pager)
 
   g_object_ref_sink (priv->pager_window);
 
-  /* stay above the connection_window */
   gdk_window_set_transient_for (priv->pager_window,
-                                priv->connection_window);
+                                gtk_widget_get_window (priv->parent));
 
+  /* FIXME(Cimi) maybe this is not required with 0 as event mask */
   gdk_window_input_shape_combine_region (priv->pager_window,
 #ifdef USE_GTK3
                                          cairo_region_create (),
@@ -659,10 +641,6 @@ os_pager_set_parent (OsPager   *pager,
       if (priv->visible)
         {
           gdk_window_show (priv->pager_window);
-
-#ifndef USE_GTK3
-          gdk_window_clear (priv->pager_window);
-#endif
         }
     }
 }
@@ -688,10 +666,6 @@ os_pager_show (OsPager *pager)
     return;
 
   gdk_window_show (priv->pager_window);
-
-#ifndef USE_GTK3
-  gdk_window_clear (priv->pager_window);
-#endif
 }
 
 /**

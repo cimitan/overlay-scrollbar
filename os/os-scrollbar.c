@@ -2296,7 +2296,7 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
     {
       priv->slider.width = DEFAULT_THUMB_HEIGHT;
       priv->slider.height = DEFAULT_THUMB_WIDTH;
-      priv->overlay_all.y = allocation->y - DEFAULT_PAGER_WIDTH ;
+      priv->overlay_all.y = allocation->y - DEFAULT_PAGER_WIDTH;
       priv->thumb_all.y = allocation->y + THUMB_ALLOCATION_SHIFT;
 
       rect.x = priv->overlay_all.x;
