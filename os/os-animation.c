@@ -37,8 +37,8 @@ struct _OsAnimationPrivate {
   guint32 source_id;
 };
 
-static void os_animation_dispose (GObject* object);
-static void os_animation_finalize (GObject* object);
+static void os_animation_dispose (GObject *object);
+static void os_animation_finalize (GObject *object);
 
 G_DEFINE_TYPE (OsAnimation, os_animation, G_TYPE_OBJECT);
 
@@ -69,7 +69,7 @@ os_animation_init (OsAnimation *animation)
 }
 
 static void
-os_animation_dispose (GObject* object)
+os_animation_dispose (GObject *object)
 {
   OsAnimation *animation;
   OsAnimationPrivate *priv;
@@ -87,7 +87,7 @@ os_animation_dispose (GObject* object)
 }
 
 static void
-os_animation_finalize (GObject* object)
+os_animation_finalize (GObject *object)
 {
   G_OBJECT_CLASS (os_animation_parent_class)->finalize (object);
 }
@@ -107,14 +107,14 @@ os_animation_finalize (GObject* object)
  * Returns: the pointer to the #OsAnimation
  */
 OsAnimation*
-os_animation_new (gint32 rate,
-                  gint32 duration,
+os_animation_new (gint32                rate,
+                  gint32                duration,
                   OsAnimationUpdateFunc update_func,
-                  OsAnimationEndFunc end_func,
-                  gpointer user_data)
+                  OsAnimationEndFunc    end_func,
+                  gpointer              user_data)
 {
-  OsAnimation* animation;
-  OsAnimationPrivate* priv;
+  OsAnimation *animation;
+  OsAnimationPrivate *priv;
 
   g_return_val_if_fail (rate != 0, NULL);
   g_return_val_if_fail (duration != 0, NULL);
@@ -140,10 +140,10 @@ os_animation_new (gint32 rate,
  * Sets the new duration of the animation
  **/
 void
-os_animation_set_duration (OsAnimation* animation,
-                           gint32 duration)
+os_animation_set_duration (OsAnimation *animation,
+                           gint32       duration)
 {
-  OsAnimationPrivate* priv;
+  OsAnimationPrivate *priv;
 
   g_return_if_fail (animation != NULL);
   g_return_if_fail (duration != 0);
@@ -192,9 +192,9 @@ update_cb (gpointer user_data)
  * Starts the animation
  **/
 void
-os_animation_start (OsAnimation* animation)
+os_animation_start (OsAnimation *animation)
 {
-  OsAnimationPrivate* priv;
+  OsAnimationPrivate *priv;
 
   g_return_if_fail (animation != NULL);
 
@@ -217,10 +217,10 @@ os_animation_start (OsAnimation* animation)
  * or end_func (if not NULL).
  **/
 void
-os_animation_stop (OsAnimation*        animation,
+os_animation_stop (OsAnimation        *animation,
                    OsAnimationStopFunc stop_func)
 {
-  OsAnimationPrivate* priv;
+  OsAnimationPrivate *priv;
 
   g_return_if_fail (animation != NULL);
 

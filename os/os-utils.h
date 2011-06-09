@@ -32,9 +32,7 @@
 
 G_BEGIN_DECLS
 
-gboolean os_utils_is_blacklisted (const gchar* program);
-
-gboolean os_utils_is_whitelisted (const gchar* program);
+gboolean os_utils_is_blacklisted (const gchar *program);
 
 G_END_DECLS
 
