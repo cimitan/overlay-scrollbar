@@ -142,7 +142,22 @@ change_state_cb (gfloat   weight,
   if (priv->parent == NULL)
     return;
 
-  draw_connection (pager);
+  draw_pager (pager);
+}
+
+/* stop_func called by the change-state animation */
+static void
+change_state_stop_cb (gpointer user_data)
+{
+  OsPager *pager;
+  OsPagerPrivate *priv;
+
+  pager = OS_PAGER (user_data);
+
+  priv = pager->priv;
+
+  priv->weight = 1.0f;
+
   draw_pager (pager);
 }
 
@@ -163,7 +178,9 @@ notify_gtk_theme_name_cb (GObject*    gobject,
       priv->connection_window == NULL)
     return;
 
-  draw_connection (pager);
+  /* FIXME(Cimi) comment out draw_connection once it'll use gtk+ colors.
+   * Right now, it's using static colors so redrawing is useless. */
+// draw_connection (pager);
   draw_pager (pager);
 }
 
@@ -366,7 +383,7 @@ os_pager_hide (OsPager *pager)
     return;
 
   /* if there's an animation currently running, stop it. */
-  os_animation_stop (priv->animation);
+  os_animation_stop (priv->animation, change_state_stop_cb);
 
   gdk_window_hide (priv->connection_window);
   gdk_window_hide (priv->pager_window);
@@ -440,7 +457,7 @@ os_pager_set_active (OsPager *pager,
       /* only start the animation if the pager is visible. */
       if (gdk_window_is_visible (priv->pager_window))
         {
-          os_animation_stop (priv->animation);
+          os_animation_stop (priv->animation, NULL);
 
           os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
                                                                      DURATION_FADE_OUT);
@@ -606,7 +623,7 @@ os_pager_set_parent (OsPager   *pager,
 
   /* stop currently running animation. */
   if (priv->animation != NULL)
-    os_animation_stop (priv->animation);
+    os_animation_stop (priv->animation, NULL);
 
   if (priv->parent != NULL)
     {
