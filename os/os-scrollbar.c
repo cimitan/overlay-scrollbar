@@ -2224,9 +2224,9 @@ os_scrollbar_realize (GtkWidget *widget)
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
-  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
-
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
+
+  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
   gdk_window_set_events (gtk_widget_get_window (widget),
                          gdk_window_get_events (gtk_widget_get_window (widget)) |
@@ -2365,6 +2365,7 @@ os_scrollbar_unmap (GtkWidget *widget)
 static void
 os_scrollbar_unrealize (GtkWidget *widget)
 {
+  GList *window_group_list;
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
@@ -2381,7 +2382,12 @@ os_scrollbar_unrealize (GtkWidget *widget)
 
   os_pager_set_parent (OS_PAGER (priv->pager), NULL);
 
-  gtk_window_group_remove_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
+  window_group_list = gtk_window_group_list_windows (priv->window_group);
+
+  if (g_list_find (window_group_list, gtk_widget_get_toplevel (widget)))
+    gtk_window_group_remove_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
+
+  g_list_free (window_group_list);
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
