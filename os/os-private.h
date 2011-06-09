@@ -109,6 +109,7 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 
 typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
 typedef void (*OsAnimationEndFunc)    (gpointer user_data);
+typedef void (*OsAnimationStopFunc)   (gpointer user_data);
 
 typedef struct _OsAnimation OsAnimation;
 typedef struct _OsAnimationPrivate OsAnimationPrivate;
@@ -137,7 +138,8 @@ void         os_animation_set_duration (OsAnimation* animation,
 
 void         os_animation_start        (OsAnimation* animation);
 
-void         os_animation_stop         (OsAnimation* animation);
+void         os_animation_stop         (OsAnimation*        animation,
+                                        OsAnimationStopFunc stop_func);
 
 /* os-thumb.c */
 

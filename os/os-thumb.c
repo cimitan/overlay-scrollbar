@@ -100,6 +100,17 @@ fade_out_cb (gfloat   weight,
     gtk_widget_hide (GTK_WIDGET (thumb));
 }
 
+/* stop_func called by the fade-out animation */
+static void
+fade_out_stop_cb (gpointer user_data)
+{
+  OsThumb *thumb;
+
+  thumb = OS_THUMB (user_data);
+
+  gtk_window_set_opacity (GTK_WINDOW (thumb), 1.0f);
+}
+
 /* timeout before starting the fade-out animation */
 static gboolean
 timeout_fade_out_cb (gpointer user_data)
@@ -214,8 +225,7 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
   /* Stop the animation on user interaction,
    * the button_press_event. */
-  os_animation_stop (priv->animation);
-  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+  os_animation_stop (priv->animation, fade_out_stop_cb);
 
   if (event->type == GDK_BUTTON_PRESS)
     {
@@ -573,7 +583,7 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
           priv->source_id = 0;
         }
 
-      os_animation_stop (priv->animation);
+      os_animation_stop (priv->animation, NULL);
     }
 
   priv->use_tolerance = FALSE;
@@ -624,8 +634,7 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
     }
 
   /* On motion, stop the fade-out. */
-  os_animation_stop (priv->animation);
-  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+  os_animation_stop (priv->animation, fade_out_stop_cb);
 
   /* If you're not dragging, and you're outside
    * the tolerance pixels, enable the fade-out.
@@ -698,8 +707,7 @@ os_thumb_scroll_event (GtkWidget      *widget,
     }
 
   /* if started, stop the fade-out. */
-  os_animation_stop (priv->animation);
-  gtk_window_set_opacity (GTK_WINDOW (widget), 1.0f);
+  os_animation_stop (priv->animation, fade_out_stop_cb);
 
   priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                    timeout_fade_out_cb,

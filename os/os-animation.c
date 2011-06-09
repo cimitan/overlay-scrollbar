@@ -210,11 +210,15 @@ os_animation_start (OsAnimation* animation)
 /**
  * os_animation_stop:
  * @animation: a #OsAnimation
+ * @stop_func: function to call at the stop
  *
- * Stops the animation
+ * Stops the animation.
+ * Before stopping, calls stop_func (if not NULL),
+ * or end_func (if not NULL).
  **/
 void
-os_animation_stop (OsAnimation* animation)
+os_animation_stop (OsAnimation*        animation,
+                   OsAnimationStopFunc stop_func)
 {
   OsAnimationPrivate* priv;
 
@@ -224,7 +228,9 @@ os_animation_stop (OsAnimation* animation)
 
   if (priv->source_id != 0)
     {
-      if (priv->end_func != NULL)
+      if (stop_func != NULL)
+        stop_func (priv->user_data);
+      else if (priv->end_func != NULL)
         priv->end_func (priv->user_data);
 
       g_source_remove (priv->source_id);
