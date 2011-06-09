@@ -53,8 +53,8 @@ extern OsLogLevel threshold;
 void
 G_GNUC_NO_INSTRUMENT
 G_GNUC_PRINTF (5, 6)
-os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
-                gint32 line, const gchar* format, ...);
+os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
+                gint32 line, const gchar *format, ...);
 
 /* Macro logging a message to stderr using the given level. */
 #define OS_LOG(level,...)                                                  \
@@ -126,18 +126,18 @@ struct _OsAnimationClass {
 
 GType        os_animation_get_type     (void);
 
-OsAnimation* os_animation_new          (gint32 rate,
-                                        gint32 duration,
+OsAnimation* os_animation_new          (gint32                rate,
+                                        gint32                duration,
                                         OsAnimationUpdateFunc update_func,
-                                        OsAnimationEndFunc end_func,
-                                        gpointer user_data);
+                                        OsAnimationEndFunc    end_func,
+                                        gpointer              user_data);
 
-void         os_animation_set_duration (OsAnimation* animation,
-                                        gint32 duration);
+void         os_animation_set_duration (OsAnimation *animation,
+                                        gint32       duration);
 
-void         os_animation_start        (OsAnimation* animation);
+void         os_animation_start        (OsAnimation *animation);
 
-void         os_animation_stop         (OsAnimation* animation);
+void         os_animation_stop         (OsAnimation *animation);
 
 /* os-thumb.c */
 

@@ -29,10 +29,10 @@
 /* Public functions. */
 
 gboolean
-os_utils_is_blacklisted (const gchar* program)
+os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
-  static const gchar *const blacklist[] = {
+  static const gchar *blacklist[] = {
     "apport-gtk",
     "codeblocks",
     "codelite",
@@ -74,10 +74,4 @@ os_utils_is_blacklisted (const gchar* program)
       return TRUE;
 
   return FALSE;
-}
-
-gboolean
-os_utils_is_whitelisted (const gchar* program)
-{
-  return TRUE;
 }
