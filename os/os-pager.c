@@ -470,11 +470,14 @@ os_pager_set_active (OsPager *pager,
           if (animate)
             os_animation_start (priv->animation);
           else
-            goto draw;
+            {
+              priv->weight = 1.0f;
+
+              draw_pager (pager);
+            }
         }
       else
         {
-draw:
           priv->weight = 1.0f;
 
           draw_pager (pager);
