@@ -279,7 +279,7 @@ deactivate_pager (OsScrollbar *scrollbar)
   priv = scrollbar->priv;
 
   if (priv->pager != NULL && priv->can_deactivate_pager)
-    os_pager_set_active (OS_PAGER (priv->pager), FALSE);
+    os_pager_set_active (OS_PAGER (priv->pager), FALSE, TRUE);
 }
 
 /* timeout before deactivating the pager */
@@ -750,12 +750,12 @@ pager_set_state_from_pointer (OsScrollbar *scrollbar,
       (y > allocation.y && y < allocation.y + allocation.height))
     {
       priv->can_deactivate_pager = FALSE;
-      os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+      os_pager_set_active (OS_PAGER (priv->pager), TRUE, TRUE);
     }
   else
     {
       priv->can_deactivate_pager = TRUE;
-      os_pager_set_active (OS_PAGER (priv->pager), FALSE);
+      os_pager_set_active (OS_PAGER (priv->pager), FALSE, TRUE);
     }
 }
 
@@ -789,7 +789,7 @@ root_gfunc (gpointer data,
           priv->active_window = TRUE;
 
           priv->can_deactivate_pager = FALSE;
-          os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+          os_pager_set_active (OS_PAGER (priv->pager), TRUE, TRUE);
         }
       else if (priv->active_window)
         {
@@ -828,7 +828,7 @@ root_gfunc (gpointer data,
             {
               /* if the pointer is outside of the window, set it inactive. */
               priv->can_deactivate_pager = TRUE;
-              os_pager_set_active (OS_PAGER (priv->pager), FALSE);
+              os_pager_set_active (OS_PAGER (priv->pager), FALSE, TRUE);
             }
 
           if ((current_time > end_time) && priv->thumb != NULL)
@@ -1069,12 +1069,18 @@ thumb_map_cb (GtkWidget *widget,
 {
   Display *display;
   OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
   XWindowChanges changes;
   guint32 xid, xid_parent;
   unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
   scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  /* immediately set the pager to be active. */
+  priv->can_deactivate_pager = FALSE;
+  os_pager_set_active (OS_PAGER (priv->pager), TRUE, FALSE);
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
@@ -1438,7 +1444,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
       else
         {
           priv->can_deactivate_pager = FALSE;
-          os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+          os_pager_set_active (OS_PAGER (priv->pager), TRUE, TRUE);
         }
     }
 
@@ -1569,12 +1575,16 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
            * this call checks the pointer after the scroll-event,
            * since it enters the window,
            * then sets the state accordingly. */
-          if (!priv->active_window && xiev->evtype == XI_Enter)
-            {
-              XIEnterEvent *xiee = xev->xcookie.data;
 
-              pager_set_state_from_pointer (scrollbar, xiee->event_x, xiee->event_y);
-            }
+          /* FIXME(Cimi) code commented out until I find what and where is wrong. */
+//          if (!priv->active_window && xiev->evtype == XI_Enter)
+//            {
+//              XIEnterEvent *xiee = xev->xcookie.data;
+//
+//              /* if the thumb is mapped, the pager should be active and should remain active. */
+//              if (gtk_widget_get_mapped (priv->thumb))
+//                pager_set_state_from_pointer (scrollbar, xiee->event_x, xiee->event_y);
+//            }
 
           if (xiev->evtype == XI_Leave)
             {
@@ -1813,8 +1823,13 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
        * this call checks the pointer after the scroll-event,
        * since it enters the window,
        * then sets the state accordingly. */
-      if (!priv->active_window && xev->type == EnterNotify)
-        pager_set_state_from_pointer (scrollbar, xev->xcrossing.x, xev->xcrossing.y);
+       /* if the thumb is mapped, the pager should be active and should remain active. */
+
+  /* FIXME(Cimi) code commented out until I find what and where is wrong. */
+//      if (!priv->active_window &&
+//          xev->type == EnterNotify &&
+//          gtk_widget_get_mapped (priv->thumb))
+//        pager_set_state_from_pointer (scrollbar, xev->xcrossing.x, xev->xcrossing.y);
 
       if (xev->type == LeaveNotify)
         {
@@ -2202,7 +2217,7 @@ os_scrollbar_map (GtkWidget *widget)
       /* on map-event of an active window,
        * the pager should be active. */
       priv->can_deactivate_pager = FALSE;
-      os_pager_set_active (OS_PAGER (priv->pager), TRUE);
+      os_pager_set_active (OS_PAGER (priv->pager), TRUE, FALSE);
     }
 
   if (priv->fullsize == FALSE)

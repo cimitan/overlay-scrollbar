@@ -133,6 +133,8 @@ OsAnimation* os_animation_new          (gint32                rate,
                                         OsAnimationEndFunc    end_func,
                                         gpointer              user_data);
 
+gboolean     os_animation_is_running   (OsAnimation *animation);
+
 void         os_animation_set_duration (OsAnimation *animation,
                                         gint32       duration);
 
@@ -217,7 +219,8 @@ void     os_pager_move_resize   (OsPager     *overlay,
                                  GdkRectangle mask);
 
 void     os_pager_set_active    (OsPager *overlay,
-                                 gboolean active);
+                                 gboolean active,
+                                 gboolean animate);
 
 void     os_pager_set_detached  (OsPager *overlay,
                                  gboolean detached);
