@@ -274,6 +274,7 @@ calc_layout_slider (OsScrollbar *scrollbar,
     }
 }
 
+/* calculate the workarea using _UNITY_NET_WORKAREA_REGION */
 static void
 calc_workarea (Display *display,
                Window   root)
@@ -299,7 +300,7 @@ calc_workarea (Display *display,
 
   if (result == Success && property_data)
     {
-      long_data = (gulong *) property_data;
+      long_data = (gulong*) property_data;
 
       if (fmt == 32 && type == XA_CARDINAL && nitems % 4 == 0)
         {
