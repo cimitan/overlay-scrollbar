@@ -2125,6 +2125,9 @@ os_scrollbar_init (OsScrollbar *scrollbar)
       /* create the region. */
       os_workarea = cairo_region_create ();
 
+      /* FIXME(Cimi) we might need to change the root window
+       * on "screen-changed" Gtk+ event. /*
+
       /* apply the root_filter_func. */
       screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
       root = gdk_screen_get_root_window (screen);
