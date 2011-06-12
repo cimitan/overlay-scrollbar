@@ -285,8 +285,7 @@ calc_workarea (Display *display)
   gulong *long_data;
   guint i;
 
-  result = XGetWindowProperty (display,
-                               gdk_x11_get_default_root_xwindow (),
+  result = XGetWindowProperty (display, DefaultRootWindow (display),
                                unity_net_workarea_region_atom,
                                0L, 4096L, FALSE, XA_CARDINAL,
                                &type, &fmt, &nitems, &nleft, &property_data);
@@ -2112,6 +2111,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   if (os_root_list == NULL)
     {
+      GdkScreen *screen;
       GdkWindow *root;
 
       /* used in the root_filter_func to match the right property. */
@@ -2125,7 +2125,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
       os_workarea = cairo_region_create ();
 
       /* apply the root_filter_func. */
-      root = gdk_get_default_root_window ();
+      screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
+      root = gdk_screen_get_root_window (screen);
       gdk_window_set_events (root, gdk_window_get_events (root) |
                                    GDK_PROPERTY_CHANGE_MASK);
       gdk_window_add_filter (root, root_filter_func, NULL);
