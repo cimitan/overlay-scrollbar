@@ -27,6 +27,8 @@
 #include "os-scrollbar.h"
 #include "os-private.h"
 #include <gdk/gdkx.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 #include "math.h"
 
@@ -86,7 +88,9 @@ struct _OsScrollbarPrivate
 };
 
 static Atom net_active_window_atom = None;
+static Atom unity_net_workarea_region_atom = None;
 static GList *os_root_list = NULL;
+static cairo_region_t *os_workarea = NULL;
 
 static void swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
 static void swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
@@ -270,6 +274,63 @@ calc_layout_slider (OsScrollbar *scrollbar,
     }
 }
 
+static void
+calc_workarea (Display *display)
+{
+  Atom type;
+  cairo_rectangle_int_t test;
+  gint result, fmt;
+  gulong nitems, nleft;
+  guchar *property_data;
+  gulong *long_data;
+  guint i;
+
+  result = XGetWindowProperty (display,
+                               gdk_x11_get_default_root_xwindow (),
+                               unity_net_workarea_region_atom,
+                               0L, 4096L, FALSE, XA_CARDINAL,
+                               &type, &fmt, &nitems, &nleft, &property_data);
+
+  /* clear the os_workarea region,
+   * before the union with the new rectangles.
+   * Maybe it'd be better to place this call
+   * inside the if statement below. */
+  cairo_region_subtract (os_workarea, os_workarea);
+
+  if (result == Success && property_data)
+    {
+      long_data = (gulong *) property_data;
+
+      if (fmt == 32 && type == XA_CARDINAL && nitems % 4 == 0)
+        {
+          int count;
+          unsigned int i;
+          
+          count = nitems / 4;
+
+          for (i = 0; i < count; i++)
+            {
+              cairo_rectangle_int_t rect;
+
+              rect.x = long_data[i * 4 + 0];
+              rect.y = long_data[i * 4 + 1];
+              rect.width = long_data[i * 4 + 2];
+              rect.height = long_data[i * 4 + 3];
+
+              cairo_region_union_rectangle (os_workarea, &rect);
+            }
+        }
+    }
+/*
+  for (i = 0; i < cairo_region_num_rectangles (os_workarea); i++)
+    {
+      cairo_region_get_rectangle (os_workarea, i, &test);
+
+      fprintf (stderr, "rect: %i %i %i %i\n", test.x, test.y, test.width, test.height);
+    }
+*/
+}
+
 /* deactivate the pager if it's the case */
 static void
 deactivate_pager (OsScrollbar *scrollbar)
@@ -364,7 +425,7 @@ sanitize_x (OsScrollbar *scrollbar,
             gint         x,
             gint         y)
 {
-  GdkRectangle rect;
+  cairo_rectangle_int_t rect;
   OsScrollbarPrivate *priv;
   gint screen_width, n_monitor;
   GdkScreen *screen;
@@ -377,7 +438,24 @@ sanitize_x (OsScrollbar *scrollbar,
   n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 
-  screen_width = rect.x + rect.width;
+  if (cairo_region_is_empty (os_workarea))
+    screen_width = rect.x + rect.width;
+  else
+    {
+      cairo_region_t *monitor_region;
+      cairo_rectangle_int_t tmp_rect;
+
+      monitor_region = cairo_region_create_rectangle (&rect);
+
+      cairo_region_intersect (monitor_region, os_workarea);
+
+      /* FIXME(Cimi) this code won't work with multiple rectangles. */
+      cairo_region_get_rectangle (monitor_region, 0, &tmp_rect);
+
+      screen_width = tmp_rect.x + tmp_rect.width;
+
+      cairo_region_destroy (monitor_region);
+    }
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL &&
       (n_monitor != gdk_screen_get_monitor_at_point (screen, x - 1 + priv->slider.width, y) ||
@@ -399,7 +477,7 @@ sanitize_y (OsScrollbar *scrollbar,
             gint         x,
             gint         y)
 {
-  GdkRectangle rect;
+  cairo_rectangle_int_t rect;
   OsScrollbarPrivate *priv;
   gint screen_height, n_monitor;
   GdkScreen *screen;
@@ -411,8 +489,25 @@ sanitize_y (OsScrollbar *scrollbar,
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
-  
-  screen_height = rect.y + rect.height;
+
+  if (cairo_region_is_empty (os_workarea))  
+    screen_height = rect.y + rect.height;
+  else
+    {
+      cairo_region_t *monitor_region;
+      cairo_rectangle_int_t tmp_rect;
+
+      monitor_region = cairo_region_create_rectangle (&rect);
+
+      cairo_region_intersect (monitor_region, os_workarea);
+
+      /* FIXME(Cimi) this code won't work with multiple rectangles. */
+      cairo_region_get_rectangle (monitor_region, 0, &tmp_rect);
+
+      screen_height = tmp_rect.y + tmp_rect.height;
+
+      cairo_region_destroy (monitor_region);
+    }
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
       (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y - 1 + priv->slider.height) ||
@@ -847,10 +942,16 @@ root_filter_func (GdkXEvent *gdkxevent,
 
   xev = gdkxevent;
 
-  if (xev->xany.type == PropertyNotify &&
-      xev->xproperty.atom == net_active_window_atom)
+  if (xev->type == PropertyNotify)
     {
-      g_list_foreach (os_root_list, root_gfunc, NULL);
+      if (xev->xproperty.atom == net_active_window_atom)
+        {
+          g_list_foreach (os_root_list, root_gfunc, NULL);
+        }
+      else if (xev->xproperty.atom == unity_net_workarea_region_atom)
+        {
+          calc_workarea (xev->xany.display);
+        }
     }
 
   return GDK_FILTER_CONTINUE;
@@ -2001,9 +2102,13 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
       /* used in the root_filter_func to match the right property. */
       net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
+      unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
 
       /* append the object to the static linked list. */
       os_root_list = g_list_append (os_root_list, scrollbar);
+
+      /* create the region. */
+      os_workarea = cairo_region_create ();
 
       /* apply the root_filter_func. */
       root = gdk_get_default_root_window ();
@@ -2089,6 +2194,12 @@ os_scrollbar_dispose (GObject *object)
     {
       g_object_unref (priv->window_group);
       priv->window_group = NULL;
+    }
+
+  if (os_workarea != NULL)
+    {
+      cairo_region_destroy (os_workarea);
+      os_workarea = NULL;
     }
 
   swap_adjustment (scrollbar, NULL);
