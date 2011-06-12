@@ -321,14 +321,6 @@ calc_workarea (Display *display)
             }
         }
     }
-/*
-  for (i = 0; i < cairo_region_num_rectangles (os_workarea); i++)
-    {
-      cairo_region_get_rectangle (os_workarea, i, &test);
-
-      fprintf (stderr, "rect: %i %i %i %i\n", test.x, test.y, test.width, test.height);
-    }
-*/
 }
 
 /* deactivate the pager if it's the case */
