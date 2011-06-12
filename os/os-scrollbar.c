@@ -285,6 +285,8 @@ calc_workarea (Display *display)
   gulong *long_data;
   guint i;
 
+  /* FIXME(Cimi) I should not get the default root window,
+   * but the root window given the screen number. */
   result = XGetWindowProperty (display, DefaultRootWindow (display),
                                unity_net_workarea_region_atom,
                                0L, 4096L, FALSE, XA_CARDINAL,
