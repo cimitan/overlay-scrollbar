@@ -434,19 +434,30 @@ sanitize_x (OsScrollbar *scrollbar,
     screen_width = rect.x + rect.width;
   else
     {
-      cairo_region_t *monitor_region;
+      cairo_region_t *monitor_workarea;
       cairo_rectangle_int_t tmp_rect;
+      gint i, x, width;
 
-      monitor_region = cairo_region_create_rectangle (&rect);
+      x = rect.x;
+      width = rect.width;
 
-      cairo_region_intersect (monitor_region, os_workarea);
+      monitor_workarea = cairo_region_create_rectangle (&rect);
 
-      /* FIXME(Cimi) this code won't work with multiple rectangles. */
-      cairo_region_get_rectangle (monitor_region, 0, &tmp_rect);
+      cairo_region_intersect (monitor_workarea, os_workarea);
 
-      screen_width = tmp_rect.x + tmp_rect.width;
+      for (i = 0; i < cairo_region_num_rectangles (monitor_workarea); i++)
+        {
+          cairo_region_get_rectangle (monitor_workarea, i, &tmp_rect);
 
-      cairo_region_destroy (monitor_region);
+          if (tmp_rect.x > x)
+            x = tmp_rect.x;
+          if (tmp_rect.x + tmp_rect.width < width)
+            width = tmp_rect.x + tmp_rect.width;
+        }
+
+      screen_width = x + width;
+
+      cairo_region_destroy (monitor_workarea);
     }
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL &&
@@ -486,19 +497,30 @@ sanitize_y (OsScrollbar *scrollbar,
     screen_height = rect.y + rect.height;
   else
     {
-      cairo_region_t *monitor_region;
+      cairo_region_t *monitor_workarea;
       cairo_rectangle_int_t tmp_rect;
+      gint i, y, height;
 
-      monitor_region = cairo_region_create_rectangle (&rect);
+      y = rect.y;
+      height = rect.height;
 
-      cairo_region_intersect (monitor_region, os_workarea);
+      monitor_workarea = cairo_region_create_rectangle (&rect);
 
-      /* FIXME(Cimi) this code won't work with multiple rectangles. */
-      cairo_region_get_rectangle (monitor_region, 0, &tmp_rect);
+      cairo_region_intersect (monitor_workarea, os_workarea);
 
-      screen_height = tmp_rect.y + tmp_rect.height;
+      for (i = 0; i < cairo_region_num_rectangles (monitor_workarea); i++)
+        {
+          cairo_region_get_rectangle (monitor_workarea, i, &tmp_rect);
 
-      cairo_region_destroy (monitor_region);
+          if (tmp_rect.y > y)
+            y = tmp_rect.y;
+          if (tmp_rect.y + tmp_rect.height < height)
+            height = tmp_rect.y + tmp_rect.height;
+        }
+
+      screen_height = y + height;
+
+      cairo_region_destroy (monitor_workarea);
     }
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
