@@ -454,29 +454,26 @@ os_pager_set_active (OsPager *pager,
   if ((priv->active != active) ||
       (!animate && os_animation_is_running (priv->animation)))
     {
+      gboolean visible;
+
       priv->active = active;
 
       if (priv->parent == NULL)
         return;
 
-      /* only start the animation if the pager is visible. */
-      if (gdk_window_is_visible (priv->pager_window))
-        {
-          os_animation_stop (priv->animation, NULL);
+      visible = gdk_window_is_visible (priv->pager_window);
 
+      if (visible)
+        os_animation_stop (priv->animation, NULL);
+
+      if (visible && animate)
+        {
           os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
                                                                      DURATION_FADE_OUT);
-
-          if (animate)
-            os_animation_start (priv->animation);
-          else
-            {
-              priv->weight = 1.0f;
-
-              draw_pager (pager);
-            }
+          os_animation_start (priv->animation);
         }
-      else
+
+      if (!visible || !animate)
         {
           priv->weight = 1.0f;
 
