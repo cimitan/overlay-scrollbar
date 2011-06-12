@@ -428,7 +428,7 @@ sanitize_x (OsScrollbar *scrollbar,
    * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, (GdkRectangle*) &rect);
 
   if (cairo_region_is_empty (os_workarea))
     screen_width = rect.x + rect.width;
@@ -491,7 +491,7 @@ sanitize_y (OsScrollbar *scrollbar,
    * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, (GdkRectangle*) &rect);
 
   if (cairo_region_is_empty (os_workarea))  
     screen_height = rect.y + rect.height;
