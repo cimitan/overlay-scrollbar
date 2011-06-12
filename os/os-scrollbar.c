@@ -275,7 +275,8 @@ calc_layout_slider (OsScrollbar *scrollbar,
 }
 
 static void
-calc_workarea (Display *display)
+calc_workarea (Display *display,
+               Window   root)
 {
   Atom type;
   cairo_rectangle_int_t test;
@@ -285,9 +286,7 @@ calc_workarea (Display *display)
   gulong *long_data;
   guint i;
 
-  /* FIXME(Cimi) I should not get the default root window,
-   * but the root window given the screen number. */
-  result = XGetWindowProperty (display, DefaultRootWindow (display),
+  result = XGetWindowProperty (display, root,
                                unity_net_workarea_region_atom,
                                0L, 4096L, FALSE, XA_CARDINAL,
                                &type, &fmt, &nitems, &nleft, &property_data);
@@ -965,7 +964,7 @@ root_filter_func (GdkXEvent *gdkxevent,
         }
       else if (xev->xproperty.atom == unity_net_workarea_region_atom)
         {
-          calc_workarea (xev->xany.display);
+          calc_workarea (xev->xany.display, xev->xany.window);
         }
     }
 
