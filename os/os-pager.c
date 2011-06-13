@@ -434,12 +434,14 @@ os_pager_move_resize (OsPager      *pager,
  * os_pager_set_active:
  * @pager: a #OsPager
  * @active: whether is active or not
+ * @animation: whether animate it or not
  *
  * Changes the activity state of @pager.
  **/
 void
 os_pager_set_active (OsPager *pager,
-                     gboolean active)
+                     gboolean active,
+                     gboolean animate)
 {
   OsPagerPrivate *priv;
 
@@ -447,24 +449,31 @@ os_pager_set_active (OsPager *pager,
 
   priv = pager->priv;
 
-  if (priv->active != active)
+  /* set the state and draw even if there's an animation running, that is
+   * (!animate && os_animation_is_running (priv->animation)). */
+  if ((priv->active != active) ||
+      (!animate && os_animation_is_running (priv->animation)))
     {
+      gboolean visible;
+
       priv->active = active;
 
       if (priv->parent == NULL)
         return;
 
-      /* only start the animation if the pager is visible. */
-      if (gdk_window_is_visible (priv->pager_window))
-        {
-          os_animation_stop (priv->animation, NULL);
+      visible = gdk_window_is_visible (priv->pager_window);
 
+      if (visible)
+        os_animation_stop (priv->animation, NULL);
+
+      if (visible && animate)
+        {
           os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
                                                                      DURATION_FADE_OUT);
-
           os_animation_start (priv->animation);
         }
-      else
+
+      if (!visible || !animate)
         {
           priv->weight = 1.0f;
 

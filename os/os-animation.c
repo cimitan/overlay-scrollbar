@@ -133,6 +133,24 @@ os_animation_new (gint32                rate,
 }
 
 /**
+ * os_animation_is_running:
+ * @animation: a #OsAnimation
+ *
+ * Returns TRUE if the animation is running
+ **/
+gboolean
+os_animation_is_running (OsAnimation *animation)
+{
+  OsAnimationPrivate *priv;
+
+  g_return_if_fail (animation != NULL);
+
+  priv = animation->priv;
+
+  return priv->source_id != 0;
+}
+
+/**
  * os_animation_set_duration:
  * @animation: a #OsAnimation
  * @duration: the new duration
