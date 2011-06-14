@@ -2213,8 +2213,16 @@ os_scrollbar_dispose (GObject *object)
   os_root_list = g_list_remove (os_root_list, scrollbar);
 
   if (os_root_list == NULL)
-    gdk_window_remove_filter (gdk_get_default_root_window (),
-                              root_filter_func, NULL);
+    {
+      if (os_workarea != NULL)
+        {
+          cairo_region_destroy (os_workarea);
+          os_workarea = NULL;
+        }
+
+      gdk_window_remove_filter (gdk_get_default_root_window (),
+                                root_filter_func, NULL);
+    }
 
   if (priv->pager != NULL)
     {
@@ -2226,12 +2234,6 @@ os_scrollbar_dispose (GObject *object)
     {
       g_object_unref (priv->window_group);
       priv->window_group = NULL;
-    }
-
-  if (os_workarea != NULL)
-    {
-      cairo_region_destroy (os_workarea);
-      os_workarea = NULL;
     }
 
   swap_adjustment (scrollbar, NULL);
