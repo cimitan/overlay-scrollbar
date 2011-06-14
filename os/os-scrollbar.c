@@ -1619,10 +1619,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if ((priv->thumb_all.x - xiev->event_x <= PROXIMITY_WIDTH &&
-                       priv->thumb_all.x - xiev->event_x >= 0) &&
-                      (xiev->event_y >= priv->thumb_all.y + priv->overlay.y &&
-                       xiev->event_y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+                  if ((priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xiev->event_x <= PROXIMITY_WIDTH &&
+                       priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xiev->event_x >= 0) &&
+                      (xiev->event_y >= priv->overlay_all.y + priv->overlay.y &&
+                       xiev->event_y <= priv->overlay_all.y + priv->overlay.y + priv->overlay.height))
                     {
                       priv->can_hide = FALSE;
 
@@ -1652,10 +1652,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if ((priv->thumb_all.y - xiev->event_y <= PROXIMITY_WIDTH &&
-                       priv->thumb_all.y - xiev->event_y >= 0) &&
-                      (xiev->event_x >= priv->thumb_all.x + priv->overlay.x &&
-                       xiev->event_x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+                  if ((priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xiev->event_y <= PROXIMITY_WIDTH &&
+                       priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xiev->event_y >= 0) &&
+                      (xiev->event_x >= priv->overlay_all.x + priv->overlay.x &&
+                       xiev->event_x <= priv->overlay_all.x + priv->overlay.x + priv->overlay.width))
                     {
                       priv->can_hide = FALSE;
 
@@ -1746,10 +1746,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if ((priv->thumb_all.x - xiev->event_x <= PROXIMITY_WIDTH &&
-                       priv->thumb_all.x - xiev->event_x >= 0) &&
-                      (xiev->event_y >= priv->thumb_all.y + priv->overlay.y &&
-                       xiev->event_y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+                  if ((priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xiev->event_x <= PROXIMITY_WIDTH &&
+                       priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xiev->event_x >= 0) &&
+                      (xiev->event_y >= priv->overlay_all.y + priv->overlay.y &&
+                       xiev->event_y <= priv->overlay_all.y + priv->overlay.y + priv->overlay.height))
                     {
                       priv->can_hide = FALSE;
 
@@ -1787,10 +1787,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if ((priv->thumb_all.y - xiev->event_y <= PROXIMITY_WIDTH &&
-                       priv->thumb_all.y - xiev->event_y >= 0) &&
-                      (xiev->event_x >= priv->thumb_all.x + priv->overlay.x &&
-                       xiev->event_x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+                  if ((priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xiev->event_y <= PROXIMITY_WIDTH &&
+                       priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xiev->event_y >= 0) &&
+                      (xiev->event_x >= priv->overlay_all.x + priv->overlay.x &&
+                       xiev->event_x <= priv->overlay_all.x + priv->overlay.x + priv->overlay.width))
                     {
                       priv->can_hide = FALSE;
 
@@ -1867,10 +1867,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xev->xbutton.x <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.x - xev->xbutton.x >= 0) &&
-                  (xev->xbutton.y >= priv->thumb_all.y + priv->overlay.y &&
-                   xev->xbutton.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+              if ((priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xev->xbutton.x <= PROXIMITY_WIDTH &&
+                   priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xev->xbutton.x >= 0) &&
+                  (xev->xbutton.y >= priv->overlay_all.y + priv->overlay.y &&
+                   xev->xbutton.y <= priv->overlay_all.y + priv->overlay.y + priv->overlay.height))
                 {
                   priv->can_hide = FALSE;
 
@@ -1900,10 +1900,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xev->xbutton.y <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.y - xev->xbutton.y >= 0) &&
-                  (xev->xbutton.x >= priv->thumb_all.x + priv->overlay.x &&
-                   xev->xbutton.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+              if ((priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xev->xbutton.y <= PROXIMITY_WIDTH &&
+                   priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xev->xbutton.y >= 0) &&
+                  (xev->xbutton.x >= priv->overlay_all.x + priv->overlay.x &&
+                   xev->xbutton.x <= priv->overlay_all.x + priv->overlay.x + priv->overlay.width))
                 {
                   priv->can_hide = FALSE;
 
@@ -1991,10 +1991,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((priv->thumb_all.x - xev->xmotion.x <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.x - xev->xmotion.x >= 0) &&
-                  (xev->xmotion.y >= priv->thumb_all.y + priv->overlay.y &&
-                   xev->xmotion.y <= priv->thumb_all.y + priv->overlay.y + priv->overlay.height))
+              if ((priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xev->xmotion.x <= PROXIMITY_WIDTH &&
+                   priv->overlay_all.x + DEFAULT_PAGER_WIDTH - xev->xmotion.x >= 0) &&
+                  (xev->xmotion.y >= priv->overlay_all.y + priv->overlay.y &&
+                   xev->xmotion.y <= priv->overlay_all.y + priv->overlay.y + priv->overlay.height))
                 {
                   priv->can_hide = FALSE;
 
@@ -2032,10 +2032,10 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((priv->thumb_all.y - xev->xmotion.y <= PROXIMITY_WIDTH &&
-                   priv->thumb_all.y - xev->xmotion.y >= 0) &&
-                  (xev->xmotion.x >= priv->thumb_all.x + priv->overlay.x &&
-                   xev->xmotion.x <= priv->thumb_all.x + priv->overlay.x + priv->overlay.width))
+              if ((priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xev->xmotion.y <= PROXIMITY_WIDTH &&
+                   priv->overlay_all.y + DEFAULT_PAGER_WIDTH - xev->xmotion.y >= 0) &&
+                  (xev->xmotion.x >= priv->overlay_all.x + priv->overlay.x &&
+                   xev->xmotion.x <= priv->overlay_all.x + priv->overlay.x + priv->overlay.width))
                 {
                   priv->can_hide = FALSE;
 
