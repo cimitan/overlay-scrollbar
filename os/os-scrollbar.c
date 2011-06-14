@@ -2515,6 +2515,8 @@ os_scrollbar_unrealize (GtkWidget *widget)
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
 
+  os_pager_hide (OS_PAGER (priv->pager));
+
   gtk_widget_hide (priv->thumb);
 
   priv->filter = FALSE;
