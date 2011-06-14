@@ -2214,9 +2214,11 @@ os_scrollbar_dispose (GObject *object)
 
   if (os_root_list == NULL)
     {
-      /* no need to check if os_workarea != NULL and set it to NULL,
-       * as this if statement is entered only once. */
-      cairo_region_destroy (os_workarea);
+      if (os_workarea != NULL)
+        {
+          cairo_region_destroy (os_workarea);
+          os_workarea = NULL;
+        }
 
       gdk_window_remove_filter (gdk_get_default_root_window (),
                                 root_filter_func, NULL);
