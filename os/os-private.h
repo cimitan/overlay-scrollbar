@@ -30,9 +30,9 @@
 #pragma GCC visibility push(hidden)
 #endif /* __GNUC__ */
 
-/* Default size of the thumb in pixels. */
-#define DEFAULT_THUMB_WIDTH  17
-#define DEFAULT_THUMB_HEIGHT 69
+/* Size of the thumb in pixels. */
+#define THUMB_WIDTH  17
+#define THUMB_HEIGHT 69
 
 G_BEGIN_DECLS
 
@@ -208,7 +208,7 @@ struct _OsPagerClass {
 
 GType    os_pager_get_type      (void) G_GNUC_CONST;
 
-GObject* os_pager_new           (void);
+OsPager* os_pager_new           (void);
 
 void     os_pager_hide          (OsPager *overlay);
 
