@@ -828,15 +828,9 @@ os_thumb_set_property (GObject      *object,
       {
         priv->orientation = g_value_get_enum (value);
         if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-          {
-            gtk_window_resize (GTK_WINDOW (object), DEFAULT_THUMB_WIDTH,
-                               DEFAULT_THUMB_HEIGHT);
-          }
+          gtk_window_resize (GTK_WINDOW (object), THUMB_WIDTH, THUMB_HEIGHT);
         else
-          {
-            gtk_window_resize (GTK_WINDOW (object), DEFAULT_THUMB_HEIGHT,
-                               DEFAULT_THUMB_WIDTH);
-          }
+          gtk_window_resize (GTK_WINDOW (object), THUMB_HEIGHT, THUMB_WIDTH);
         break;
       }
 

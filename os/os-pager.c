@@ -315,7 +315,7 @@ os_pager_finalize (GObject *object)
  *
  * Returns: the new #OsPager instance.
  */
-GObject*
+OsPager*
 os_pager_new (void)
 {
   return g_object_new (OS_TYPE_PAGER, NULL);
