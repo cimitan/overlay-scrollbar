@@ -45,7 +45,7 @@
 #define TIMEOUT_PRESENT_WINDOW 400
 
 /* Timeout before hiding in ms, after leaving the thumb. */
-#define TIMEOUT_THUMB_HIDE 1000
+#define TIMEOUT_THUMB_HIDE 400
 
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
