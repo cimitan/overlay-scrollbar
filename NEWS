@@ -1,3 +1,24 @@
+overlay-scrollbar 0.2.1 (June 15, 2011)
+---------------------------------------
+
+* Gtk+ 3 support, based on the work by Andrea Azzarone.
+
+* Performance boost with updated versions of both Gtk+ 2 and 3.
+
+* Refinements in the code and coding style fixes.
+
+* Various general fixes and improvements.
+
+* Bugs fixed:
+ 781432 In nvidia-settings overlay scrollbars are kept displayed when they...
+ 767823 Overlay scrollbar hidden underneath bottom panel in Ubuntu Classic mode
+ 773930 Overlay scrollbar not working correctly with font selection dialog
+ 796828 overlay-scrollbar requires two mouse targetings
+
+* Contributors:
+ Andrea Azzarone <azzaronea@gmail.com>
+
+
 overlay-scrollbar 0.2.0 (May 18, 2011)
 --------------------------------------
 
@@ -105,7 +126,7 @@ overlay-scrollbar 0.1.5 (March 30, 2011)
  741885 use proper allocation, not from the parent
 
 * Contributors:
- Andrea Azzarone <aazzarone@hotmail.it>
+ Andrea Azzarone <azzaronea@gmail.com>
 
 
 overlay-scrollbar 0.1.4 (March 23, 2011)
