@@ -50,6 +50,14 @@
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
 
+typedef enum
+{
+  OS_SIDE_TOP,
+  OS_SIDE_BOTTOM,
+  OS_SIDE_LEFT,
+  OS_SIDE_RIGHT
+} OsSide;
+
 struct _OsScrollbarPrivate
 {
   GdkRectangle trough;
@@ -1535,6 +1543,41 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   return FALSE;
 }
 
+/* checks if the pointer is in the proximity area. */
+static gboolean
+check_proximity (OsScrollbar *scrollbar,
+                 gint x,
+                 gint y,
+                 OsSide side)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+  
+  switch (side)
+  {
+    case OS_SIDE_RIGHT:
+      return (x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
+              x <= priv->pager_all.x + priv->pager_all.width) &&
+             (y >= priv->pager_all.y + priv->overlay.y &&
+              y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height);
+      break;
+    case OS_SIDE_BOTTOM:
+      return (y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
+              y <= priv->pager_all.y + priv->pager_all.height) &&
+             (x >= priv->pager_all.x + priv->overlay.x &&
+              x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width);
+      break;
+    case OS_SIDE_LEFT:
+    case OS_SIDE_TOP:
+      /* FIXME not implemented yet.
+       * Add support for different scrollbar positions here. */
+      break;
+  }
+
+  return FALSE;
+}
+
 /* filter function applied to the toplevel window */
 #ifdef USE_GTK3
 static GdkFilterReturn
@@ -1549,8 +1592,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
   scrollbar = OS_SCROLLBAR (user_data);
-
   priv = scrollbar->priv;
+
   xev = gdkxevent;
 
   g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
@@ -1577,10 +1620,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if ((xiev->event_x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
-                       xiev->event_x <= priv->pager_all.x + priv->pager_all.width) &&
-                      (xiev->event_y >= priv->pager_all.y + priv->overlay.y &&
-                       xiev->event_y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_RIGHT))
                     {
                       priv->can_hide = FALSE;
 
@@ -1610,10 +1650,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if ((xiev->event_y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
-                       xiev->event_y <= priv->pager_all.y + priv->pager_all.height) &&
-                      (xiev->event_x >= priv->pager_all.x + priv->overlay.x &&
-                       xiev->event_x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_BOTTOM))
                     {
                       priv->can_hide = FALSE;
 
@@ -1704,10 +1741,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if ((xiev->event_x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
-                       xiev->event_x <= priv->pager_all.x + priv->pager_all.width) &&
-                      (xiev->event_y >= priv->pager_all.y + priv->overlay.y &&
-                       xiev->event_y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_RIGHT))
                     {
                       priv->can_hide = FALSE;
 
@@ -1745,10 +1779,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if ((xiev->event_y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
-                       xiev->event_y <= priv->pager_all.y + priv->pager_all.height) &&
-                      (xiev->event_x >= priv->pager_all.x + priv->overlay.x &&
-                       xiev->event_x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_BOTTOM))
                     {
                       priv->can_hide = FALSE;
 
@@ -1803,8 +1834,8 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
   g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
   scrollbar = OS_SCROLLBAR (user_data);
-
   priv = scrollbar->priv;
+
   xev = gdkxevent;
 
   g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
@@ -1825,10 +1856,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((xev->xbutton.x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
-                   xev->xbutton.x <= priv->pager_all.x + priv->pager_all.width) &&
-                  (xev->xbutton.y >= priv->pager_all.y + priv->overlay.y &&
-                   xev->xbutton.y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height))
+              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y, OS_SIDE_RIGHT))
                 {
                   priv->can_hide = FALSE;
 
@@ -1858,10 +1886,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((xev->xbutton.y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
-                   xev->xbutton.y <= priv->pager_all.y + priv->pager_all.height) &&
-                  (xev->xbutton.x >= priv->pager_all.x + priv->overlay.x &&
-                   xev->xbutton.x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width))
+              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y, OS_SIDE_BOTTOM))
                 {
                   priv->can_hide = FALSE;
 
@@ -1949,10 +1974,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if ((xev->xmotion.x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
-                   xev->xmotion.x <= priv->pager_all.x + priv->pager_all.width) &&
-                  (xev->xmotion.y >= priv->pager_all.y + priv->overlay.y &&
-                   xev->xmotion.y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height))
+              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y, OS_SIDE_RIGHT))
                 {
                   priv->can_hide = FALSE;
 
@@ -1990,10 +2012,7 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if ((xev->xmotion.y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
-                   xev->xmotion.y <= priv->pager_all.y + priv->pager_all.height) &&
-                  (xev->xmotion.x >= priv->pager_all.x + priv->overlay.x &&
-                   xev->xmotion.x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width))
+              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y, OS_SIDE_BOTTOM))
                 {
                   priv->can_hide = FALSE;
 
