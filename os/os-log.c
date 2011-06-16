@@ -35,10 +35,10 @@ OsLogLevel threshold = OS_WARN;
 /* Public functions. */
 
 void
-os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
-                gint32 line, const gchar* format, ...)
+os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
+                gint32 line, const gchar *format, ...)
 {
-  static const gchar* prefix[3] = {
+  static const gchar *prefix[3] = {
     "\033[37;01m", /* OS_INFO */
     "\033[33;01m", /* OS_WARN */
     "\033[31;01m"  /* OS_ERROR */

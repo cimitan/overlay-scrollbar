@@ -103,6 +103,7 @@ DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DEPS_CFLAGS = @DEPS_CFLAGS@
 DEPS_LIBS = @DEPS_LIBS@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -129,6 +130,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINTAINER_CFLAGS = @MAINTAINER_CFLAGS@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -169,6 +171,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
@@ -190,6 +193,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 glib_req = @glib_req@
+gtk3_req = @gtk3_req@
 gtk_req = @gtk_req@
 host = @host@
 host_alias = @host_alias@
@@ -204,7 +208,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
-lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -220,10 +223,12 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-pcfiles = overlay-scrollbar-@OS_MAJORMINOR@.pc
+@USE_GTK3_FALSE@VER = 
+@USE_GTK3_TRUE@VER = 3
+pcfiles = overlay-scrollbar$(VER)-@OS_MAJORMINOR@.pc
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = $(pcfiles)
-EXTRA_DIST = overlay-scrollbar.pc.in
+EXTRA_DIST = overlay-scrollbar$(VER).pc.in
 CLEANFILES = $(pcfiles)
 all: all-am
 
@@ -439,7 +444,7 @@ uninstall-am: uninstall-pkgconfigDATA
 
 all-local: $(pcfiles)
 
-%-@OS_MAJORMINOR@.pc: %.pc
+%$(VER)-@OS_MAJORMINOR@.pc: %.pc
 	cp $< $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

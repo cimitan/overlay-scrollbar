@@ -112,6 +112,7 @@ DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DEPS_CFLAGS = @DEPS_CFLAGS@
 DEPS_LIBS = @DEPS_LIBS@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -138,6 +139,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINTAINER_CFLAGS = @MAINTAINER_CFLAGS@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -178,6 +180,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
@@ -199,6 +202,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 glib_req = @glib_req@
+gtk3_req = @gtk3_req@
 gtk_req = @gtk_req@
 host = @host@
 host_alias = @host_alias@
@@ -213,7 +217,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
-lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -229,6 +232,8 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+@USE_GTK3_FALSE@VER = 
+@USE_GTK3_TRUE@VER = 3
 EXTRA_DIST = \
 	test-os-pager.c \
 	test-os-pixmap.c \
@@ -240,7 +245,7 @@ test_os_CFLAGS = \
 	$(OS_CFLAGS)
 
 test_os_LDFLAGS = \
-	$(top_builddir)/os/liboverlay-scrollbar-@OS_MAJORMINOR@.la \
+	$(top_builddir)/os/liboverlay-scrollbar$(VER)-@OS_MAJORMINOR@.la \
 	$(OS_LIBADD)
 
 all: all-am

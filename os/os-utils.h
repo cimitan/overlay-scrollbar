@@ -28,14 +28,11 @@
 #define __OS_UTILS_H__
 
 #include <glib.h>
-#include <gtk/gtkwidget.h>
-#include <gtk/gtkenums.h>
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
-gboolean os_utils_is_blacklisted (const gchar* program);
-
-gboolean os_utils_is_whitelisted (const gchar* program);
+gboolean os_utils_is_blacklisted (const gchar *program);
 
 G_END_DECLS
 
