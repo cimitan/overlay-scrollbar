@@ -30,9 +30,9 @@
 #pragma GCC visibility push(hidden)
 #endif /* __GNUC__ */
 
-/* Default size of the thumb in pixels. */
-#define DEFAULT_THUMB_WIDTH  15
-#define DEFAULT_THUMB_HEIGHT 67
+/* Size of the thumb in pixels. */
+#define THUMB_WIDTH  17
+#define THUMB_HEIGHT 69
 
 G_BEGIN_DECLS
 
@@ -53,8 +53,8 @@ extern OsLogLevel threshold;
 void
 G_GNUC_NO_INSTRUMENT
 G_GNUC_PRINTF (5, 6)
-os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
-                gint32 line, const gchar* format, ...);
+os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
+                gint32 line, const gchar *format, ...);
 
 /* Macro logging a message to stderr using the given level. */
 #define OS_LOG(level,...)                                                  \
@@ -109,6 +109,7 @@ os_log_message (OsLogLevel level, const gchar* function, const gchar* file,
 
 typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
 typedef void (*OsAnimationEndFunc)    (gpointer user_data);
+typedef void (*OsAnimationStopFunc)   (gpointer user_data);
 
 typedef struct _OsAnimation OsAnimation;
 typedef struct _OsAnimationPrivate OsAnimationPrivate;
@@ -126,18 +127,21 @@ struct _OsAnimationClass {
 
 GType        os_animation_get_type     (void);
 
-OsAnimation* os_animation_new          (gint32 rate,
-                                        gint32 duration,
+OsAnimation* os_animation_new          (gint32                rate,
+                                        gint32                duration,
                                         OsAnimationUpdateFunc update_func,
-                                        OsAnimationEndFunc end_func,
-                                        gpointer user_data);
+                                        OsAnimationEndFunc    end_func,
+                                        gpointer              user_data);
 
-void         os_animation_set_duration (OsAnimation* animation,
-                                        gint32 duration);
+gboolean     os_animation_is_running   (OsAnimation *animation);
 
-void         os_animation_start        (OsAnimation* animation);
+void         os_animation_set_duration (OsAnimation *animation,
+                                        gint32       duration);
 
-void         os_animation_stop         (OsAnimation* animation);
+void         os_animation_start        (OsAnimation *animation);
+
+void         os_animation_stop         (OsAnimation        *animation,
+                                        OsAnimationStopFunc stop_func);
 
 /* os-thumb.c */
 
@@ -167,9 +171,12 @@ struct _OsThumbClass {
   GtkWindowClass parent_class;
 };
 
-GType      os_thumb_get_type (void) G_GNUC_CONST;
+GType      os_thumb_get_type     (void) G_GNUC_CONST;
 
-GtkWidget* os_thumb_new      (GtkOrientation orientation);
+GtkWidget* os_thumb_new          (GtkOrientation orientation);
+
+void       os_thumb_set_detached (OsThumb *thumb,
+                                  gboolean detached);
 
 /* os-pager.c */
 
@@ -201,15 +208,22 @@ struct _OsPagerClass {
 
 GType    os_pager_get_type      (void) G_GNUC_CONST;
 
-GObject* os_pager_new           (void);
+OsPager* os_pager_new           (void);
 
 void     os_pager_hide          (OsPager *overlay);
+
+void     os_pager_connect       (OsPager     *overlay,
+                                 GdkRectangle mask);
 
 void     os_pager_move_resize   (OsPager     *overlay,
                                  GdkRectangle mask);
 
 void     os_pager_set_active    (OsPager *overlay,
-                                 gboolean active);
+                                 gboolean active,
+                                 gboolean animate);
+
+void     os_pager_set_detached  (OsPager *overlay,
+                                 gboolean detached);
 
 void     os_pager_set_parent    (OsPager   *pager,
                                  GtkWidget *parent);

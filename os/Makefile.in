@@ -36,9 +36,12 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = os
-DIST_COMMON = $(liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS) \
-	$(noinst_HEADERS) $(osinclude_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/os-version.h.in
+DIST_COMMON =  \
+	$(liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS) \
+	$(liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS) \
+	$(noinst_HEADERS) $(os3include_HEADERS) $(osinclude_HEADERS) \
+	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/os-version.h.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/build/as-compiler-flag.m4 \
 	$(top_srcdir)/build/libtool.m4 \
@@ -74,8 +77,9 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(libdir)" \
+	"$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" \
 	"$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)" \
-	"$(DESTDIR)$(osincludedir)"
+	"$(DESTDIR)$(os3includedir)" "$(DESTDIR)$(osincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_DEPENDENCIES =  \
@@ -97,6 +101,27 @@ liboverlay_scrollbar_@OS_MAJORMINOR@_la_LINK = $(LIBTOOL) $(AM_V_lt) \
 	$(CCLD) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) \
 	$(CFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@USE_GTK3_FALSE@am_liboverlay_scrollbar_@OS_MAJORMINOR@_la_rpath =  \
+@USE_GTK3_FALSE@	-rpath $(libdir)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_DEPENDENCIES =  \
+	$(am__DEPENDENCIES_1)
+am__objects_2 = liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo \
+	liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo \
+	liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo \
+	liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo \
+	liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo \
+	liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo
+am_liboverlay_scrollbar3_@OS_MAJORMINOR@_la_OBJECTS =  \
+	$(am__objects_2)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_OBJECTS =  \
+	$(am_liboverlay_scrollbar3_@OS_MAJORMINOR@_la_OBJECTS)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LINK = $(LIBTOOL) $(AM_V_lt) \
+	--tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
+	$(CCLD) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) \
+	$(CFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@USE_GTK3_TRUE@am_liboverlay_scrollbar3_@OS_MAJORMINOR@_la_rpath =  \
+@USE_GTK3_TRUE@	-rpath $(libdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build/depcomp
 am__depfiles_maybe = depfiles
@@ -123,10 +148,13 @@ am__v_CCLD_0 = @echo "  CCLD  " $@;
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
 am__v_GEN_0 = @echo "  GEN   " $@;
-SOURCES = $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES)
-DIST_SOURCES = $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES)
-HEADERS = $(liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS) \
-	$(noinst_HEADERS) $(osinclude_HEADERS)
+SOURCES = $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES) \
+	$(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_SOURCES)
+DIST_SOURCES = $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES) \
+	$(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_SOURCES)
+HEADERS = $(liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS) \
+	$(liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS) \
+	$(noinst_HEADERS) $(os3include_HEADERS) $(osinclude_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -151,6 +179,7 @@ DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DEPS_CFLAGS = @DEPS_CFLAGS@
 DEPS_LIBS = @DEPS_LIBS@
+DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 ECHO_C = @ECHO_C@
@@ -177,6 +206,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAINTAINER_CFLAGS = @MAINTAINER_CFLAGS@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -217,6 +247,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
@@ -238,6 +269,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 glib_req = @glib_req@
+gtk3_req = @gtk3_req@
 gtk_req = @gtk_req@
 host = @host@
 host_alias = @host_alias@
@@ -252,7 +284,6 @@ libdir = @libdir@
 libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
-lt_ECHO = @lt_ECHO@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -268,6 +299,10 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+@USE_GTK3_FALSE@VER = 
+@USE_GTK3_TRUE@VER = 3
+@USE_GTK3_FALSE@lib_LTLIBRARIES = liboverlay-scrollbar-@OS_MAJORMINOR@.la
+@USE_GTK3_TRUE@lib_LTLIBRARIES = liboverlay-scrollbar3-@OS_MAJORMINOR@.la
 noinst_HEADERS = \
 	os-private.h
 
@@ -284,17 +319,34 @@ source_c = \
 	$(srcdir)/os-thumb.c \
 	$(srcdir)/os-scrollbar.c
 
-osincludedir = $(includedir)/overlay-scrollbar-@OS_MAJORMINOR@/os
+osincludedir = $(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
 osinclude_HEADERS = $(source_h)
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES = $(source_c)
-lib_LTLIBRARIES = liboverlay-scrollbar-@OS_MAJORMINOR@.la
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS = $(OS_CFLAGS)
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_LIBADD = $(OS_LIBADD)
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_LDFLAGS = $(OS_LDFLAGS)
 liboverlay_scrollbar_@OS_MAJORMINOR@_includedir = \
-	$(includedir)/overlay-scrollbar-@OS_MAJORMINOR@/os
+	$(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
 
 liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS = \
+	$(source_h) \
+	os-version.h
+
+
+# We duplicate these here because Automake won't let us use $(VER) on the left hand side.
+# Since we carefully use $(VER) in the right hand side above, we can assign the same values.
+# Only one version of the library is every compiled at the same time, so it is safe to reuse
+# the right hand sides like this.
+os3includedir = $(osincludedir)
+os3include_HEADERS = $(osinclude_HEADERS)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_SOURCES = $(source_c)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS = $(OS_CFLAGS) \
+  -DUSE_GTK3
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LIBADD = $(OS_LIBADD)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LDFLAGS = $(OS_LDFLAGS)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir = $(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
+liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS = \
 	$(source_h) \
 	os-version.h
 
@@ -372,7 +424,9 @@ clean-libLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 liboverlay-scrollbar-@OS_MAJORMINOR@.la: $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_OBJECTS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(liboverlay_scrollbar_@OS_MAJORMINOR@_la_LINK) -rpath $(libdir) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_OBJECTS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(liboverlay_scrollbar_@OS_MAJORMINOR@_la_LINK) $(am_liboverlay_scrollbar_@OS_MAJORMINOR@_la_rpath) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_OBJECTS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_LIBADD) $(LIBS)
+liboverlay-scrollbar3-@OS_MAJORMINOR@.la: $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_OBJECTS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LINK) $(am_liboverlay_scrollbar3_@OS_MAJORMINOR@_la_rpath) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_OBJECTS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -380,6 +434,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-animation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-pager.Plo@am__quote@
@@ -459,11 +519,79 @@ liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-scrollbar.lo: $(srcdir)/os-scrollbar.
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar_@OS_MAJORMINOR@_la-os-scrollbar.lo `test -f '$(srcdir)/os-scrollbar.c' || echo '$(srcdir)/'`$(srcdir)/os-scrollbar.c
 
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo: $(srcdir)/os-log.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo `test -f '$(srcdir)/os-log.c' || echo '$(srcdir)/'`$(srcdir)/os-log.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-log.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-log.lo `test -f '$(srcdir)/os-log.c' || echo '$(srcdir)/'`$(srcdir)/os-log.c
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo: $(srcdir)/os-utils.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo `test -f '$(srcdir)/os-utils.c' || echo '$(srcdir)/'`$(srcdir)/os-utils.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-utils.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-utils.lo `test -f '$(srcdir)/os-utils.c' || echo '$(srcdir)/'`$(srcdir)/os-utils.c
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo: $(srcdir)/os-animation.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo `test -f '$(srcdir)/os-animation.c' || echo '$(srcdir)/'`$(srcdir)/os-animation.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-animation.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-animation.lo `test -f '$(srcdir)/os-animation.c' || echo '$(srcdir)/'`$(srcdir)/os-animation.c
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo: $(srcdir)/os-pager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo `test -f '$(srcdir)/os-pager.c' || echo '$(srcdir)/'`$(srcdir)/os-pager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-pager.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-pager.lo `test -f '$(srcdir)/os-pager.c' || echo '$(srcdir)/'`$(srcdir)/os-pager.c
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo: $(srcdir)/os-thumb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo `test -f '$(srcdir)/os-thumb.c' || echo '$(srcdir)/'`$(srcdir)/os-thumb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-thumb.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-thumb.lo `test -f '$(srcdir)/os-thumb.c' || echo '$(srcdir)/'`$(srcdir)/os-thumb.c
+
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo: $(srcdir)/os-scrollbar.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo -MD -MP -MF $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.Tpo -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo `test -f '$(srcdir)/os-scrollbar.c' || echo '$(srcdir)/'`$(srcdir)/os-scrollbar.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.Tpo $(DEPDIR)/liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(srcdir)/os-scrollbar.c' object='liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o liboverlay_scrollbar3_@OS_MAJORMINOR@_la-os-scrollbar.lo `test -f '$(srcdir)/os-scrollbar.c' || echo '$(srcdir)/'`$(srcdir)/os-scrollbar.c
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS: $(liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" || $(MKDIR_P) "$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)"
+	@list='$(liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS)'; test -n "$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" || exit $$?; \
+	done
+
+uninstall-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS)'; test -n "$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" && rm -f $$files
 install-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS: $(liboverlay_scrollbar_@OS_MAJORMINOR@_include_HEADERS)
 	@$(NORMAL_INSTALL)
 	test -z "$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)" || $(MKDIR_P) "$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)"
@@ -484,6 +612,26 @@ uninstall-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS:
 	test -n "$$files" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)" && rm -f $$files
+install-os3includeHEADERS: $(os3include_HEADERS)
+	@$(NORMAL_INSTALL)
+	test -z "$(os3includedir)" || $(MKDIR_P) "$(DESTDIR)$(os3includedir)"
+	@list='$(os3include_HEADERS)'; test -n "$(os3includedir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(os3includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(os3includedir)" || exit $$?; \
+	done
+
+uninstall-os3includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(os3include_HEADERS)'; test -n "$(os3includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(os3includedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(os3includedir)" && rm -f $$files
 install-osincludeHEADERS: $(osinclude_HEADERS)
 	@$(NORMAL_INSTALL)
 	test -z "$(osincludedir)" || $(MKDIR_P) "$(DESTDIR)$(osincludedir)"
@@ -591,7 +739,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)" "$(DESTDIR)$(osincludedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir)" "$(DESTDIR)$(liboverlay_scrollbar_@OS_MAJORMINOR@_includedir)" "$(DESTDIR)$(os3includedir)" "$(DESTDIR)$(osincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -644,8 +792,9 @@ info: info-am
 info-am:
 
 install-data-am:  \
+	install-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS \
 	install-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS \
-	install-osincludeHEADERS
+	install-os3includeHEADERS install-osincludeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -692,8 +841,9 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-libLTLIBRARIES \
+	uninstall-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS \
 	uninstall-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS \
-	uninstall-osincludeHEADERS
+	uninstall-os3includeHEADERS uninstall-osincludeHEADERS
 
 .MAKE: install-am install-strip
 
@@ -705,15 +855,18 @@ uninstall-am: uninstall-libLTLIBRARIES \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am \
 	install-libLTLIBRARIES \
+	install-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS \
 	install-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS \
-	install-man install-osincludeHEADERS install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-libLTLIBRARIES \
+	install-man install-os3includeHEADERS install-osincludeHEADERS \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-libLTLIBRARIES \
+	uninstall-liboverlay_scrollbar3_@OS_MAJORMINOR@_includeHEADERS \
 	uninstall-liboverlay_scrollbar_@OS_MAJORMINOR@_includeHEADERS \
-	uninstall-osincludeHEADERS
+	uninstall-os3includeHEADERS uninstall-osincludeHEADERS
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

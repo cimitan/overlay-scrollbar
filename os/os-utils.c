@@ -29,27 +29,41 @@
 /* Public functions. */
 
 gboolean
-os_utils_is_blacklisted (const gchar* program)
+os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
-  static const gchar *const blacklist[] = {
+  static const gchar *blacklist[] = {
     "apport-gtk",
-    "Banshee",
     "codeblocks",
     "codelite",
     "eclipse",
+    "emacs",
+    "firefox-bin",
     "gnucash",
+    "gvim",
     "meld",
     "pgadmin3",
+    "soffice",
     "synaptic",
+    "thunderbird-bin",
     "update-manager",
     "vinagre",
     "vmplayer",
     "vmware"
   };
 
+  GModule *module;
+  gpointer func;
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+
+  module = g_module_open (NULL, 0);
+  if (g_module_symbol (module, "qt_startup_hook", &func))
+    {
+      g_module_close (module);
+      return TRUE;
+    }
+  g_module_close (module);
 
   /* Black list RTL languages, not supported yet */
   if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
@@ -60,10 +74,4 @@ os_utils_is_blacklisted (const gchar* program)
       return TRUE;
 
   return FALSE;
-}
-
-gboolean
-os_utils_is_whitelisted (const gchar* program)
-{
-  return TRUE;
 }
