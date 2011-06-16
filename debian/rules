@@ -1,13 +1,22 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+DEB_BUILDDIR = build
+DEB_MAKE_FLAVORS = gtk2 gtk3
 
-%:
-	dh $@
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/gnome.mk
 
-override_dh_install:
-	rm debian/tmp/usr/lib/*a
-	rm debian/tmp/etc/X11/Xsession.d/81overlay-scrollbar
+DEB_MAKE_DESTDIRSKEL = $(CURDIR)/debian/tmp/@FLAVOR@
+DEB_DESTDIR = $(CURDIR)/debian/tmp/$(cdbs_make_curflavor)/
+
+DEB_CONFIGURE_FLAGS_gtk2 = --with-gtk=2
+DEB_CONFIGURE_FLAGS_gtk3 = --with-gtk=3
+DEB_CONFIGURE_EXTRA_FLAGS = --disable-static
+
+debian/stamp-autotools/gtk2: cdbs_configure_flags += $(DEB_CONFIGURE_FLAGS_gtk2)
+debian/stamp-autotools/gtk3: cdbs_configure_flags += $(DEB_CONFIGURE_FLAGS_gtk3)
+
+common-install-arch::
+	find debian/tmp -name \*.la -delete
+	rm debian/tmp/*/etc/X11/Xsession.d/81overlay-scrollbar
 	dh_install --fail-missing

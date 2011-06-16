@@ -1,9 +1,13 @@
-overlay-scrollbar (0.2.1-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.1-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
   * soname bump for 0.2
   * debian/control
     - updated standards version to 3.9.2
+    - Added binaries for gtk3 builds
+    - Added build depends for gtk3
+  * debian/rules
+    - dual build for gtk2 and gtk3
 
  -- Ken VanDine <ken.vandine@canonical.com>  Thu, 16 Jun 2011 13:18:13 -0400
 
