@@ -2197,6 +2197,12 @@ os_scrollbar_dispose (GObject *object)
           os_workarea = NULL;
         }
 
+      if (priv->window_group != NULL)
+        {
+          g_object_unref (priv->window_group);
+          priv->window_group = NULL;
+        }
+
       gdk_window_remove_filter (gdk_get_default_root_window (),
                                 root_filter_func, NULL);
     }
@@ -2205,12 +2211,6 @@ os_scrollbar_dispose (GObject *object)
     {
       g_object_unref (priv->pager);
       priv->pager = NULL;
-    }
-
-  if (priv->window_group != NULL)
-    {
-      g_object_unref (priv->window_group);
-      priv->window_group = NULL;
     }
 
   swap_adjustment (scrollbar, NULL);
