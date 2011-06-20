@@ -2277,10 +2277,16 @@ os_scrollbar_get_preferred_width (GtkWidget *widget,
                                   gint      *minimal_width,
                                   gint      *natural_width)
 {
-  /* FIXME(Cimi) this is not checking for orientation,
-   * but setting everything to 0.
-   * If you see issues in allocation with Gtk+ 3, look here. */
-  *minimal_width = *natural_width = 0;
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    *minimal_width = *natural_width = 0;
+  else
+    GTK_WIDGET_CLASS (os_scrollbar_parent_class)->get_preferred_width (widget, minimal_width, natural_width);
 }
 
 static void
@@ -2288,10 +2294,16 @@ os_scrollbar_get_preferred_height (GtkWidget *widget,
                                    gint      *minimal_height,
                                    gint      *natural_height)
 {
-  /* FIXME(Cimi) this is not checking for orientation,
-   * but setting everything to 0.
-   * If you see issues in allocation with Gtk+ 3, look here. */
-  *minimal_height = *natural_height = 0;
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (widget);
+  priv = scrollbar->priv;
+
+  if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
+    *minimal_height = *natural_height = 0;
+  else
+    GTK_WIDGET_CLASS (os_scrollbar_parent_class)->get_preferred_height (widget, minimal_height, natural_height);
 }
 #endif
 
