@@ -126,7 +126,9 @@ static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
 static void os_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
+#ifndef USE_GTK3
 static void os_scrollbar_size_request (GtkWidget *widget, GtkRequisition *requisition);
+#endif
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
 static void os_scrollbar_dispose (GObject *object);
@@ -147,6 +149,7 @@ calc_layout_pager (OsScrollbar *scrollbar,
     {
       gint y, trough_length, height;
 
+      y = 0;
       trough_length = priv->trough.height;
 
       if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
@@ -175,6 +178,7 @@ calc_layout_pager (OsScrollbar *scrollbar,
     {
       gint x, trough_length, width;
 
+      x = 0;
       trough_length = priv->trough.width;
 
       if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
@@ -214,6 +218,7 @@ calc_layout_slider (OsScrollbar *scrollbar,
     {
       gint y, trough_length, height;
 
+      y = 0;
       trough_length = priv->trough.height;
       height = priv->slider.height;
 
@@ -234,6 +239,7 @@ calc_layout_slider (OsScrollbar *scrollbar,
     {
       gint x, trough_length, width;
 
+      x = 0;
       trough_length = priv->trough.width;
       width = priv->slider.width;
 
@@ -258,12 +264,10 @@ calc_workarea (Display *display,
                Window   root)
 {
   Atom type;
-  cairo_rectangle_int_t test;
   gint result, fmt;
   gulong nitems, nleft;
   guchar *property_data;
   gulong *long_data;
-  guint i;
 
   result = XGetWindowProperty (display, root,
                                unity_net_workarea_region_atom,
@@ -282,8 +286,8 @@ calc_workarea (Display *display,
 
       if (fmt == 32 && type == XA_CARDINAL && nitems % 4 == 0)
         {
-          int count;
-          unsigned int i;
+          guint count;
+          guint i;
           
           count = nitems / 4;
 
@@ -396,18 +400,30 @@ sanitize_x (OsScrollbar *scrollbar,
             gint         x,
             gint         y)
 {
-  cairo_rectangle_int_t rect;
-  OsScrollbarPrivate *priv;
-  gint screen_width, n_monitor;
+#ifndef USE_GTK3
+  GdkRectangle gdk_rect;
+#endif
   GdkScreen *screen;
-  
+  OsScrollbarPrivate *priv;
+  cairo_rectangle_int_t rect;
+  gint screen_width, n_monitor;
+
   priv = scrollbar->priv;
 
   /* the x - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, (GdkRectangle*) &rect);
+#ifdef USE_GTK3
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+#else
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &gdk_rect);
+
+  rect.x = gdk_rect.x;
+  rect.y = gdk_rect.y;
+  rect.width = gdk_rect.width;
+  rect.height = gdk_rect.height;
+#endif
 
   if (cairo_region_is_empty (os_workarea))
     screen_width = rect.x + rect.width;
@@ -459,18 +475,30 @@ sanitize_y (OsScrollbar *scrollbar,
             gint         x,
             gint         y)
 {
-  cairo_rectangle_int_t rect;
-  OsScrollbarPrivate *priv;
-  gint screen_height, n_monitor;
+#ifndef USE_GTK3
+  GdkRectangle gdk_rect;
+#endif
   GdkScreen *screen;
-  
+  OsScrollbarPrivate *priv;
+  cairo_rectangle_int_t rect;
+  gint screen_height, n_monitor;
+
   priv = scrollbar->priv;
 
   /* the y - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, (GdkRectangle*) &rect);
+#ifdef USE_GTK3
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+#else
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &gdk_rect);
+
+  rect.x = gdk_rect.x;
+  rect.y = gdk_rect.y;
+  rect.width = gdk_rect.width;
+  rect.height = gdk_rect.height;
+#endif
 
   if (cairo_region_is_empty (os_workarea))  
     screen_height = rect.y + rect.height;
@@ -1573,6 +1601,8 @@ check_proximity (OsScrollbar *scrollbar,
       /* FIXME not implemented yet.
        * Add support for different scrollbar positions here. */
       break;
+    default:
+      break;
   }
 
   return FALSE;
@@ -2241,17 +2271,16 @@ os_scrollbar_expose_event (GtkWidget      *widget,
 }
 #endif
 
-#if USE_GTK3
+#ifdef USE_GTK3
 static void
 os_scrollbar_get_preferred_width (GtkWidget *widget,
                                   gint      *minimal_width,
                                   gint      *natural_width)
 {
-  GtkRequisition requisition;
-
-  os_scrollbar_size_request (widget, &requisition);
-
-  *minimal_width = *natural_width = requisition.width;
+  /* FIXME(Cimi) this is not checking for orientation,
+   * but setting everything to 0.
+   * If you see issues in allocation with Gtk+ 3, look here. */
+  *minimal_width = *natural_width = 0;
 }
 
 static void
@@ -2259,11 +2288,10 @@ os_scrollbar_get_preferred_height (GtkWidget *widget,
                                    gint      *minimal_height,
                                    gint      *natural_height)
 {
-  GtkRequisition requisition;
-
-  os_scrollbar_size_request (widget, &requisition);
-
-  *minimal_height = *natural_height = requisition.height;
+  /* FIXME(Cimi) this is not checking for orientation,
+   * but setting everything to 0.
+   * If you see issues in allocation with Gtk+ 3, look here. */
+  *minimal_height = *natural_height = 0;
 }
 #endif
 
@@ -2437,6 +2465,7 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   gtk_widget_set_allocation (widget, allocation);
 }
 
+#ifndef USE_GTK3
 static void
 os_scrollbar_size_request (GtkWidget      *widget,
                            GtkRequisition *requisition)
@@ -2452,10 +2481,9 @@ os_scrollbar_size_request (GtkWidget      *widget,
   else
     requisition->height = 0;
 
-#ifndef USE_GTK3
   widget->requisition = *requisition;
-#endif
 }
+#endif
 
 static void
 os_scrollbar_unmap (GtkWidget *widget)
