@@ -142,7 +142,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-#if USE_GTK3
+#ifdef USE_GTK3
   widget_class->draw                 = os_thumb_draw;
 #else
   widget_class->expose_event         = os_thumb_expose;
@@ -386,7 +386,7 @@ os_thumb_expose (GtkWidget      *widget,
 
   radius = priv->can_rgba ? THUMB_RADIUS : 0;
 
-#if USE_GTK3
+#ifdef USE_GTK3
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
 #else
@@ -669,7 +669,7 @@ static void
 os_thumb_screen_changed (GtkWidget *widget,
                          GdkScreen *old_screen)
 {
-#if USE_GTK3
+#ifdef USE_GTK3
   GdkScreen *screen;
   GdkVisual *visual;
 
