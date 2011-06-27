@@ -1611,9 +1611,9 @@ check_proximity (OsScrollbar *scrollbar,
 /* filter function applied to the toplevel window */
 #ifdef USE_GTK3
 static GdkFilterReturn
-toplevel_filter_func (GdkXEvent *gdkxevent,
-                      GdkEvent  *event,
-                      gpointer   user_data)
+window_filter_func (GdkXEvent *gdkxevent,
+                    GdkEvent  *event,
+                    gpointer   user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
@@ -1853,9 +1853,9 @@ toplevel_filter_func (GdkXEvent *gdkxevent,
 }
 #else
 static GdkFilterReturn
-toplevel_filter_func (GdkXEvent *gdkxevent,
-                      GdkEvent  *event,
-                      gpointer   user_data)
+window_filter_func (GdkXEvent *gdkxevent,
+                    GdkEvent  *event,
+                    gpointer   user_data)
 {
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
@@ -2373,7 +2373,7 @@ os_scrollbar_map (GtkWidget *widget)
   if (gtk_widget_get_realized (widget) && priv->filter == FALSE)
     {
       priv->filter = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+      gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
     }
 }
 
@@ -2397,7 +2397,7 @@ os_scrollbar_realize (GtkWidget *widget)
   if (priv->filter == FALSE && priv->proximity == TRUE)
     {
       priv->filter =  TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+      gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
     }
 
   g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
@@ -2517,7 +2517,7 @@ os_scrollbar_unmap (GtkWidget *widget)
   if (gtk_widget_get_realized (widget) && priv->filter == TRUE)
     {
       priv->filter = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+      gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
     }
 }
 
@@ -2536,7 +2536,7 @@ os_scrollbar_unrealize (GtkWidget *widget)
   gtk_widget_hide (priv->thumb);
 
   priv->filter = FALSE;
-  gdk_window_remove_filter (gtk_widget_get_window (widget), toplevel_filter_func, scrollbar);
+  gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
 
   g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
                                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
