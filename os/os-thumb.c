@@ -855,6 +855,24 @@ os_thumb_new (GtkOrientation orientation)
 }
 
 /**
+ * os_thumb_resize:
+ * @thumb: a #OsThumb
+ * @width: width in pixels
+ * @height: height in pixels
+ *
+ * Resize the thumb.
+ **/
+void
+os_thumb_resize (OsThumb *thumb,
+                 gint     width,
+                 gint     height)
+{
+  g_return_if_fail (OS_THUMB (thumb));
+
+  gtk_window_resize (GTK_WINDOW (thumb), width, height);
+}
+
+/**
  * os_thumb_set_detached:
  * @thumb: a #OsThumb
  * @detached: a gboolean
