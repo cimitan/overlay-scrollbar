@@ -2310,7 +2310,11 @@ os_scrollbar_get_preferred_width (GtkWidget *widget,
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     *minimal_width = *natural_width = 0;
   else
-    GTK_WIDGET_CLASS (os_scrollbar_parent_class)->get_preferred_width (widget, minimal_width, natural_width);
+    {
+      /* smaller than 35 pixels the thumb looks weird. */
+      *minimal_width = 35;
+      *natural_width = THUMB_HEIGHT;
+    }
 }
 
 static void
@@ -2327,7 +2331,11 @@ os_scrollbar_get_preferred_height (GtkWidget *widget,
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
     *minimal_height = *natural_height = 0;
   else
-    GTK_WIDGET_CLASS (os_scrollbar_parent_class)->get_preferred_height (widget, minimal_height, natural_height);
+    {
+      /* smaller than 35 pixels the thumb looks weird. */
+      *minimal_height = 35;
+      *natural_height = THUMB_HEIGHT;
+    }
 }
 #endif
 
@@ -2461,7 +2469,11 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       priv->slider.width = THUMB_WIDTH;
-      priv->slider.height = THUMB_HEIGHT;
+      if (priv->slider.height != MIN (THUMB_HEIGHT, allocation->height))
+        {
+          priv->slider.height = MIN (THUMB_HEIGHT, allocation->height);
+          os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+        }
 
       priv->pager_all.x = allocation->x - PAGER_SIZE;
       priv->pager_all.width = PAGER_SIZE;
@@ -2473,8 +2485,12 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
     }
   else
     {
-      priv->slider.width = THUMB_HEIGHT;
       priv->slider.height = THUMB_WIDTH;
+      if (priv->slider.width != MIN (THUMB_HEIGHT, allocation->width))
+        {
+          priv->slider.width = MIN (THUMB_HEIGHT, allocation->width);
+          os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+        }
 
       priv->pager_all.y = allocation->y - PAGER_SIZE;
       priv->pager_all.height = PAGER_SIZE;
