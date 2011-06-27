@@ -1804,7 +1804,13 @@ window_filter_func (GdkXEvent *gdkxevent,
                     {
                       priv->can_hide = TRUE;
                       priv->lock_position = FALSE;
-                      hide_thumb (scrollbar);
+
+                      if (priv->source_hide_thumb_id != 0)
+                        g_source_remove (priv->source_hide_thumb_id);
+
+                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                                  hide_thumb_cb,
+                                                                  scrollbar);
                     }
                 }
               else
@@ -1842,7 +1848,13 @@ window_filter_func (GdkXEvent *gdkxevent,
                     {
                       priv->can_hide = TRUE;
                       priv->lock_position = FALSE;
-                      hide_thumb (scrollbar);
+
+                      if (priv->source_hide_thumb_id != 0)
+                        g_source_remove (priv->source_hide_thumb_id);
+
+                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                                  hide_thumb_cb,
+                                                                  scrollbar);
                     }
                 }
             }
@@ -2037,7 +2049,13 @@ window_filter_func (GdkXEvent *gdkxevent,
                 {
                   priv->can_hide = TRUE;
                   priv->lock_position = FALSE;
-                  hide_thumb (scrollbar);
+
+                  if (priv->source_hide_thumb_id != 0)
+                    g_source_remove (priv->source_hide_thumb_id);
+
+                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                              hide_thumb_cb,
+                                                              scrollbar);
                 }
             }
           else
@@ -2075,7 +2093,13 @@ window_filter_func (GdkXEvent *gdkxevent,
                 {
                   priv->can_hide = TRUE;
                   priv->lock_position = FALSE;
-                  hide_thumb (scrollbar);
+
+                  if (priv->source_hide_thumb_id != 0)
+                    g_source_remove (priv->source_hide_thumb_id);
+
+                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                                                              hide_thumb_cb,
+                                                              scrollbar);
                 }
             }
         }
