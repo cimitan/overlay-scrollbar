@@ -1205,7 +1205,7 @@ thumb_map_cb (GtkWidget *widget,
   os_pager_set_active (priv->pager, TRUE, FALSE);
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
-  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
+  xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
   display = GDK_WINDOW_XDISPLAY (gtk_widget_get_window (GTK_WIDGET (scrollbar)));
 
   changes.sibling = xid_parent;
