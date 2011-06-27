@@ -41,7 +41,7 @@
 #define TOLERANCE_PIXELS 3
 
 /* Thumb radius in pixels (higher values are automatically clamped). */
-#define THUMB_RADIUS 9
+#define THUMB_RADIUS 3
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
