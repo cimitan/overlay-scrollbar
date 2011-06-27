@@ -375,6 +375,11 @@ os_pager_hide (OsPager *pager)
 
   g_return_if_fail (OS_PAGER (pager));
 
+  /* return if pager is NULL, happens on emacs23,
+   * when emacs calls unrealize after dispose. */
+  if (pager == NULL)
+    return;
+
   priv = pager->priv;
 
   priv->visible = FALSE;
