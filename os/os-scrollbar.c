@@ -835,6 +835,8 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
 
                   os_pager_connect (priv->pager, mask);
                   os_pager_set_detached (priv->pager, TRUE);
+
+                  os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
                 }
               else
                 {
