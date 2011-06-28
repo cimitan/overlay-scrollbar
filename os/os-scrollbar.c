@@ -1778,6 +1778,12 @@ window_filter_func (GdkXEvent *gdkxevent,
                     {
                       priv->can_hide = FALSE;
 
+                      if (priv->source_hide_thumb_id != 0)
+                        {
+                          g_source_remove (priv->source_hide_thumb_id);
+                          priv->source_hide_thumb_id = 0;
+                        }
+
                       if (priv->lock_position)
                         return GDK_FILTER_CONTINUE;
 
@@ -1808,12 +1814,11 @@ window_filter_func (GdkXEvent *gdkxevent,
                       priv->can_hide = TRUE;
                       priv->lock_position = FALSE;
 
-                      if (priv->source_hide_thumb_id != 0)
-                        g_source_remove (priv->source_hide_thumb_id);
-
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                  hide_thumb_cb,
-                                                                  scrollbar);
+                      if (gtk_widget_get_mapped (priv->thumb) &&
+                          priv->source_hide_thumb_id == 0)
+                        priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                    hide_thumb_cb,
+                                                                    scrollbar);
                     }
                 }
               else
@@ -1821,6 +1826,12 @@ window_filter_func (GdkXEvent *gdkxevent,
                   if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_BOTTOM))
                     {
                       priv->can_hide = FALSE;
+
+                      if (priv->source_hide_thumb_id != 0)
+                        {
+                          g_source_remove (priv->source_hide_thumb_id);
+                          priv->source_hide_thumb_id = 0;
+                        }
 
                       if (priv->lock_position)
                         return GDK_FILTER_CONTINUE;
@@ -1852,12 +1863,11 @@ window_filter_func (GdkXEvent *gdkxevent,
                       priv->can_hide = TRUE;
                       priv->lock_position = FALSE;
 
-                      if (priv->source_hide_thumb_id != 0)
-                        g_source_remove (priv->source_hide_thumb_id);
-
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                  hide_thumb_cb,
-                                                                  scrollbar);
+                      if (gtk_widget_get_mapped (priv->thumb) &&
+                          priv->source_hide_thumb_id == 0)
+                        priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                    hide_thumb_cb,
+                                                                    scrollbar);
                     }
                 }
             }
@@ -1905,6 +1915,12 @@ window_filter_func (GdkXEvent *gdkxevent,
                 {
                   priv->can_hide = FALSE;
 
+                  if (priv->source_hide_thumb_id != 0)
+                    {
+                      g_source_remove (priv->source_hide_thumb_id);
+                      priv->source_hide_thumb_id = 0;
+                    }
+
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
 
@@ -1934,6 +1950,12 @@ window_filter_func (GdkXEvent *gdkxevent,
               if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y, OS_SIDE_BOTTOM))
                 {
                   priv->can_hide = FALSE;
+
+                  if (priv->source_hide_thumb_id != 0)
+                    {
+                      g_source_remove (priv->source_hide_thumb_id);
+                      priv->source_hide_thumb_id = 0;
+                    }
 
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
@@ -2053,12 +2075,11 @@ window_filter_func (GdkXEvent *gdkxevent,
                   priv->can_hide = TRUE;
                   priv->lock_position = FALSE;
 
-                  if (priv->source_hide_thumb_id != 0)
-                    g_source_remove (priv->source_hide_thumb_id);
-
-                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                              hide_thumb_cb,
-                                                              scrollbar);
+                  if (gtk_widget_get_mapped (priv->thumb) &&
+                      priv->source_hide_thumb_id == 0)
+                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                hide_thumb_cb,
+                                                                scrollbar);
                 }
             }
           else
@@ -2097,12 +2118,11 @@ window_filter_func (GdkXEvent *gdkxevent,
                   priv->can_hide = TRUE;
                   priv->lock_position = FALSE;
 
-                  if (priv->source_hide_thumb_id != 0)
-                    g_source_remove (priv->source_hide_thumb_id);
-
-                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                              hide_thumb_cb,
-                                                              scrollbar);
+                  if (gtk_widget_get_mapped (priv->thumb) &&
+                      priv->source_hide_thumb_id == 0)
+                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                hide_thumb_cb,
+                                                                scrollbar);
                 }
             }
         }
