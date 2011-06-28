@@ -446,7 +446,7 @@ sanitize_x (OsScrollbar *scrollbar,
       gint i, x, width;
 
       x = rect.x;
-      width = rect.width;
+      width = rect.x + rect.width;
 
       /* full monitor region */
       monitor_workarea = cairo_region_create_rectangle (&rect);
@@ -481,13 +481,13 @@ sanitize_x (OsScrollbar *scrollbar,
               count++;
             }
 
-          if (tmp_rect.x + tmp_rect.width == rect.width)
+          if (tmp_rect.x + tmp_rect.width == rect.x + rect.width)
             {
               strut_side |= OS_STRUT_SIDE_RIGHT;
               count++;
             }
 
-          if (tmp_rect.y + tmp_rect.height == rect.height)
+          if (tmp_rect.y + tmp_rect.height == rect.y + rect.height)
             {
               strut_side |= OS_STRUT_SIDE_BOTTOM;
               count++;
@@ -589,7 +589,7 @@ sanitize_y (OsScrollbar *scrollbar,
       gint i, y, height;
 
       y = rect.y;
-      height = rect.height;
+      height = rect.y + rect.height;
 
       /* full monitor region */
       monitor_workarea = cairo_region_create_rectangle (&rect);
@@ -624,13 +624,13 @@ sanitize_y (OsScrollbar *scrollbar,
               count++;
             }
 
-          if (tmp_rect.x + tmp_rect.width == rect.width)
+          if (tmp_rect.x + tmp_rect.width == rect.x + rect.width)
             {
               strut_side |= OS_STRUT_SIDE_RIGHT;
               count++;
             }
 
-          if (tmp_rect.y + tmp_rect.height == rect.height)
+          if (tmp_rect.y + tmp_rect.height == rect.y + rect.height)
             {
               strut_side |= OS_STRUT_SIDE_BOTTOM;
               count++;
