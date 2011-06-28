@@ -37,7 +37,7 @@
 /* Timeout before the fade-out. */
 #define TIMEOUT_FADE_OUT 250
 
-/* Number of tolerance pixels. */
+/* Number of tolerance pixels, before hiding the thumb. */
 #define TOLERANCE_PIXELS 3
 
 /* Thumb radius in pixels (higher values are automatically clamped). */

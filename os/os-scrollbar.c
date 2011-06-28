@@ -31,6 +31,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 #include "math.h"
+#include <stdlib.h>
 
 /* Size of the pager in pixels. */
 #define PAGER_SIZE 3
@@ -52,6 +53,9 @@
 
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
+
+/* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
+#define TOLERANCE_PIXELS 2
 
 typedef enum
 {
@@ -1350,6 +1354,10 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       /* reconnect slider and overlay after key press */
       if (priv->value_changed_event)
         {
+          if (abs (priv->pointer_x - event->x) <= TOLERANCE_PIXELS &&
+              abs (priv->pointer_y - event->y) <= TOLERANCE_PIXELS)
+            return FALSE;
+
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
               priv->slide_initial_slider_position = event->y_root - priv->win_y - event->y;
