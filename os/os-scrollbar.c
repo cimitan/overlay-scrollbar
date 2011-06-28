@@ -35,9 +35,6 @@
 /* Size of the pager in pixels. */
 #define PAGER_SIZE 3
 
-/* Thumb allocation shift in pixels. */
-#define THUMB_ALLOCATION_SHIFT -3
-
 /* Size of the proximity effect in pixels. */
 #define PROXIMITY_SIZE 30
 
@@ -58,6 +55,15 @@ typedef enum
   OS_SIDE_RIGHT
 } OsSide;
 
+typedef enum
+{
+  OS_STRUT_SIDE_NONE = 0,
+  OS_STRUT_SIDE_TOP = 1,
+  OS_STRUT_SIDE_BOTTOM = 2,
+  OS_STRUT_SIDE_LEFT = 4,
+  OS_STRUT_SIDE_RIGHT = 8
+} OsStrutSide;
+
 struct _OsScrollbarPrivate
 {
   GdkRectangle trough;
@@ -70,6 +76,7 @@ struct _OsScrollbarPrivate
   GtkOrientation orientation;
   GtkWindowGroup *window_group;
   OsPager *pager;
+  OsSide side;
   gboolean button_press_event;
   gboolean enter_notify_event;
   gboolean motion_notify_event;
@@ -99,6 +106,7 @@ static Atom net_active_window_atom = None;
 static Atom unity_net_workarea_region_atom = None;
 static GList *os_root_list = NULL;
 static cairo_region_t *os_workarea = NULL;
+static GQuark os_quark_placement = 0;
 
 static void swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
 static void swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
@@ -406,14 +414,16 @@ sanitize_x (OsScrollbar *scrollbar,
   GdkScreen *screen;
   OsScrollbarPrivate *priv;
   cairo_rectangle_int_t rect;
-  gint screen_width, n_monitor;
+  gint screen_x, screen_width, n_monitor, monitor_x;
 
   priv = scrollbar->priv;
 
   /* the x - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
+  monitor_x = priv->side == OS_SIDE_LEFT ? x : x - 1;
+
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
-  n_monitor = gdk_screen_get_monitor_at_point (screen, x - 1, y);
+  n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 #else
@@ -425,42 +435,108 @@ sanitize_x (OsScrollbar *scrollbar,
   rect.height = gdk_rect.height;
 #endif
 
-  if (cairo_region_is_empty (os_workarea))
-    screen_width = rect.x + rect.width;
-  else
+  screen_x = rect.x;
+  screen_width = rect.x + rect.width;
+
+  if (!cairo_region_is_empty (os_workarea))
     {
       cairo_region_t *monitor_workarea;
+      cairo_region_t *struts_region;
       cairo_rectangle_int_t tmp_rect;
       gint i, x, width;
 
       x = rect.x;
       width = rect.width;
 
+      /* full monitor region */
       monitor_workarea = cairo_region_create_rectangle (&rect);
+      struts_region = cairo_region_copy (monitor_workarea);
 
+      /* workarea region for current monitor */
       cairo_region_intersect (monitor_workarea, os_workarea);
 
-      for (i = 0; i < cairo_region_num_rectangles (monitor_workarea); i++)
-        {
-          cairo_region_get_rectangle (monitor_workarea, i, &tmp_rect);
+      /* struts region for current monitor */
+      cairo_region_subtract (struts_region, monitor_workarea);
 
-          if (tmp_rect.x > x)
-            x = tmp_rect.x;
-          if (tmp_rect.x + tmp_rect.width < width)
-            width = tmp_rect.x + tmp_rect.width;
+      for (i = 0; i < cairo_region_num_rectangles (struts_region); i++)
+        {
+          OsStrutSide strut_side;
+          gint count;
+
+          cairo_region_get_rectangle (struts_region, i, &tmp_rect);
+
+          strut_side = OS_STRUT_SIDE_NONE;
+          count = 0;
+
+          /* determine which side the strut is on */
+          if (tmp_rect.y == rect.y)
+            {
+              strut_side |= OS_STRUT_SIDE_TOP;
+              count++;
+            }
+
+          if (tmp_rect.x == rect.x)
+            {
+              strut_side |= OS_STRUT_SIDE_LEFT;
+              count++;
+            }
+
+          if (tmp_rect.x + tmp_rect.width == rect.width)
+            {
+              strut_side |= OS_STRUT_SIDE_RIGHT;
+              count++;
+            }
+
+          if (tmp_rect.y + tmp_rect.height == rect.height)
+            {
+              strut_side |= OS_STRUT_SIDE_BOTTOM;
+              count++;
+            }
+
+          /* handle multiple sides */
+          if (count >= 2)
+            {
+              if (tmp_rect.width > tmp_rect.height)
+                strut_side &= ~(OS_STRUT_SIDE_LEFT | OS_STRUT_SIDE_RIGHT);
+              else if (tmp_rect.width < tmp_rect.height)
+                strut_side &= ~(OS_STRUT_SIDE_TOP | OS_STRUT_SIDE_BOTTOM);
+            }
+
+          /* get the monitor boundaries using the strut */
+          if (strut_side & OS_STRUT_SIDE_LEFT)
+            {
+              if (tmp_rect.x + tmp_rect.width > x)
+                x = tmp_rect.x + tmp_rect.width;
+            }
+
+          if (strut_side & OS_STRUT_SIDE_RIGHT)
+            {
+              if (tmp_rect.x < width)
+                width = tmp_rect.x;
+            }
         }
 
-      screen_width = x + width;
+      screen_x = x;
+      screen_width = width;
 
       cairo_region_destroy (monitor_workarea);
+      cairo_region_destroy (struts_region);
     }
 
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL &&
-      (n_monitor != gdk_screen_get_monitor_at_point (screen, x - 1 + priv->slider.width, y) ||
-       x - 1 + priv->slider.width >= screen_width))
+  if (priv->side == OS_SIDE_RIGHT &&
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, monitor_x + priv->thumb_all.width, y) ||
+       monitor_x + priv->thumb_all.width >= screen_width))
     {
       priv->internal = TRUE;
-      return MAX (x - priv->slider.width, screen_width - priv->slider.width);
+      return MAX (x - priv->thumb_all.width, screen_width - priv->thumb_all.width);
+    }
+
+  if (priv->side == OS_SIDE_LEFT &&
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, monitor_x - priv->thumb_all.width, y) ||
+       monitor_x - priv->thumb_all.width <= screen_x))
+    {
+      priv->internal = TRUE;
+      return MAX (x, screen_x);
     }
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
@@ -481,14 +557,16 @@ sanitize_y (OsScrollbar *scrollbar,
   GdkScreen *screen;
   OsScrollbarPrivate *priv;
   cairo_rectangle_int_t rect;
-  gint screen_height, n_monitor;
+  gint screen_y, screen_height, n_monitor, monitor_y;
 
   priv = scrollbar->priv;
 
   /* the y - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
+  monitor_y = priv->side == OS_SIDE_TOP ? y : y - 1;
+
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
-  n_monitor = gdk_screen_get_monitor_at_point (screen, x, y - 1);
+  n_monitor = gdk_screen_get_monitor_at_point (screen, x, monitor_y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 #else
@@ -500,42 +578,108 @@ sanitize_y (OsScrollbar *scrollbar,
   rect.height = gdk_rect.height;
 #endif
 
-  if (cairo_region_is_empty (os_workarea))  
-    screen_height = rect.y + rect.height;
-  else
+  screen_y = rect.y;
+  screen_height = rect.y + rect.height;
+
+  if (!cairo_region_is_empty (os_workarea))
     {
       cairo_region_t *monitor_workarea;
+      cairo_region_t *struts_region;
       cairo_rectangle_int_t tmp_rect;
       gint i, y, height;
 
       y = rect.y;
       height = rect.height;
 
+      /* full monitor region */
       monitor_workarea = cairo_region_create_rectangle (&rect);
+      struts_region = cairo_region_copy (monitor_workarea);
 
+      /* workarea region for current monitor */
       cairo_region_intersect (monitor_workarea, os_workarea);
 
-      for (i = 0; i < cairo_region_num_rectangles (monitor_workarea); i++)
-        {
-          cairo_region_get_rectangle (monitor_workarea, i, &tmp_rect);
+      /* struts region for current monitor */
+      cairo_region_subtract (struts_region, monitor_workarea);
 
-          if (tmp_rect.y > y)
-            y = tmp_rect.y;
-          if (tmp_rect.y + tmp_rect.height < height)
-            height = tmp_rect.y + tmp_rect.height;
+      for (i = 0; i < cairo_region_num_rectangles (struts_region); i++)
+        {
+          OsStrutSide strut_side;
+          gint count;
+
+          cairo_region_get_rectangle (struts_region, i, &tmp_rect);
+
+          strut_side = OS_STRUT_SIDE_NONE;
+          count = 0;
+
+          /* determine which side the strut is on */
+          if (tmp_rect.y == rect.y)
+            {
+              strut_side |= OS_STRUT_SIDE_TOP;
+              count++;
+            }
+
+          if (tmp_rect.x == rect.x)
+            {
+              strut_side |= OS_STRUT_SIDE_LEFT;
+              count++;
+            }
+
+          if (tmp_rect.x + tmp_rect.width == rect.width)
+            {
+              strut_side |= OS_STRUT_SIDE_RIGHT;
+              count++;
+            }
+
+          if (tmp_rect.y + tmp_rect.height == rect.height)
+            {
+              strut_side |= OS_STRUT_SIDE_BOTTOM;
+              count++;
+            }
+
+          /* handle multiple sides */
+          if (count >= 2)
+            {
+              if (tmp_rect.width > tmp_rect.height)
+                strut_side &= ~(OS_STRUT_SIDE_LEFT | OS_STRUT_SIDE_RIGHT);
+              else if (tmp_rect.width < tmp_rect.height)
+                strut_side &= ~(OS_STRUT_SIDE_TOP | OS_STRUT_SIDE_BOTTOM);
+            }
+
+          /* get the monitor boundaries using the strut */
+          if (strut_side & OS_STRUT_SIDE_TOP)
+            {
+              if (tmp_rect.y + tmp_rect.height > y)
+                y = tmp_rect.y + tmp_rect.height;
+            }
+
+          if (strut_side & OS_STRUT_SIDE_BOTTOM)
+            {
+              if (tmp_rect.y < height)
+                height = tmp_rect.y;
+            }
         }
 
-      screen_height = y + height;
+      screen_y = y;
+      screen_height = height;
 
       cairo_region_destroy (monitor_workarea);
+      cairo_region_destroy (struts_region);
     }
 
-  if (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, y - 1 + priv->slider.height) ||
-       y - 1 + priv->slider.height >= screen_height))
+  if (priv->side == OS_SIDE_BOTTOM &&
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, monitor_y + priv->thumb_all.height) ||
+       monitor_y + priv->thumb_all.height >= screen_height))
     {
       priv->internal = TRUE;
-      return MAX (y - priv->slider.height, screen_height - priv->slider.height);
+      return MAX (y - priv->thumb_all.height, screen_height - priv->thumb_all.height);
+    }
+
+  if (priv->side == OS_SIDE_TOP &&
+      (n_monitor != gdk_screen_get_monitor_at_point (screen, x, monitor_y - priv->thumb_all.height) ||
+       monitor_y - priv->thumb_all.height <= screen_y))
+    {
+      priv->internal = TRUE;
+      return MAX (y, screen_y);
     }
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
@@ -1575,14 +1719,13 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 static gboolean
 check_proximity (OsScrollbar *scrollbar,
                  gint x,
-                 gint y,
-                 OsSide side)
+                 gint y)
 {
   OsScrollbarPrivate *priv;
 
   priv = scrollbar->priv;
   
-  switch (side)
+  switch (priv->side)
   {
     case OS_SIDE_RIGHT:
       return (x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
@@ -1597,9 +1740,16 @@ check_proximity (OsScrollbar *scrollbar,
               x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width);
       break;
     case OS_SIDE_LEFT:
+      return (x <= priv->pager_all.x + priv->pager_all.width + PROXIMITY_SIZE &&
+              x >= priv->pager_all.x) &&
+             (y >= priv->pager_all.y + priv->overlay.y &&
+              y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height);
+      break;
     case OS_SIDE_TOP:
-      /* FIXME not implemented yet.
-       * Add support for different scrollbar positions here. */
+      return (y <= priv->pager_all.y + priv->pager_all.height + PROXIMITY_SIZE &&
+              y >= priv->pager_all.y) &&
+             (x >= priv->pager_all.x + priv->overlay.x &&
+              x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width);
       break;
     default:
       break;
@@ -1650,7 +1800,7 @@ window_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_RIGHT))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y))
                     {
                       priv->can_hide = FALSE;
 
@@ -1680,7 +1830,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_BOTTOM))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y))
                     {
                       priv->can_hide = FALSE;
 
@@ -1771,7 +1921,7 @@ window_filter_func (GdkXEvent *gdkxevent,
               /* proximity area */
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_RIGHT))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y))
                     {
                       priv->can_hide = FALSE;
 
@@ -1815,7 +1965,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                 }
               else
                 {
-                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y, OS_SIDE_BOTTOM))
+                  if (check_proximity (scrollbar, xiev->event_x, xiev->event_y))
                     {
                       priv->can_hide = FALSE;
 
@@ -1898,7 +2048,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y, OS_SIDE_RIGHT))
+              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
                 {
                   priv->can_hide = FALSE;
 
@@ -1928,7 +2078,7 @@ window_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y, OS_SIDE_BOTTOM))
+              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
                 {
                   priv->can_hide = FALSE;
 
@@ -2016,7 +2166,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           /* proximity area */
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
-              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y, OS_SIDE_RIGHT))
+              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
                 {
                   priv->can_hide = FALSE;
 
@@ -2060,7 +2210,7 @@ window_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y, OS_SIDE_BOTTOM))
+              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
                 {
                   priv->can_hide = FALSE;
 
@@ -2178,6 +2328,9 @@ os_scrollbar_init (OsScrollbar *scrollbar)
       gdk_window_set_events (root, gdk_window_get_events (root) |
                                    GDK_PROPERTY_CHANGE_MASK);
       gdk_window_add_filter (root, root_filter_func, NULL);
+
+      /* initialize the quark */
+      os_quark_placement = g_quark_from_string ("os_quark_placement");
     }
   else
     {
@@ -2448,6 +2601,50 @@ os_scrollbar_show (GtkWidget *widget)
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->show (widget);
 }
 
+/* retrieve the side of the scrollbar */
+static void
+retrieve_side (OsScrollbar *scrollbar)
+{
+  GtkCornerType corner;
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  corner = GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (scrollbar), os_quark_placement));
+
+  if (GTK_SCROLLED_WINDOW (gtk_widget_get_parent (GTK_WIDGET (scrollbar))))
+    corner = gtk_scrolled_window_get_placement (GTK_SCROLLED_WINDOW (gtk_widget_get_parent (GTK_WIDGET (scrollbar))));
+
+  /* GtkCornerType to OsSide */
+  if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
+    {
+      if (corner == GTK_CORNER_TOP_LEFT ||
+          corner == GTK_CORNER_TOP_RIGHT)
+        priv->side = OS_SIDE_BOTTOM;
+      else
+        priv->side = OS_SIDE_TOP;
+    }
+  else
+    {
+      if (gtk_widget_get_direction (GTK_WIDGET (scrollbar)) == GTK_TEXT_DIR_LTR)
+        {
+          if (corner == GTK_CORNER_TOP_LEFT ||
+              corner == GTK_CORNER_BOTTOM_LEFT)
+            priv->side = OS_SIDE_RIGHT;
+          else
+            priv->side = OS_SIDE_LEFT;
+        }
+      else
+        {
+          if (corner == GTK_CORNER_TOP_RIGHT ||
+              corner == GTK_CORNER_BOTTOM_RIGHT)
+            priv->side = OS_SIDE_RIGHT;
+          else
+            priv->side = OS_SIDE_LEFT;
+        }
+    }
+}
+
 static void
 os_scrollbar_size_allocate (GtkWidget    *widget,
                             GdkRectangle *allocation)
@@ -2457,6 +2654,9 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
 
   scrollbar = OS_SCROLLBAR (widget);
   priv = scrollbar->priv;
+
+  /* get the side, then move thumb and pager accordingly. */
+  retrieve_side (scrollbar);
 
   priv->trough.x = allocation->x;
   priv->trough.y = allocation->y;
@@ -2475,11 +2675,17 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
           os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
         }
 
-      priv->pager_all.x = allocation->x - PAGER_SIZE;
+      if (priv->side == OS_SIDE_RIGHT)
+        priv->pager_all.x = allocation->x - PAGER_SIZE;
+
       priv->pager_all.width = PAGER_SIZE;
 
-      priv->thumb_all.x = allocation->x + THUMB_ALLOCATION_SHIFT;
       priv->thumb_all.width = THUMB_WIDTH;
+
+      if (priv->side == OS_SIDE_RIGHT)
+        priv->thumb_all.x = allocation->x - priv->pager_all.width;
+      else
+        priv->thumb_all.x = allocation->x + priv->pager_all.width - priv->thumb_all.width;
 
       allocation->width = 0;
     }
@@ -2492,11 +2698,17 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
           os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
         }
 
-      priv->pager_all.y = allocation->y - PAGER_SIZE;
+      if (priv->side == OS_SIDE_BOTTOM)
+        priv->pager_all.y = allocation->y - PAGER_SIZE;
+
       priv->pager_all.height = PAGER_SIZE;
 
-      priv->thumb_all.y = allocation->y + THUMB_ALLOCATION_SHIFT;
-      priv->thumb_all.height = THUMB_HEIGHT;
+      priv->thumb_all.height = THUMB_WIDTH;
+
+      if (priv->side == OS_SIDE_BOTTOM)
+        priv->thumb_all.y = allocation->y - priv->pager_all.height;
+      else
+        priv->thumb_all.y = allocation->y + priv->pager_all.height - priv->thumb_all.height;
 
       allocation->height = 0;
     }
