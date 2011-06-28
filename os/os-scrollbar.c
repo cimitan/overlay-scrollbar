@@ -1354,6 +1354,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       /* reconnect slider and overlay after key press */
       if (priv->value_changed_event)
         {
+          /* return if the mouse movement is small. */
           if (abs (priv->pointer_x - event->x) <= TOLERANCE_PIXELS &&
               abs (priv->pointer_y - event->y) <= TOLERANCE_PIXELS)
             return FALSE;
@@ -1369,8 +1370,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               priv->slide_initial_coordinate = event->x_root;
             }
 
-          /* FIXME(Cimi) seems useless. */
-//          capture_movement (scrollbar, event->x_root, event->y_root);
           priv->value_changed_event = FALSE;
         }
 
