@@ -44,6 +44,9 @@
 /* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
 
+/* Timeout before hiding in ms, after leaving the proximity area. */
+#define TIMEOUT_PROXIMITY_HIDE 200
+
 /* Timeout before hiding in ms, after leaving the thumb. */
 #define TIMEOUT_THUMB_HIDE 200
 
@@ -1808,7 +1811,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                       if (priv->source_hide_thumb_id != 0)
                         g_source_remove (priv->source_hide_thumb_id);
 
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
                                                                   hide_thumb_cb,
                                                                   scrollbar);
                     }
@@ -1852,7 +1855,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                       if (priv->source_hide_thumb_id != 0)
                         g_source_remove (priv->source_hide_thumb_id);
 
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
                                                                   hide_thumb_cb,
                                                                   scrollbar);
                     }
@@ -2053,7 +2056,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                   if (priv->source_hide_thumb_id != 0)
                     g_source_remove (priv->source_hide_thumb_id);
 
-                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
                                                               hide_thumb_cb,
                                                               scrollbar);
                 }
@@ -2097,7 +2100,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                   if (priv->source_hide_thumb_id != 0)
                     g_source_remove (priv->source_hide_thumb_id);
 
-                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_THUMB_HIDE,
+                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
                                                               hide_thumb_cb,
                                                               scrollbar);
                 }
