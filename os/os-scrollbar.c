@@ -976,7 +976,7 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
                 {
                   GdkRectangle mask;
 
-                  mask.x = priv->overlay.y + priv->overlay.height;
+                  mask.x = priv->overlay.x + priv->overlay.width;
                   mask.y = 0;
                   mask.width = x_pos + priv->slider.width / 2 - priv->win_x - mask.x;
                   mask.height = priv->pager_all.height;
