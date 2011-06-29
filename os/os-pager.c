@@ -67,21 +67,32 @@ static void os_pager_finalize (GObject *object);
 static void
 draw_connection (OsPager *pager)
 {
+#ifndef USE_GTK3
   GdkColor color;
+  GtkStyle *style;
+#else
+  GdkRGBA color;
+  GtkStyleContext *style_context;
+#endif
   OsPagerPrivate *priv;
 
   priv = pager->priv;
 
-  /* 0.6 is taken from os_thumb_expose. */
-  color.red   = 65535 * 0.6;
-  color.green = 65535 * 0.6;
-  color.blue  = 65535 * 0.6;
-
 #ifndef USE_GTK3
+  style = gtk_widget_get_style (priv->parent);
+
+  color = style->bg[GTK_STATE_ACTIVE];
+
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->connection_window), &color, FALSE, TRUE);
-#endif
 
   gdk_window_set_background (priv->connection_window, &color);
+#else
+  style_context = gtk_widget_get_style_context (priv->parent);
+
+  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_ACTIVE, &color);
+
+  gdk_window_set_background_rgba (priv->connection_window, &color);
+#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -90,37 +101,62 @@ draw_connection (OsPager *pager)
 static void
 draw_pager (OsPager *pager)
 {
+#ifndef USE_GTK3
   GdkColor c1, c2, color;
   GtkStyle *style;
+#else
+  GdkRGBA c1, c2, color;
+  GtkStyleContext *style_context;
+#endif
   OsPagerPrivate *priv;
   gfloat weight;
 
   priv = pager->priv;
 
+  weight = priv->weight;
+
+#ifndef USE_GTK3
   style = gtk_widget_get_style (priv->parent);
 
   if (priv->active == FALSE)
     {
-      c1 = style->base[GTK_STATE_INSENSITIVE];
-      c2 = style->base[GTK_STATE_SELECTED];
+      c1 = style->bg[GTK_STATE_INSENSITIVE];
+      c2 = style->bg[GTK_STATE_SELECTED];
     }
   else
     {
-      c1 = style->base[GTK_STATE_SELECTED];
-      c2 = style->base[GTK_STATE_INSENSITIVE];
+      c1 = style->bg[GTK_STATE_SELECTED];
+      c2 = style->bg[GTK_STATE_INSENSITIVE];
     }
-
-  weight = priv->weight;
 
   color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
   color.green = weight * c1.green + (1.0 - weight) * c2.green;
   color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
 
-#ifndef USE_GTK3
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->pager_window), &color, FALSE, TRUE);
-#endif
 
   gdk_window_set_background (priv->pager_window, &color);
+#else
+  style_context = gtk_widget_get_style_context (priv->parent);
+
+  if (priv->active == FALSE)
+    {
+      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_INSENSITIVE, &c1);
+      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &c2);
+    }
+  else
+    {
+      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &c1);
+      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_INSENSITIVE, &c2);
+    }
+
+  color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
+  color.green = weight * c1.green + (1.0 - weight) * c2.green;
+  color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
+  color.alpha = weight * c1.alpha + (1.0 - weight) * c2.alpha;
+
+  gdk_window_set_background_rgba (priv->pager_window, &color);
+#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
