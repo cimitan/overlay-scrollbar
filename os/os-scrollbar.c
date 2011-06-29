@@ -2355,6 +2355,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->lock_position = FALSE;
   priv->proximity = FALSE;
   priv->toplevel_button_press = FALSE;
+  priv->side = OS_SIDE_RIGHT;
   priv->source_deactivate_pager_id = 0;
   priv->source_hide_thumb_id = 0;
   priv->source_unlock_thumb_id = 0;
