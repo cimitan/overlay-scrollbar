@@ -83,6 +83,8 @@ draw_connection (OsPager *pager)
 
   gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_ACTIVE, &color);
 
+  color.alpha = 1.0;
+
   gdk_window_set_background_rgba (priv->connection_window, &color);
 #else
   style = gtk_widget_get_style (priv->parent);
@@ -132,7 +134,7 @@ draw_pager (OsPager *pager)
   color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
   color.green = weight * c1.green + (1.0 - weight) * c2.green;
   color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
-  color.alpha = weight * c1.alpha + (1.0 - weight) * c2.alpha;
+  color.alpha = 1.0;
 
   gdk_window_set_background_rgba (priv->pager_window, &color);
 #else
