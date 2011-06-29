@@ -18,7 +18,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 # - interfaces added -> increment AGE
 # - interfaces removed -> AGE = 0
 OS_LT_CURRENT=0
-OS_LT_REV=1
+OS_LT_REV=2
 OS_LT_AGE=0
 OS_LT_VERSION="$OS_LT_CURRENT:$OS_LT_REV:$OS_LT_AGE"
 OS_LT_LDFLAGS="-version-info $OS_LT_VERSION"
