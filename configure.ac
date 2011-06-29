@@ -71,9 +71,9 @@ AC_SUBST(cairo_req, 1.10)
 
 AC_ARG_WITH([gtk],
   [AS_HELP_STRING([--with-gtk],
-    [Which version of gtk to use @<:@default=2@:>@])],
+    [Which version of gtk to use @<:@default=3@:>@])],
   [],
-  [with_gtk=2])
+  [with_gtk=3])
 AS_IF([test "x$with_gtk" = x3],
         [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-3.0 >= $gtk3_req cairo >= $cairo_req)
          AC_SUBST(DEPS_CFLAGS)

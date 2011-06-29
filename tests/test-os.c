@@ -270,6 +270,7 @@ main (int   argc,
   text_view0 = gtk_text_view_new ();
   gtk_scrolled_window_add_with_viewport (GTK_SCROLLED_WINDOW (scrolled_window_text0), text_view0);
   gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window_text0), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_scrolled_window_set_placement (GTK_SCROLLED_WINDOW (scrolled_window_text0), GTK_CORNER_BOTTOM_RIGHT);
 
   /* text_buffer0 */
   text_buffer0 = gtk_text_view_get_buffer(GTK_TEXT_VIEW (text_view0));
