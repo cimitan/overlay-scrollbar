@@ -768,8 +768,8 @@ os_thumb_expose (GtkWidget      *widget,
     }
   else
     {
-      cairo_move_to (cr, 1 + width / 2, 2.5);
-      cairo_line_to (cr, 1 + width / 2, height - 2.5);
+      cairo_move_to (cr, - 1 + width / 2, 2.5);
+      cairo_line_to (cr, - 1 + width / 2, height - 2.5);
       set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
