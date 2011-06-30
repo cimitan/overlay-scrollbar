@@ -2437,12 +2437,6 @@ os_scrollbar_dispose (GObject *object)
           os_workarea = NULL;
         }
 
-      if (priv->window_group != NULL)
-        {
-          g_object_unref (priv->window_group);
-          priv->window_group = NULL;
-        }
-
       gdk_window_remove_filter (gdk_get_default_root_window (),
                                 root_filter_func, NULL);
     }
@@ -2451,6 +2445,12 @@ os_scrollbar_dispose (GObject *object)
     {
       g_object_unref (priv->pager);
       priv->pager = NULL;
+    }
+
+  if (priv->window_group != NULL)
+    {
+      g_object_unref (priv->window_group);
+      priv->window_group = NULL;
     }
 
   swap_adjustment (scrollbar, NULL);
@@ -2809,7 +2809,6 @@ os_scrollbar_unmap (GtkWidget *widget)
 static void
 os_scrollbar_unrealize (GtkWidget *widget)
 {
-  GList *window_group_list;
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
@@ -2827,13 +2826,6 @@ os_scrollbar_unrealize (GtkWidget *widget)
                                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
   os_pager_set_parent (priv->pager, NULL);
-
-  window_group_list = gtk_window_group_list_windows (priv->window_group);
-
-  if (g_list_find (window_group_list, gtk_widget_get_toplevel (widget)))
-    gtk_window_group_remove_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
-
-  g_list_free (window_group_list);
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
 }
