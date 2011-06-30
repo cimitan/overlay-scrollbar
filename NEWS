@@ -1,3 +1,33 @@
+overlay-scrollbar 0.2.3 (June 30, 2011)
+---------------------------------------
+
+* New thumb design.
+
+* Minor bug fixes.
+ 
+
+overlay-scrollbar 0.2.2 (June 29, 2011)
+---------------------------------------
+
+* Scrollbars now use Gtk+ colors.
+
+* Scrollbars are now less rounded.
+
+* Support RTL locales and different scrolled window placements.
+
+* Added tolerance to pageup and down buttons before dragging.
+
+* Adjusted timings before hiding the thumb.
+
+* Shrink the thumb size on small scrolled windows.
+
+* Bugs fixed:
+ 771450 Cannot scroll in small areas
+ 761138 support left (and top) scrollbar placements
+ 782022 Overlay scrollbars do not work in right to left locales
+ 800387 emacs23-x crashing in liboverlay-scrollbar-0.2.so.0
+
+
 overlay-scrollbar 0.2.1 (June 15, 2011)
 ---------------------------------------
 

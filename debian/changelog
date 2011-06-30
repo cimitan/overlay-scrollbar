@@ -1,3 +1,20 @@
+overlay-scrollbar (0.2.3-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - New thumb design.
+    - Scrollbars now use Gtk+ colors.
+    - Scrollbars are now less rounded.
+    - Support RTL locales and different scrolled window placements.
+    - Added tolerance to pageup and down buttons before dragging.
+    - Adjusted timings before hiding the thumb.
+    - Shrink the thumb size on small scrolled windows.
+    - Cannot scroll in small areas (LP: #771450)
+    - support left (and top) scrollbar placements (LP: #761138)
+    - Overlay scrollbars do not work in right to left locales (LP: #782022)
+    - emacs23-x crashing in liboverlay-scrollbar-0.2.so.0 (LP: #800387)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 30 Jun 2011 17:45:35 +0100
+
 overlay-scrollbar (0.2.1-0ubuntu2) oneiric; urgency=low
 
   * debian/control

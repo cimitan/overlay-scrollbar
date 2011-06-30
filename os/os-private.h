@@ -175,6 +175,10 @@ GType      os_thumb_get_type     (void) G_GNUC_CONST;
 
 GtkWidget* os_thumb_new          (GtkOrientation orientation);
 
+void       os_thumb_resize       (OsThumb *thumb,
+                                  gint     width,
+                                  gint     height);
+
 void       os_thumb_set_detached (OsThumb *thumb,
                                   gboolean detached);
 
