@@ -67,6 +67,7 @@ Package: overlay-scrollbar
 Section: libs
 Architecture: all
 Depends: liboverlay-scrollbar-0.2-0,
+         liboverlay-scrollbar3-0.2-0,
          ${misc:Depends}
 Replaces: liboverlay-scrollbar-0.1-0 (<< 0.1.5-0ubuntu2)
 Breaks: liboverlay-scrollbar-0.1-0 (<< 0.1.5-0ubuntu2)

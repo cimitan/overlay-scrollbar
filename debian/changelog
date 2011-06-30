@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.1-0ubuntu2) oneiric; urgency=low
+
+  * debian/control
+    - Added a depends on liboverlay-scrollbar3-0.2-0
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 20 Jun 2011 10:36:32 -0400
+
 overlay-scrollbar (0.2.1-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
