@@ -786,14 +786,14 @@ os_thumb_expose (GtkWidget      *widget,
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI);  
-      draw_arrow (cr, &arrow_color, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction DOWN. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, height - 8.5);
       cairo_rotate (cr, 0);
-      draw_arrow (cr, &arrow_color, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
     }
   else
@@ -802,14 +802,14 @@ os_thumb_expose (GtkWidget      *widget,
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI * 0.5);  
-      draw_arrow (cr, &arrow_color, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction RIGHT. */
       cairo_save (cr);
       cairo_translate (cr, width - 8.5, 8.5);
       cairo_rotate (cr, G_PI * 1.5);
-      draw_arrow (cr, &arrow_color, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
     }
 
