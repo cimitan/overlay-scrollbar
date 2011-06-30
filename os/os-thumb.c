@@ -619,9 +619,8 @@ os_thumb_expose (GtkWidget      *widget,
   GtkStyle *style;
 #endif
   GdkRGBA bg, bg_active, bg_selected;
-  GdkRGBA bg_fill_light, bg_fill_dark;
   GdkRGBA bg_arrow_up, bg_arrow_down;
-  GdkRGBA bg_shadow, bg_frame, bg_inner_frame;
+  GdkRGBA bg_shadow, bg_dark_line, bg_bright_line;
   GdkRGBA arrow_color;
   OsThumb *thumb;
   OsThumbPrivate *priv;
@@ -673,28 +672,15 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_set_line_width (cr, 1.0);
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
-  /* background pattern from left to right */
-  shade_gdk_rgba (&bg, 1.1, &bg_fill_light);
-  shade_gdk_rgba (&bg, 0.9, &bg_fill_dark);
-
+  /* background */
   draw_round_rect (cr, 0, 0, width, height, radius);
 
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    pat = cairo_pattern_create_linear (0, 0, width, 0);
-  else
-    pat = cairo_pattern_create_linear (0, 0, 0, height);
-
-  pattern_add_gdk_rgba_stop (pat, 0.0, &bg_fill_light, 1.0);
-  pattern_add_gdk_rgba_stop (pat, 1.0, &bg_fill_dark, 1.0);
-  cairo_set_source (cr, pat);
-  cairo_pattern_destroy (pat);
-  cairo_fill (cr);
+  set_source_gdk_rgba (cr, &bg, 1.0);
+  cairo_fill_preserve (cr);
 
   /* background pattern from top to bottom */
   shade_gdk_rgba (&bg, 1.3, &bg_arrow_up);
   shade_gdk_rgba (&bg, 0.7, &bg_arrow_down);
-
-  draw_round_rect (cr, 0, 0, width, height, radius);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     pat = cairo_pattern_create_linear (0, 0, 0, height);
@@ -706,25 +692,25 @@ os_thumb_expose (GtkWidget      *widget,
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
         {
-          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.5);
-          pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_down, 0.1);
-          pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.6);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
           pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.5);
         }
       else
         {
           pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.5);
-          pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_up, 0.1);
-          pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_down, 0.1);
-          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.8);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_up, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 1.0);
         }
     }
   else
     {
-      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.5);
-      pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_up, 0.1);
-      pattern_add_gdk_rgba_stop (pat, 0.5, &bg_arrow_down, 0.1);
-      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.5);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.8);
+      pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_up, 0.1);
+      pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.8);
     }
   cairo_set_source (cr, pat);
   cairo_pattern_destroy (pat);
@@ -732,7 +718,7 @@ os_thumb_expose (GtkWidget      *widget,
   if (priv->motion_notify_event)
     {
       cairo_fill_preserve (cr);
-      set_source_gdk_rgba (cr, &bg_arrow_down, 0.2);
+      set_source_gdk_rgba (cr, &bg_arrow_down, 0.3);
       cairo_fill (cr);
     }
   else
@@ -754,47 +740,42 @@ os_thumb_expose (GtkWidget      *widget,
   /* 1px subtle shadow around the background */
   shade_gdk_rgba (&bg, 0.2, &bg_shadow);
 
-  draw_round_rect (cr, 1, 1, width - 2, height - 2, radius - 1);
-  set_source_gdk_rgba (cr, &bg_shadow, 0.1);
+  draw_round_rect (cr, 1, 1, width - 2, height - 2, radius);
+  set_source_gdk_rgba (cr, &bg_shadow, 0.26);
   cairo_stroke (cr);
 
   /* 1px frame around the background */
-  shade_gdk_rgba (&bg, 0.65, &bg_frame);
+  shade_gdk_rgba (&bg, 0.6, &bg_dark_line);
 
-  draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 3);
-  set_source_gdk_rgba (cr, &bg_frame, 0.6);
+  draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 1);
+  set_source_gdk_rgba (cr, &bg_dark_line, 0.26);
   cairo_stroke (cr);
 
-  /* 1px inner frame around the background */
-  shade_gdk_rgba (&bg, 1.1, &bg_inner_frame);
-
-  draw_round_rect (cr, 3, 3, width - 6, height - 6, radius - 4);
-  set_source_gdk_rgba (cr, &bg_inner_frame, 0.3);
-  cairo_stroke (cr);
+  shade_gdk_rgba (&bg, 1.2, &bg_bright_line);
 
   /* separators between the two steppers */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       cairo_move_to (cr, 2.5, - 1 + height / 2);
       cairo_line_to (cr, width - 2.5, - 1 + height / 2);
-      set_source_gdk_rgba (cr, &bg_frame, 0.4);
+      set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
       cairo_move_to (cr, 2.5, height / 2);
       cairo_line_to (cr, width - 2.5, height / 2);
-      set_source_gdk_rgba (cr, &bg_inner_frame, 0.2);
+      set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
   else
     {
-      cairo_move_to (cr, 1 + width / 2, 2.5);
-      cairo_line_to (cr, 1 + width / 2, height - 2.5);
-      set_source_gdk_rgba (cr, &bg_frame, 0.4);
+      cairo_move_to (cr, - 1 + width / 2, 2.5);
+      cairo_line_to (cr, - 1 + width / 2, height - 2.5);
+      set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
       cairo_move_to (cr, width / 2, 2.5);
       cairo_line_to (cr, width / 2, height - 2.5);
-      set_source_gdk_rgba (cr, &bg_inner_frame, 0.2);
+      set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
 
@@ -805,14 +786,14 @@ os_thumb_expose (GtkWidget      *widget,
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI);  
-      draw_arrow (cr, &arrow_color, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction DOWN. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, height - 8.5);
       cairo_rotate (cr, 0);
-      draw_arrow (cr, &arrow_color, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
     }
   else
@@ -821,14 +802,14 @@ os_thumb_expose (GtkWidget      *widget,
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI * 0.5);  
-      draw_arrow (cr, &arrow_color, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction RIGHT. */
       cairo_save (cr);
       cairo_translate (cr, width - 8.5, 8.5);
       cairo_rotate (cr, G_PI * 1.5);
-      draw_arrow (cr, &arrow_color, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
     }
 
