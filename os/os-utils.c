@@ -41,7 +41,6 @@ os_utils_is_blacklisted (const gchar *program)
     "firefox-bin",
     "gnucash",
     "gvim",
-    "meld",
     "pgadmin3",
     "soffice",
     "synaptic",
@@ -64,10 +63,6 @@ os_utils_is_blacklisted (const gchar *program)
       return TRUE;
     }
   g_module_close (module);
-
-  /* Black list RTL languages, not supported yet */
-  if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
-    return TRUE;
 
   for (i = 0; i < nr_programs; i++)
     if (g_strcmp0 (blacklist[i], program) == 0)

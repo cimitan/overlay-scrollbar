@@ -37,11 +37,20 @@
 /* Timeout before the fade-out. */
 #define TIMEOUT_FADE_OUT 250
 
-/* Number of tolerance pixels. */
+/* Number of tolerance pixels, before hiding the thumb. */
 #define TOLERANCE_PIXELS 3
 
 /* Thumb radius in pixels (higher values are automatically clamped). */
-#define THUMB_RADIUS 9
+#define THUMB_RADIUS 3
+
+#ifndef USE_GTK3
+typedef struct {
+  gdouble red;
+  gdouble green;
+  gdouble blue;
+  gdouble alpha;
+} GdkRGBA;
+#endif
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
@@ -142,7 +151,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-#if USE_GTK3
+#ifdef USE_GTK3
   widget_class->draw                 = os_thumb_draw;
 #else
   widget_class->expose_event         = os_thumb_expose;
@@ -310,13 +319,33 @@ os_thumb_composited_changed (GtkWidget *widget)
   gtk_widget_queue_draw (widget);
 }
 
+/* simplified wrapper of cairo_pattern_add_color_stop_rgba */
+static void
+pattern_add_gdk_rgba_stop (cairo_pattern_t *pat,
+                           gdouble          stop,
+                           const GdkRGBA   *color,
+                           gdouble          alpha)
+{
+  cairo_pattern_add_color_stop_rgba (pat, stop, color->red, color->green, color->blue, alpha);
+}
+
+/* simplified wrapper of cairo_set_source_rgba */
+static void
+set_source_gdk_rgba (cairo_t       *cr,
+                     const GdkRGBA *color,
+                     gdouble        alpha)
+{
+  cairo_set_source_rgba (cr, color->red, color->green, color->blue, alpha);
+}
+
 /* draw an arrow using cairo */
 static void
-draw_arrow (cairo_t *cr,
-            gdouble  x,
-            gdouble  y,
-            gdouble  width,
-            gdouble  height)
+draw_arrow (cairo_t       *cr,
+            const GdkRGBA *color,
+            gdouble        x,
+            gdouble        y,
+            gdouble        width,
+            gdouble        height)
 {
   cairo_save (cr);
 
@@ -326,10 +355,10 @@ draw_arrow (cairo_t *cr,
   cairo_line_to (cr, width / 2, -height / 2);
   cairo_close_path (cr);
 
-  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 0.75);
+  set_source_gdk_rgba (cr, color, 0.75);
   cairo_fill_preserve (cr);
 
-  cairo_set_source_rgba (cr, 0.3, 0.3, 0.3, 1.0);
+  set_source_gdk_rgba (cr, color, 1.0);
   cairo_stroke (cr);
 
   cairo_restore (cr);
@@ -360,48 +389,279 @@ draw_round_rect (cairo_t *cr,
   cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
 }
 
+/* convert rgb to hls */
+static void
+rgb_to_hls (gdouble *r,
+            gdouble *g,
+            gdouble *b)
+{
+  gdouble min;
+  gdouble max;
+  gdouble red;
+  gdouble green;
+  gdouble blue;
+  gdouble h, l, s;
+  gdouble delta;
+
+  h = 0;
+
+  red = *r;
+  green = *g;
+  blue = *b;
+
+  if (red > green)
+    {
+      if (red > blue)
+        max = red;
+      else
+        max = blue;
+
+      if (green < blue)
+        min = green;
+      else
+        min = blue;
+    }
+  else
+    {
+      if (green > blue)
+        max = green;
+      else
+        max = blue;
+
+      if (red < blue)
+        min = red;
+      else
+        min = blue;
+    }
+
+  l = (max + min) / 2;
+  if (fabs (max - min) < 0.0001)
+    {
+      h = 0;
+      s = 0;
+    }
+  else
+    {
+      if (l <= 0.5)
+        s = (max - min) / (max + min);
+      else
+        s = (max - min) / (2 - max - min);
+
+      delta = max - min;
+      if (red == max)
+        h = (green - blue) / delta;
+      else if (green == max)
+        h = 2 + (blue - red) / delta;
+      else if (blue == max)
+        h = 4 + (red - green) / delta;
+
+      h *= 60;
+      if (h < 0.0)
+        h += 360;
+    }
+
+  *r = h;
+  *g = l;
+  *b = s;
+}
+
+/* convert hls to rgb */
+static void
+hls_to_rgb (gdouble *h,
+            gdouble *l,
+            gdouble *s)
+{
+  gdouble hue;
+  gdouble lightness;
+  gdouble saturation;
+  gdouble m1, m2;
+  gdouble r, g, b;
+
+  lightness = *l;
+  saturation = *s;
+
+  if (lightness <= 0.5)
+    m2 = lightness * (1 + saturation);
+  else
+    m2 = lightness + saturation - lightness * saturation;
+
+  m1 = 2 * lightness - m2;
+
+  if (saturation == 0)
+    {
+      *h = lightness;
+      *l = lightness;
+      *s = lightness;
+    }
+  else
+    {
+      hue = *h + 120;
+      while (hue > 360)
+        hue -= 360;
+      while (hue < 0)
+        hue += 360;
+
+      if (hue < 60)
+        r = m1 + (m2 - m1) * hue / 60;
+      else if (hue < 180)
+        r = m2;
+      else if (hue < 240)
+        r = m1 + (m2 - m1) * (240 - hue) / 60;
+      else
+        r = m1;
+
+      hue = *h;
+      while (hue > 360)
+        hue -= 360;
+      while (hue < 0)
+        hue += 360;
+
+      if (hue < 60)
+        g = m1 + (m2 - m1) * hue / 60;
+      else if (hue < 180)
+        g = m2;
+      else if (hue < 240)
+        g = m1 + (m2 - m1) * (240 - hue) / 60;
+      else
+        g = m1;
+
+      hue = *h-120;
+      while (hue > 360)
+        hue -= 360;
+      while (hue < 0)
+        hue += 360;
+
+      if (hue < 60)
+        b = m1 + (m2 - m1) * hue / 60;
+      else if (hue < 180)
+        b = m2;
+      else if (hue < 240)
+        b = m1 + (m2 - m1) * (240 - hue) / 60;
+      else
+        b = m1;
+
+      *h = r;
+      *l = g;
+      *s = b;
+    }
+}
+
+/* shade a GdkRGBA color */
+static void
+shade_gdk_rgba (const GdkRGBA *a,
+                gfloat         k,
+                GdkRGBA       *b)
+{
+  gdouble red;
+  gdouble green;
+  gdouble blue;
+
+  red   = a->red;
+  green = a->green;
+  blue  = a->blue;
+
+  if (k == 1.0)
+    {
+      b->red = red;
+      b->green = green;
+      b->blue = blue;
+      return;
+    }
+
+  rgb_to_hls (&red, &green, &blue);
+
+  green *= k;
+  if (green > 1.0)
+    green = 1.0;
+  else if (green < 0.0)
+    green = 0.0;
+
+  blue *= k;
+  if (blue > 1.0)
+    blue = 1.0;
+  else if (blue < 0.0)
+    blue = 0.0;
+
+  hls_to_rgb (&red, &green, &blue);
+
+  b->red = red;
+  b->green = green;
+  b->blue = blue;
+  b->alpha = a->alpha;
+}
+
+#ifndef USE_GTK3
+/* convert a GdkColor to GdkRGBA */
+static void
+convert_gdk_color_to_gdk_rgba (GdkColor *color,
+                               GdkRGBA  *rgba)
+{  
+  rgba->red = (gdouble) color->red / (gdouble) 65535;
+  rgba->green = (gdouble) color->green / (gdouble) 65535;
+  rgba->blue = (gdouble) color->blue / (gdouble) 65535;
+
+  rgba->alpha = 1.0;
+}
+#endif
+
 static gboolean
 #ifdef USE_GTK3
 os_thumb_draw (GtkWidget *widget,
                cairo_t   *cr)
 {
+  GtkStyleContext *style_context;
 #else
 os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
   cairo_t *cr;
-#endif
   GtkStyle *style;
+#endif
+  GdkRGBA bg, bg_active, bg_selected;
+  GdkRGBA bg_arrow_up, bg_arrow_down;
+  GdkRGBA bg_shadow, bg_dark_line, bg_bright_line;
+  GdkRGBA arrow_color;
   OsThumb *thumb;
   OsThumbPrivate *priv;
   cairo_pattern_t *pat;
   gint width, height;
   gint radius;
 
-  style = gtk_widget_get_style (widget);
-
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
   radius = priv->can_rgba ? THUMB_RADIUS : 0;
 
-#if USE_GTK3
+#ifdef USE_GTK3
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
+
+  style_context = gtk_widget_get_style_context (widget);
+
+  gtk_style_context_get_background_color (style_context, gtk_widget_get_state_flags (widget), &bg);
+  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_ACTIVE, &bg_active);
+  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &bg_selected);
+  gtk_style_context_get_color (style_context, gtk_widget_get_state_flags (widget), &arrow_color);
 #else
   gtk_widget_get_allocation (widget, &allocation);
  
   width = allocation.width;
   height = allocation.height;
 
+  style = gtk_widget_get_style (widget);
+
+  convert_gdk_color_to_gdk_rgba (&style->bg[gtk_widget_get_state (widget)], &bg);
+  convert_gdk_color_to_gdk_rgba (&style->bg[GTK_STATE_ACTIVE], &bg_active);
+  convert_gdk_color_to_gdk_rgba (&style->bg[GTK_STATE_SELECTED], &bg_selected);
+  convert_gdk_color_to_gdk_rgba (&style->fg[gtk_widget_get_state (widget)], &arrow_color);
+
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
 #endif
 
   cairo_save (cr);
 
-  cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-  cairo_set_source_rgba (cr, 0, 0, 0, 0);
+  cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
   cairo_paint (cr);
 
   cairo_save (cr);
@@ -409,23 +669,18 @@ os_thumb_expose (GtkWidget      *widget,
   width--;
   height--;
 
-  cairo_set_line_width (cr, 1);
+  cairo_set_line_width (cr, 1.0);
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
+  /* background */
   draw_round_rect (cr, 0, 0, width, height, radius);
 
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    pat = cairo_pattern_create_linear (0, 0, width, 0);
-  else
-    pat = cairo_pattern_create_linear (0, 0, 0, height);
+  set_source_gdk_rgba (cr, &bg, 1.0);
+  cairo_fill_preserve (cr);
 
-  cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.95, 0.95, 0.95, 1.0);
-  cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 1.0);
-  cairo_set_source (cr, pat);
-  cairo_pattern_destroy (pat);
-  cairo_fill (cr);
-
-  draw_round_rect (cr, 0, 0, width, height, radius);
+  /* background pattern from top to bottom */
+  shade_gdk_rgba (&bg, 1.3, &bg_arrow_up);
+  shade_gdk_rgba (&bg, 0.7, &bg_arrow_down);
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     pat = cairo_pattern_create_linear (0, 0, 0, height);
@@ -437,25 +692,25 @@ os_thumb_expose (GtkWidget      *widget,
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
         {
-          cairo_pattern_add_color_stop_rgba (pat, 0.0, 0.8, 0.8, 0.8, 0.8);
-          cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
-          cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
-          cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 0.8);
+          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.6);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.5);
         }
       else
         {
-          cairo_pattern_add_color_stop_rgba (pat, 0.0, 1.0, 1.0, 1.0, 0.8);
-          cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
-          cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
-          cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.6, 0.6, 0.6, 0.8);
+          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.5);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_up, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 1.0);
         }
     }
   else
     {
-      cairo_pattern_add_color_stop_rgba (pat, 0.0, 1.0, 1.0, 1.0, 0.8);
-      cairo_pattern_add_color_stop_rgba (pat, 0.49, 1.0, 1.0, 1.0, 0.0);
-      cairo_pattern_add_color_stop_rgba (pat, 0.49, 0.8, 0.8, 0.8, 0.5);
-      cairo_pattern_add_color_stop_rgba (pat, 1.0, 0.8, 0.8, 0.8, 0.8);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.8);
+      pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_up, 0.1);
+      pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.8);
     }
   cairo_set_source (cr, pat);
   cairo_pattern_destroy (pat);
@@ -463,74 +718,82 @@ os_thumb_expose (GtkWidget      *widget,
   if (priv->motion_notify_event)
     {
       cairo_fill_preserve (cr);
-      cairo_set_source_rgba (cr, 0.5, 0.5, 0.5, 0.2);
+      set_source_gdk_rgba (cr, &bg_arrow_down, 0.3);
       cairo_fill (cr);
     }
   else
     cairo_fill (cr);
 
+  /* 2px fat border around the thumb */
+  cairo_save (cr);
+
   cairo_set_line_width (cr, 2.0);
   draw_round_rect (cr, 0.5, 0.5, width - 1, height - 1, radius - 1);
   if (!priv->detached)
-    cairo_set_source_rgba (cr, style->bg[GTK_STATE_SELECTED].red/65535.0,
-                               style->bg[GTK_STATE_SELECTED].green/65535.0,
-                               style->bg[GTK_STATE_SELECTED].blue/65535.0, 1.0f);
+    set_source_gdk_rgba (cr, &bg_selected, 1.0);
   else
-    cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 1.0f);
+    set_source_gdk_rgba (cr, &bg_active, 1.0);
   cairo_stroke (cr);
 
-  cairo_set_line_width (cr, 1.0);
-  draw_round_rect (cr, 1, 1, width - 2, height - 2, radius - 1);
-  cairo_set_source_rgba (cr, 0.1, 0.1, 0.1, 0.1);
+  cairo_restore (cr);
+
+  /* 1px subtle shadow around the background */
+  shade_gdk_rgba (&bg, 0.2, &bg_shadow);
+
+  draw_round_rect (cr, 1, 1, width - 2, height - 2, radius);
+  set_source_gdk_rgba (cr, &bg_shadow, 0.26);
   cairo_stroke (cr);
 
-  draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 3);
-  cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.5);
+  /* 1px frame around the background */
+  shade_gdk_rgba (&bg, 0.6, &bg_dark_line);
+
+  draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 1);
+  set_source_gdk_rgba (cr, &bg_dark_line, 0.26);
   cairo_stroke (cr);
 
-  draw_round_rect (cr, 3, 3, width - 6, height - 6, radius - 4);
-  cairo_set_source_rgba (cr, 1, 1, 1, 0.2);
-  cairo_stroke (cr);
+  shade_gdk_rgba (&bg, 1.2, &bg_bright_line);
 
+  /* separators between the two steppers */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       cairo_move_to (cr, 2.5, - 1 + height / 2);
       cairo_line_to (cr, width - 2.5, - 1 + height / 2);
-      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
+      set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
       cairo_move_to (cr, 2.5, height / 2);
       cairo_line_to (cr, width - 2.5, height / 2);
-      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
   else
     {
-      cairo_move_to (cr, 1 + width / 2, 2.5);
-      cairo_line_to (cr, 1 + width / 2, height - 2.5);
-      cairo_set_source_rgba (cr, 0.6, 0.6, 0.6, 0.4);
+      cairo_move_to (cr, - 1 + width / 2, 2.5);
+      cairo_line_to (cr, - 1 + width / 2, height - 2.5);
+      set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
       cairo_move_to (cr, width / 2, 2.5);
       cairo_line_to (cr, width / 2, height - 2.5);
-      cairo_set_source_rgba (cr, 1, 1, 1, 0.5);
+      set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
 
+  /* arrows */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       /* direction UP. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI);  
-      draw_arrow (cr, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction DOWN. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, height - 8.5);
       cairo_rotate (cr, 0);
-      draw_arrow (cr, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
     }
   else
@@ -539,14 +802,14 @@ os_thumb_expose (GtkWidget      *widget,
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI * 0.5);  
-      draw_arrow (cr, -0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
 
       /* direction RIGHT. */
       cairo_save (cr);
       cairo_translate (cr, width - 8.5, 8.5);
       cairo_rotate (cr, G_PI * 1.5);
-      draw_arrow (cr, 0.5, 0, 4, 3);
+      draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
     }
 
@@ -669,7 +932,7 @@ static void
 os_thumb_screen_changed (GtkWidget *widget,
                          GdkScreen *old_screen)
 {
-#if USE_GTK3
+#ifdef USE_GTK3
   GdkScreen *screen;
   GdkVisual *visual;
 
@@ -852,6 +1115,24 @@ GtkWidget*
 os_thumb_new (GtkOrientation orientation)
 {
   return g_object_new (OS_TYPE_THUMB, "orientation", orientation, NULL);
+}
+
+/**
+ * os_thumb_resize:
+ * @thumb: a #OsThumb
+ * @width: width in pixels
+ * @height: height in pixels
+ *
+ * Resize the thumb.
+ **/
+void
+os_thumb_resize (OsThumb *thumb,
+                 gint     width,
+                 gint     height)
+{
+  g_return_if_fail (OS_THUMB (thumb));
+
+  gtk_window_resize (GTK_WINDOW (thumb), width, height);
 }
 
 /**

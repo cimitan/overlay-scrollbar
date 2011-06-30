@@ -2,7 +2,7 @@ AC_PREREQ(2.63)
 
 # Package
 
-AC_INIT([overlay-scrollbar],[0.2.1],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
+AC_INIT([overlay-scrollbar],[0.2.3],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
 AC_CONFIG_SRCDIR([os/os-scrollbar.h])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
@@ -18,7 +18,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 # - interfaces added -> increment AGE
 # - interfaces removed -> AGE = 0
 OS_LT_CURRENT=0
-OS_LT_REV=1
+OS_LT_REV=3
 OS_LT_AGE=0
 OS_LT_VERSION="$OS_LT_CURRENT:$OS_LT_REV:$OS_LT_AGE"
 OS_LT_LDFLAGS="-version-info $OS_LT_VERSION"
@@ -71,9 +71,9 @@ AC_SUBST(cairo_req, 1.10)
 
 AC_ARG_WITH([gtk],
   [AS_HELP_STRING([--with-gtk],
-    [Which version of gtk to use @<:@default=2@:>@])],
+    [Which version of gtk to use @<:@default=3@:>@])],
   [],
-  [with_gtk=2])
+  [with_gtk=3])
 AS_IF([test "x$with_gtk" = x3],
         [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-3.0 >= $gtk3_req cairo >= $cairo_req)
          AC_SUBST(DEPS_CFLAGS)

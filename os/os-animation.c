@@ -143,7 +143,7 @@ os_animation_is_running (OsAnimation *animation)
 {
   OsAnimationPrivate *priv;
 
-  g_return_if_fail (animation != NULL);
+  g_return_val_if_fail (animation != NULL, FALSE);
 
   priv = animation->priv;
 
