@@ -1284,6 +1284,7 @@ static void
 page_down (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
+  gdouble new_value;
 
   priv = scrollbar->priv;
 
@@ -1292,11 +1293,15 @@ page_down (OsScrollbar *scrollbar)
   if (os_animation_is_running (priv->animation))
     {
       os_animation_stop (priv->animation, NULL);
-      priv->value += gtk_adjustment_get_page_increment (priv->adjustment);
+      new_value = priv->value + gtk_adjustment_get_page_increment (priv->adjustment);
     }
   else
-      priv->value = gtk_adjustment_get_value (priv->adjustment) +
-                    gtk_adjustment_get_page_increment (priv->adjustment);
+      new_value = gtk_adjustment_get_value (priv->adjustment) +
+                  gtk_adjustment_get_page_increment (priv->adjustment);
+
+  priv->value = CLAMP (new_value,
+                       gtk_adjustment_get_lower (priv->adjustment),
+                       gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
   /* start the scroll animation */
   os_animation_start (priv->animation);
@@ -1307,6 +1312,7 @@ static void
 page_up (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
+  gdouble new_value;
 
   priv = scrollbar->priv;
 
@@ -1315,11 +1321,15 @@ page_up (OsScrollbar *scrollbar)
   if (os_animation_is_running (priv->animation))
     {
       os_animation_stop (priv->animation, NULL);
-      priv->value -= gtk_adjustment_get_page_increment (priv->adjustment);
+      new_value = priv->value - gtk_adjustment_get_page_increment (priv->adjustment);
     }
   else
-      priv->value = gtk_adjustment_get_value (priv->adjustment) -
-                    gtk_adjustment_get_page_increment (priv->adjustment);
+      new_value = gtk_adjustment_get_value (priv->adjustment) -
+                  gtk_adjustment_get_page_increment (priv->adjustment);
+
+  priv->value = CLAMP (new_value,
+                       gtk_adjustment_get_lower (priv->adjustment),
+                       gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
   /* start the scroll animation */
   os_animation_start (priv->animation);
