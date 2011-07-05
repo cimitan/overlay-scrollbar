@@ -39,6 +39,12 @@
 /* Size of the proximity effect in pixels. */
 #define PROXIMITY_SIZE 30
 
+/* Rate of the scroll */
+#define RATE_SCROLL 30
+
+/* Duration of the scroll */
+#define DURATION_SCROLL 1000
+
 /* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
 
@@ -82,6 +88,7 @@ struct _OsScrollbarPrivate
   GtkAdjustment *adjustment;
   GtkOrientation orientation;
   GtkWindowGroup *window_group;
+  OsAnimation *animation;
   OsPager *pager;
   OsSide side;
   gboolean button_press_event;
@@ -97,6 +104,7 @@ struct _OsScrollbarPrivate
   gboolean lock_position;
   gboolean proximity;
   gboolean toplevel_button_press;
+  gdouble value;
   gint win_x;
   gint win_y;
   gint slide_initial_slider_position;
@@ -738,6 +746,46 @@ notify_orientation_cb (GObject *object,
   swap_thumb (scrollbar, os_thumb_new (priv->orientation));
 }
 
+/* callback called by the set-scroll animation */
+static void
+set_scroll_cb (gfloat   weight,
+               gpointer user_data)
+{
+  gdouble new_value;
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  if (weight < 1.0f)
+    {
+      gdouble current_value;
+      gdouble diff;
+
+      current_value = gtk_adjustment_get_value (priv->adjustment);
+      diff = priv->value - current_value;
+      new_value = current_value + diff * weight;
+    }
+  else
+    new_value = priv->value;
+
+  gtk_adjustment_set_value (priv->adjustment, new_value);
+}
+
+/* stop_func called by the set-scroll animation */
+static void
+set_scroll_stop_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  priv->value = gtk_adjustment_get_value (priv->adjustment);
+}
+
 /* swap adjustment pointer */
 static void
 swap_adjustment (OsScrollbar   *scrollbar,
@@ -1231,6 +1279,52 @@ thumb_button_press_event_cb (GtkWidget      *widget,
   return FALSE;
 }
 
+/* page down, with animation */
+static void
+page_down (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  /* if a page_up or down is running,
+   * stop the animation and add the new value */
+  if (os_animation_is_running (priv->animation))
+    {
+      os_animation_stop (priv->animation, NULL);
+      priv->value += gtk_adjustment_get_page_increment (priv->adjustment);
+    }
+  else
+      priv->value = gtk_adjustment_get_value (priv->adjustment) +
+                    gtk_adjustment_get_page_increment (priv->adjustment);
+
+  /* start the scroll animation */
+  os_animation_start (priv->animation);
+}
+
+/* page up, with animation */
+static void
+page_up (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  /* if a page_up or down is running,
+   * stop the animation and subtract the new value */
+  if (os_animation_is_running (priv->animation))
+    {
+      os_animation_stop (priv->animation, NULL);
+      priv->value -= gtk_adjustment_get_page_increment (priv->adjustment);
+    }
+  else
+      priv->value = gtk_adjustment_get_value (priv->adjustment) -
+                    gtk_adjustment_get_page_increment (priv->adjustment);
+
+  /* start the scroll animation */
+  os_animation_start (priv->animation);
+}
+
 static gboolean
 thumb_button_release_event_cb (GtkWidget      *widget,
                                GdkEventButton *event,
@@ -1253,16 +1347,16 @@ thumb_button_release_event_cb (GtkWidget      *widget,
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
                   if (priv->pointer_y < priv->slider.height / 2)
-                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_UP);
+                    page_up (scrollbar);
                   else
-                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_DOWN);
+                    page_down (scrollbar);
                 }
               else
                 {
                   if (priv->pointer_x < priv->slider.width / 2)
-                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_UP);
+                    page_up (scrollbar);
                   else
-                    g_signal_emit_by_name (GTK_RANGE (scrollbar), "move-slider", GTK_SCROLL_PAGE_DOWN);
+                    page_down (scrollbar);
                 }
 
               priv->value_changed_event = TRUE;
@@ -1457,7 +1551,7 @@ coord_to_value (OsScrollbar *scrollbar,
   return value;
 }
 
-/* from pointer movement, set GtkRange value */
+/* from pointer movement, set adjustment value */
 static void
 capture_movement (OsScrollbar *scrollbar,
                   gint         mouse_x,
@@ -1480,6 +1574,46 @@ capture_movement (OsScrollbar *scrollbar,
   new_value = coord_to_value (scrollbar, c);
 
   gtk_adjustment_set_value (priv->adjustment, new_value);
+}
+
+/* from pointer movement, store the right adjustment value */
+static void
+capture_movement_for_animation (OsScrollbar *scrollbar,
+                                gint         mouse_x,
+                                gint         mouse_y)
+{
+  OsScrollbarPrivate *priv;
+  gint delta;
+  gint c;
+  gdouble current_value, old_value, new_value;
+
+  priv = scrollbar->priv;
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    delta = mouse_y - priv->slide_initial_coordinate;
+  else
+    delta = mouse_x - priv->slide_initial_coordinate;
+
+  c = priv->slide_initial_slider_position + delta;
+
+  current_value = gtk_adjustment_get_value (priv->adjustment);
+  old_value = priv->value;
+  new_value = coord_to_value (scrollbar, c);
+
+  /* stop the animation if we are connecting. */
+  if ((current_value > old_value &&
+       new_value > current_value) ||
+      (current_value < old_value &&
+       new_value < current_value))
+    {
+      os_animation_stop (priv->animation, NULL);
+
+      gtk_adjustment_set_value (priv->adjustment, new_value);
+    }
+
+  /* update the adjustment value for the reconnect animation:
+   * set_scroll_cb could be running at that time. */
+  priv->value = new_value;
 }
 
 static gboolean
@@ -1516,7 +1650,46 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               priv->slide_initial_coordinate = event->x_root;
             }
 
+          /* stop the scroll animation if it's running. */
+          os_animation_stop (priv->animation, set_scroll_stop_cb);
+
+          /* set the initial adjustment value required for reconnect. */
+          capture_movement_for_animation (scrollbar, event->x_root, event->y_root);
+
+          /* animate the reconnect, using the same animation object. */
+          os_animation_start (priv->animation);
+
           priv->value_changed_event = FALSE;
+        }
+
+      /* only the reconnect animation can be running at that time. */
+      if (os_animation_is_running (priv->animation))
+        {
+          /* update the adjustment value. */
+          capture_movement_for_animation (scrollbar, event->x_root, event->y_root);
+
+          /* limit x and y within the thumb allocation. */
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              x = priv->win_x;
+              y = CLAMP (event->y_root - priv->pointer_y,
+                         priv->win_y,
+                         priv->win_y + priv->thumb_all.height);
+            }
+          else
+            {
+              x = CLAMP (event->x_root - priv->pointer_x,
+                         priv->win_x,
+                         priv->win_x + priv->thumb_all.width);
+              y = priv->win_y;
+            }
+
+          move_thumb (scrollbar, x, y);
+
+          /* return if the reconnect animation is still running after
+           * capture_movement_for_animation. */
+          if (os_animation_is_running (priv->animation))
+            return FALSE;
         }
 
       priv->motion_notify_event = TRUE;
@@ -1527,6 +1700,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         {
           if (priv->overlay.height > priv->slider.height)
             {
+              /* limit x and y within the overlay. */
               x = priv->win_x;
               y = CLAMP (event->y_root - priv->pointer_y,
                          priv->win_y + priv->overlay.y,
@@ -1553,6 +1727,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         {
           if (priv->overlay.width > priv->slider.width)
             {
+              /* limit x and y within the overlay. */
               x = CLAMP (event->x_root - priv->pointer_x,
                          priv->win_x + priv->overlay.x,
                          priv->win_x + priv->overlay.x + priv->overlay.width - priv->slider.width);
@@ -2393,6 +2568,10 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->window_group = gtk_window_group_new ();
 
+  priv->animation = os_animation_new (RATE_SCROLL, DURATION_SCROLL,
+                                      set_scroll_cb, NULL, scrollbar);
+  priv->value = 0;
+
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
                     G_CALLBACK (notify_adjustment_cb), NULL);
 
@@ -2439,6 +2618,12 @@ os_scrollbar_dispose (GObject *object)
 
       gdk_window_remove_filter (gdk_get_default_root_window (),
                                 root_filter_func, NULL);
+    }
+
+  if (priv->animation != NULL)
+    {
+      g_object_unref (priv->animation);
+      priv->animation = NULL;
     }
 
   if (priv->pager != NULL)
