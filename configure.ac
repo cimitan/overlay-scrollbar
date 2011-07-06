@@ -2,7 +2,7 @@ AC_PREREQ(2.63)
 
 # Package
 
-AC_INIT([overlay-scrollbar],[0.2.3],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
+AC_INIT([overlay-scrollbar],[0.2.3.1],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
 AC_CONFIG_SRCDIR([os/os-scrollbar.h])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
