@@ -31,6 +31,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/XInput2.h>
 #include "math.h"
+#include <stdlib.h>
 
 /* Size of the pager in pixels. */
 #define PAGER_SIZE 3
@@ -55,6 +56,9 @@
 
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
+
+/* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
+#define TOLERANCE_PIXELS 2
 
 typedef enum
 {
@@ -1598,6 +1602,11 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
        * update the visual connection when reaching an edge. */
       if (priv->value_changed_event)
         {
+          /* return if the mouse movement is small. */
+          if (abs (priv->pointer_x - event->x) <= TOLERANCE_PIXELS &&
+              abs (priv->pointer_y - event->y) <= TOLERANCE_PIXELS)
+            return FALSE;
+
           priv->detached_scroll = TRUE;
 
           /* stop the scroll animation if it's running. */
