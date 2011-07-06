@@ -103,6 +103,7 @@ struct _OsScrollbarPrivate
   gboolean internal;
   gboolean lock_position;
   gboolean proximity;
+  gboolean reconnect;
   gboolean toplevel_button_press;
   gdouble value;
   gint win_x;
@@ -1259,6 +1260,7 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
+          priv->reconnect = FALSE;
 
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1352,7 +1354,7 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
-          if (!priv->motion_notify_event)
+          if (!priv->motion_notify_event && !priv->reconnect)
             {
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
@@ -1670,6 +1672,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           os_animation_start (priv->animation);
 
           priv->value_changed_event = FALSE;
+          priv->reconnect = TRUE;
         }
 
       /* only the reconnect animation can be running at that time. */
@@ -1703,6 +1706,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         }
 
       priv->motion_notify_event = TRUE;
+      priv->reconnect = FALSE;
 
       capture_movement (scrollbar, event->x_root, event->y_root);
 
@@ -1824,6 +1828,8 @@ thumb_unmap_cb (GtkWidget *widget,
   priv->button_press_event = FALSE;
   priv->motion_notify_event = FALSE;
   priv->enter_notify_event = FALSE;
+
+  priv->reconnect = FALSE;
 
   os_pager_set_detached (priv->pager, FALSE);
 }
@@ -2568,6 +2574,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->internal = FALSE;
   priv->lock_position = FALSE;
   priv->proximity = FALSE;
+  priv->reconnect = FALSE;
   priv->toplevel_button_press = FALSE;
   priv->side = OS_SIDE_RIGHT;
   priv->source_deactivate_pager_id = 0;
