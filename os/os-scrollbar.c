@@ -1255,7 +1255,7 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           priv->button_press_event = TRUE;
           priv->motion_notify_event = FALSE;
- 
+
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
               priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
