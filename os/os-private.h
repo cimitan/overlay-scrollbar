@@ -71,7 +71,7 @@ os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
     }                                                                      \
   } G_STMT_END
 
-/* Macro loggging an error message to stderr and breaking the program execution
+/* Macro logging an error message to stderr and breaking the program execution
  * if the assertion fails. */
 #define OS_CHECK(cond)                                        \
   G_STMT_START {                                              \
