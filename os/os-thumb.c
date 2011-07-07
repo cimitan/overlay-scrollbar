@@ -56,8 +56,7 @@ struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
   OsAnimation *animation;
-  gboolean button_press_event;
-  gboolean motion_notify_event;
+  OsEvent event;
   gboolean can_rgba;
   gboolean detached;
   gboolean use_tolerance;
@@ -190,8 +189,7 @@ os_thumb_init (OsThumb *thumb)
                                              OsThumbPrivate);
   priv = thumb->priv;
 
-  priv->button_press_event = FALSE;
-  priv->motion_notify_event = FALSE;
+  priv->event = OS_EVENT_NONE;
 
   priv->can_rgba = FALSE;
   priv->detached = FALSE;
@@ -245,8 +243,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
 
-          priv->button_press_event = TRUE;
-          priv->motion_notify_event = FALSE;
+          priv->event |= OS_EVENT_BUTTON_PRESS;
+          priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
           priv->use_tolerance = TRUE;
 
@@ -276,8 +274,7 @@ os_thumb_button_release_event (GtkWidget      *widget,
         {
           gtk_grab_remove (widget);
 
-          priv->button_press_event = FALSE;
-          priv->motion_notify_event = FALSE;
+          priv->event &= ~(OS_EVENT_BUTTON_PRESS | OS_EVENT_MOTION_NOTIFY);
 
           gtk_widget_queue_draw (widget);
         }
@@ -687,7 +684,8 @@ os_thumb_expose (GtkWidget      *widget,
   else
     pat = cairo_pattern_create_linear (0, 0, width, 0);
 
-  if (priv->button_press_event && !priv->motion_notify_event)
+  if ((priv->event & OS_EVENT_BUTTON_PRESS) &&
+      !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
@@ -715,7 +713,7 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_set_source (cr, pat);
   cairo_pattern_destroy (pat);
 
-  if (priv->motion_notify_event)
+  if (priv->event & OS_EVENT_MOTION_NOTIFY)
     {
       cairo_fill_preserve (cr);
       set_source_gdk_rgba (cr, &bg_arrow_down, 0.3);
@@ -837,8 +835,8 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   /* If we exit the thumb when a button is pressed,
    * there's no need to stop the animation, it should
    * already be stopped.
-   * Stop it only if priv->button_press_event is FALSE. */
-  if (!priv->button_press_event)
+   * Stop it only if OS_EVENT_BUTTON_PRESS is not set. */
+  if (!(priv->event & OS_EVENT_BUTTON_PRESS))
     {
       if (priv->source_id != 0)
         {
@@ -901,9 +899,9 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
 
   /* If you're not dragging, and you're outside
    * the tolerance pixels, enable the fade-out.
-   * priv->motion_notify_event is TRUE only on dragging,
+   * OS_EVENT_MOTION_NOTIFY is set only on dragging,
    * see code few lines below. */
-  if (!priv->motion_notify_event)
+  if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
   {
     if (!priv->use_tolerance ||
         (abs (priv->pointer_x - event->x) > TOLERANCE_PIXELS ||
@@ -916,12 +914,12 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
       }
   }
 
-  if (priv->button_press_event)
+  if (priv->event & OS_EVENT_BUTTON_PRESS)
     {
-      if (!priv->motion_notify_event)
+      if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
         gtk_widget_queue_draw (widget);
 
-      priv->motion_notify_event = TRUE;
+      priv->event |= OS_EVENT_MOTION_NOTIFY;
     }
 
   return FALSE;
@@ -988,8 +986,7 @@ os_thumb_unmap (GtkWidget *widget)
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  priv->button_press_event = FALSE;
-  priv->motion_notify_event = FALSE;
+  priv->event = OS_EVENT_NONE;
 
   priv->use_tolerance = FALSE;
 
@@ -1155,6 +1152,7 @@ os_thumb_set_detached (OsThumb *thumb,
   if (priv->detached != detached)
     {
       priv->detached = detached;
+
       gtk_widget_queue_draw (GTK_WIDGET (thumb));
     }
 }
