@@ -28,13 +28,13 @@
 #include <gdk/gdkx.h>
 #include "os-private.h"
 
-/* Rate of the fade */
+/* Rate of the fade. */
 #define RATE_FADE 30
 
-/* Duration of the fade-in */
+/* Duration of the fade-in. */
 #define DURATION_FADE_IN 200
 
-/* Duration of the fade-out */
+/* Duration of the fade-out. */
 #define DURATION_FADE_OUT 400
 
 #ifdef USE_GTK3
@@ -410,11 +410,6 @@ os_pager_hide (OsPager *pager)
   OsPagerPrivate *priv;
 
   g_return_if_fail (OS_PAGER (pager));
-
-  /* return if pager is NULL, happens on emacs23,
-   * when emacs calls unrealize after dispose. */
-  if (pager == NULL)
-    return;
 
   priv = pager->priv;
 

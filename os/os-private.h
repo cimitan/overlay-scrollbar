@@ -34,7 +34,19 @@
 #define THUMB_WIDTH  17
 #define THUMB_HEIGHT 69
 
+/* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
+#define TOLERANCE_MOTION 2
+
 G_BEGIN_DECLS
+
+typedef enum
+{
+  OS_EVENT_NONE = 0,
+  OS_EVENT_BUTTON_PRESS = 1,
+  OS_EVENT_ENTER_NOTIFY = 2,
+  OS_EVENT_MOTION_NOTIFY = 4,
+  OS_EVENT_VALUE_CHANGED = 8
+} OsEvent;
 
 /* os-log.c */
 
@@ -71,7 +83,7 @@ os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
     }                                                                      \
   } G_STMT_END
 
-/* Macro loggging an error message to stderr and breaking the program execution
+/* Macro logging an error message to stderr and breaking the program execution
  * if the assertion fails. */
 #define OS_CHECK(cond)                                        \
   G_STMT_START {                                              \
