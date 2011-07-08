@@ -37,11 +37,11 @@
 /* Timeout before the fade-out. */
 #define TIMEOUT_FADE_OUT 250
 
-/* Number of tolerance pixels, before hiding the thumb. */
-#define TOLERANCE_PIXELS 3
-
 /* Thumb radius in pixels (higher values are automatically clamped). */
 #define THUMB_RADIUS 3
+
+/* Number of tolerance pixels, before hiding the thumb. */
+#define TOLERANCE_FADE 3
 
 #ifndef USE_GTK3
 typedef struct {
@@ -693,13 +693,13 @@ os_thumb_expose (GtkWidget      *widget,
           pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.6);
           pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
           pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
-          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.5);
+          pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 0.8);
         }
       else
         {
-          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.5);
+          pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_up, 0.8);
           pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_up, 0.1);
-          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
+          pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.2);
           pattern_add_gdk_rgba_stop (pat, 1.0, &bg_arrow_down, 1.0);
         }
     }
@@ -904,8 +904,8 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
   {
     if (!priv->use_tolerance ||
-        (abs (priv->pointer_x - event->x) > TOLERANCE_PIXELS ||
-         abs (priv->pointer_y - event->y) > TOLERANCE_PIXELS))
+        (abs (priv->pointer_x - event->x) > TOLERANCE_FADE ||
+         abs (priv->pointer_y - event->y) > TOLERANCE_FADE))
       {
         priv->use_tolerance = FALSE;
         priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
@@ -916,6 +916,10 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
 
   if (priv->event & OS_EVENT_BUTTON_PRESS)
     {
+      if (abs (priv->pointer_x - event->x) <= TOLERANCE_MOTION &&
+          abs (priv->pointer_y - event->y) <= TOLERANCE_MOTION)
+        return FALSE;
+
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
         gtk_widget_queue_draw (widget);
 

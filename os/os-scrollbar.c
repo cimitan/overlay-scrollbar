@@ -57,9 +57,6 @@
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
 
-/* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
-#define TOLERANCE_PIXELS 2
-
 typedef enum
 {
   OS_SIDE_TOP,
@@ -1602,8 +1599,8 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       if (priv->event & OS_EVENT_VALUE_CHANGED)
         {
           /* return if the mouse movement is small. */
-          if (abs (priv->pointer_x - event->x) <= TOLERANCE_PIXELS &&
-              abs (priv->pointer_y - event->y) <= TOLERANCE_PIXELS)
+          if (abs (priv->pointer_x - event->x) <= TOLERANCE_MOTION &&
+              abs (priv->pointer_y - event->y) <= TOLERANCE_MOTION)
             return FALSE;
 
           priv->detached_scroll = TRUE;

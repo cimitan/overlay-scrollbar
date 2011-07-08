@@ -34,6 +34,9 @@
 #define THUMB_WIDTH  17
 #define THUMB_HEIGHT 69
 
+/* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
+#define TOLERANCE_MOTION 2
+
 G_BEGIN_DECLS
 
 typedef enum
