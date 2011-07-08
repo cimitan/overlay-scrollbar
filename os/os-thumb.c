@@ -974,10 +974,6 @@ os_thumb_scroll_event (GtkWidget      *widget,
   /* if started, stop the fade-out. */
   os_animation_stop (priv->animation, fade_out_stop_cb);
 
-  priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
-                                   timeout_fade_out_cb,
-                                   thumb);
-
   return FALSE;
 }
 

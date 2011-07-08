@@ -1605,7 +1605,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
           priv->detached_scroll = TRUE;
 
-          /* stop the scroll animation if it's running. */
+          /* stop the page_up or page_down animation if it's running. */
           os_animation_stop (priv->animation, NULL);
 
           /* limit x and y within the allocation. */
@@ -1806,6 +1806,9 @@ thumb_scroll_event_cb (GtkWidget      *widget,
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
+
+  /* stop the page_up or page_down animation if it's running. */
+  os_animation_stop (priv->animation, NULL);
 
   priv->event |= OS_EVENT_VALUE_CHANGED;
 
