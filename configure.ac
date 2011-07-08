@@ -106,7 +106,7 @@ AS_CASE([$enable_debug],
           DEBUG_CFLAGS="-D_DEBUG"
         ],
         [no],
-        [DEBUG_CFLAGS="-DNDEBUG -DG_DISABLE_CAST_CHECKS -DG_DISABLE_CHECKS -DG_DISABLE_ASSERT"],
+        [DEBUG_CFLAGS="-DNDEBUG"],
         [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
 AC_SUBST(DEBUG_CFLAGS)
