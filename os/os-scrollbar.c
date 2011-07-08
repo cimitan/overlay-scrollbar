@@ -91,10 +91,7 @@ struct _OsScrollbarPrivate
   OsAnimation *animation;
   OsPager *pager;
   OsSide side;
-  gboolean button_press_event;
-  gboolean enter_notify_event;
-  gboolean motion_notify_event;
-  gboolean value_changed_event;
+  OsEvent event;
   gboolean active_window;
   gboolean can_deactivate_pager;
   gboolean can_hide;
@@ -918,7 +915,8 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   calc_layout_pager (scrollbar, gtk_adjustment_get_value (adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (adjustment));
 
-  if (!priv->motion_notify_event && !priv->enter_notify_event)
+  if (!(priv->event & OS_EVENT_ENTER_NOTIFY) &&
+      !(priv->event & OS_EVENT_MOTION_NOTIFY))
     gtk_widget_hide (priv->thumb);
 
   move_pager (scrollbar);
@@ -1022,13 +1020,14 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   calc_layout_pager (scrollbar, gtk_adjustment_get_value (adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (adjustment));
 
-  if (!priv->motion_notify_event && !priv->enter_notify_event)
+  if (!(priv->event & OS_EVENT_ENTER_NOTIFY) &&
+      !(priv->event & OS_EVENT_MOTION_NOTIFY))
     gtk_widget_hide (priv->thumb);
 
   if (gtk_widget_get_mapped (priv->thumb))
     {
       /* if we're dragging the thumb, it can't be detached. */
-      if (priv->motion_notify_event)
+      if (priv->event & OS_EVENT_MOTION_NOTIFY)
         {
           os_pager_set_detached (priv->pager, FALSE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
@@ -1251,10 +1250,10 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           priv->present_time = g_get_monotonic_time ();
           present_gdk_window_with_timestamp (GTK_WIDGET (scrollbar), event->time);
 
-          priv->detached_scroll = FALSE;
+          priv->event |= OS_EVENT_BUTTON_PRESS;
+          priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
-          priv->button_press_event = TRUE;
-          priv->motion_notify_event = FALSE;
+          priv->detached_scroll = FALSE;
 
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1348,7 +1347,7 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
-          if (!priv->motion_notify_event && !priv->detached_scroll)
+          if (!(priv->event & OS_EVENT_MOTION_NOTIFY) && !priv->detached_scroll)
             {
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
@@ -1365,11 +1364,10 @@ thumb_button_release_event_cb (GtkWidget      *widget,
                     page_down (scrollbar);
                 }
 
-              priv->value_changed_event = TRUE;
+              priv->event |= OS_EVENT_VALUE_CHANGED;
             }
 
-          priv->button_press_event = FALSE;
-          priv->motion_notify_event = FALSE;
+          priv->event &= ~(OS_EVENT_BUTTON_PRESS | OS_EVENT_MOTION_NOTIFY);
         }
     }
 
@@ -1387,7 +1385,8 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  priv->enter_notify_event = TRUE;
+  priv->event |= OS_EVENT_ENTER_NOTIFY;
+
   priv->can_deactivate_pager = FALSE;
   priv->can_hide = FALSE;
 
@@ -1410,7 +1409,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
 
   /* add the timeouts only if you are
    * not interacting with the thumb. */
-  if (!priv->button_press_event)
+  if (!(priv->event & OS_EVENT_BUTTON_PRESS))
     {
       /* never deactivate the pager in an active window. */
       if (!priv->active_window)
@@ -1593,14 +1592,14 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  if (priv->button_press_event)
+  if (priv->event & OS_EVENT_BUTTON_PRESS)
     {
       gint x, y;
 
       /* thumb and pager are detached.
        * Detached scroll: keep the thumb detached during the scroll,
        * update the visual connection when reaching an edge. */
-      if (priv->value_changed_event)
+      if (priv->event & OS_EVENT_VALUE_CHANGED)
         {
           /* return if the mouse movement is small. */
           if (abs (priv->pointer_x - event->x) <= TOLERANCE_PIXELS &&
@@ -1715,7 +1714,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       /* thumb and pager are connected.
        * Normal scroll: keep the thumb in sync with the pager,
        * do not update the visual connection. */
-      priv->motion_notify_event = TRUE;
+      priv->event |= OS_EVENT_MOTION_NOTIFY;
 
       capture_movement (scrollbar, event->x_root, event->y_root);
 
@@ -1811,7 +1810,7 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  priv->value_changed_event = TRUE;
+  priv->event |= OS_EVENT_VALUE_CHANGED;
 
   delta = get_wheel_delta (scrollbar, event->direction);
 
@@ -1834,12 +1833,9 @@ thumb_unmap_cb (GtkWidget *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  priv->detached_scroll = FALSE;
+  priv->event = OS_EVENT_NONE;
 
-  priv->button_press_event = FALSE;
-  priv->motion_notify_event = FALSE;
-  priv->enter_notify_event = FALSE;
-  priv->value_changed_event = FALSE;
+  priv->detached_scroll = FALSE;
 
   os_pager_set_detached (priv->pager, FALSE);
 }
@@ -2571,10 +2567,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
       os_root_list = g_list_append (os_root_list, scrollbar);
     }
 
-  priv->button_press_event = FALSE;
-  priv->enter_notify_event = FALSE;
-  priv->motion_notify_event = FALSE;
-  priv->value_changed_event = FALSE;
+  priv->event = OS_EVENT_NONE;
 
   priv->active_window = FALSE;
   priv->can_deactivate_pager = TRUE;
