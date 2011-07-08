@@ -7,6 +7,11 @@ overlay-scrollbar 0.2.4 (July 8, 2011)
 
 * Enable glib assertions on releases.
 
+* Fix thumb rendering on page up and down.
+
+* Bugs fixed:
+ 778891 The "Timeout before the fade-out" value of 250ms for cursor on thumb...
+
 
 overlay-scrollbar 0.2.3 (June 30, 2011)
 ---------------------------------------
