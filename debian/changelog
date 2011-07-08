@@ -1,4 +1,4 @@
-overlay-scrollbar (0.2.4-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.4-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
     - Animate page up and page down.
