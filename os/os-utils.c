@@ -38,6 +38,7 @@ os_utils_is_blacklisted (const gchar *program)
     "codelite",
     "eclipse",
     "emacs",
+    "emacs23",
     "firefox-bin",
     "gnucash",
     "gvim",
