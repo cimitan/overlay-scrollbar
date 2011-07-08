@@ -28,13 +28,13 @@
 #include <gdk/gdkx.h>
 #include "os-private.h"
 
-/* Rate of the fade */
+/* Rate of the fade. */
 #define RATE_FADE 30
 
-/* Duration of the fade-in */
+/* Duration of the fade-in. */
 #define DURATION_FADE_IN 200
 
-/* Duration of the fade-out */
+/* Duration of the fade-out. */
 #define DURATION_FADE_OUT 400
 
 #ifdef USE_GTK3

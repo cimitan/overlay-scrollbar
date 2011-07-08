@@ -39,11 +39,11 @@
 /* Size of the proximity effect in pixels. */
 #define PROXIMITY_SIZE 30
 
-/* Rate of the scroll */
-#define RATE_SCROLL 30
+/* Rate of the paging. */
+#define RATE_PAGING 30
 
-/* Duration of the scroll */
-#define DURATION_SCROLL 1000
+/* Duration of the paging. */
+#define DURATION_PAGING 1000
 
 /* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
@@ -738,10 +738,10 @@ notify_orientation_cb (GObject *object,
   swap_thumb (scrollbar, os_thumb_new (priv->orientation));
 }
 
-/* callback called by the set-scroll animation */
+/* callback called by the paging animation */
 static void
-set_scroll_cb (gfloat   weight,
-               gpointer user_data)
+paging_cb (gfloat   weight,
+           gpointer user_data)
 {
   gdouble new_value;
   OsScrollbar *scrollbar;
@@ -1280,8 +1280,8 @@ page_down (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  /* if a page_up or down is running,
-   * stop the animation and add the new value */
+  /* if a paging animation is running,
+   * stop it and add the new value. */
   if (os_animation_is_running (priv->animation))
     {
       os_animation_stop (priv->animation, NULL);
@@ -1295,7 +1295,7 @@ page_down (OsScrollbar *scrollbar)
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
-  /* start the scroll animation */
+  /* start the paging animation. */
   os_animation_start (priv->animation);
 }
 
@@ -1308,8 +1308,8 @@ page_up (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  /* if a page_up or down is running,
-   * stop the animation and subtract the new value */
+  /* if a paging animation is running,
+   * stop it and subtract the new value. */
   if (os_animation_is_running (priv->animation))
     {
       os_animation_stop (priv->animation, NULL);
@@ -1323,7 +1323,7 @@ page_up (OsScrollbar *scrollbar)
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
-  /* start the scroll animation */
+  /* start the paging animation. */
   os_animation_start (priv->animation);
 }
 
@@ -1605,7 +1605,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
           priv->detached_scroll = TRUE;
 
-          /* stop the page_up or page_down animation if it's running. */
+          /* stop the paging animation if it's running. */
           os_animation_stop (priv->animation, NULL);
 
           /* limit x and y within the allocation. */
@@ -1807,7 +1807,7 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  /* stop the page_up or page_down animation if it's running. */
+  /* stop the paging animation if it's running. */
   os_animation_stop (priv->animation, NULL);
 
   priv->event |= OS_EVENT_VALUE_CHANGED;
@@ -2588,8 +2588,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->window_group = gtk_window_group_new ();
 
-  priv->animation = os_animation_new (RATE_SCROLL, DURATION_SCROLL,
-                                      set_scroll_cb, NULL, scrollbar);
+  priv->animation = os_animation_new (RATE_PAGING, DURATION_PAGING,
+                                      paging_cb, NULL, scrollbar);
   priv->value = 0;
 
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
