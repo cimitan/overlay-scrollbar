@@ -390,7 +390,7 @@ static gboolean
 is_insensitive (OsScrollbar *scrollbar)
 {
 #ifdef USE_GTK3
-  return gtk_widget_get_state_flags (GTK_WIDGET (scrollbar)) & GTK_STATE_FLAG_INSENSITIVE;
+  return (gtk_widget_get_state_flags (GTK_WIDGET (scrollbar)) & GTK_STATE_FLAG_INSENSITIVE) != 0;
 #else
   return gtk_widget_get_state (GTK_WIDGET (scrollbar)) == GTK_STATE_INSENSITIVE;
 #endif
@@ -3058,7 +3058,7 @@ os_scrollbar_state_flags_changed (GtkWidget    *widget,
 
   scrollbar = OS_SCROLLBAR (widget);
 
-  if (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE)
+  if ((gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE) != 0)
     set_insensitive (scrollbar);
   else
     set_sensitive (scrollbar);
