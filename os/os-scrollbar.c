@@ -144,8 +144,11 @@ static void os_scrollbar_map (GtkWidget *widget);
 static void os_scrollbar_realize (GtkWidget *widget);
 static void os_scrollbar_show (GtkWidget *widget);
 static void os_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
-#ifndef USE_GTK3
+#ifdef USE_GTK3
+static void os_scrollbar_state_flags_changed (GtkWidget *widget, GtkStateFlags flags);
+#else
 static void os_scrollbar_size_request (GtkWidget *widget, GtkRequisition *requisition);
+static void os_scrollbar_state_changed (GtkWidget *widget, GtkStateType state);
 #endif
 static void os_scrollbar_unmap (GtkWidget *widget);
 static void os_scrollbar_unrealize (GtkWidget *widget);
@@ -380,6 +383,17 @@ hide_thumb_cb (gpointer user_data)
   priv->source_hide_thumb_id = 0;
 
   return FALSE;
+}
+
+/* return TRUE if the widget is insensitive */
+static gboolean
+is_insensitive (OsScrollbar *scrollbar)
+{
+#ifdef USE_GTK3
+  return (gtk_widget_get_state_flags (GTK_WIDGET (scrollbar)) & GTK_STATE_FLAG_INSENSITIVE) != 0;
+#else
+  return gtk_widget_get_state (GTK_WIDGET (scrollbar)) == GTK_STATE_INSENSITIVE;
+#endif
 }
 
 /* move the pager */
@@ -1080,6 +1094,10 @@ root_gfunc (gpointer data,
   priv = scrollbar->priv;
 
   OS_DCHECK (scrollbar != NULL);
+
+  /* return if the scrollbar is insensitive */
+  if (is_insensitive (scrollbar))
+    return;
 
   if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
@@ -1869,11 +1887,13 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   const gint64 current_time = g_get_monotonic_time ();
   const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
 
-  /* if the widget is mapped and the configure-event happens
-   * after the PropertyNotify _NET_ACTIVE_WINDOW event,
+  /* if the widget is mapped, is not insentitive
+   * and the configure-event happens after
+   * the PropertyNotify _NET_ACTIVE_WINDOW event,
    * see if the mouse pointer is over this window, if TRUE,
    * proceed with pager_set_state_from_pointer. */
-  if ((current_time > end_time) &&
+  if (!is_insensitive (scrollbar) &&
+      (current_time > end_time) &&
       gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
     {
       if (!priv->active_window)
@@ -1896,7 +1916,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
             {
               gint x, y;
 
-              gtk_widget_get_pointer (widget, &x, &y);
+              gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
 
               /* when the window is resized (maximize/restore),
                * check the position of the pointer
@@ -2124,7 +2144,7 @@ window_filter_func (GdkXEvent *gdkxevent,
             {
               /* react to motion_notify_event
                * and set the state accordingly. */
-              if (!priv->active_window)
+              if (!is_insensitive (scrollbar) && !priv->active_window)
                 pager_set_state_from_pointer (scrollbar, xiev->event_x, xiev->event_y);
 
               /* proximity area */
@@ -2391,7 +2411,7 @@ window_filter_func (GdkXEvent *gdkxevent,
         {
           /* react to motion_notify_event
            * and set the state accordingly. */
-          if (!priv->active_window)
+          if (!is_insensitive (scrollbar) && !priv->active_window)
             pager_set_state_from_pointer (scrollbar, xev->xmotion.x, xev->xmotion.y);
 
           /* proximity area */
@@ -2512,8 +2532,11 @@ os_scrollbar_class_init (OsScrollbarClass *class)
   widget_class->realize              = os_scrollbar_realize;
   widget_class->show                 = os_scrollbar_show;
   widget_class->size_allocate        = os_scrollbar_size_allocate;
-#ifndef USE_GTK3
+#ifdef USE_GTK3
+  widget_class->state_flags_changed  = os_scrollbar_state_flags_changed;
+#else
   widget_class->size_request         = os_scrollbar_size_request;
+  widget_class->state_changed        = os_scrollbar_state_changed;
 #endif
   widget_class->unmap                = os_scrollbar_unmap;
   widget_class->unrealize            = os_scrollbar_unrealize;
@@ -2753,8 +2776,6 @@ os_scrollbar_map (GtkWidget *widget)
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->map (widget);
 
-  priv->proximity = TRUE;
-
   /* on map, check for the active window. */
   if (gtk_widget_get_window (gtk_widget_get_toplevel (widget)) ==
       gdk_screen_get_active_window (gtk_widget_get_screen (widget)))
@@ -2771,32 +2792,41 @@ os_scrollbar_map (GtkWidget *widget)
   else
     priv->active_window = FALSE;
 
-  if (!priv->active_window)
+  if (!is_insensitive (scrollbar))
     {
-      gint x, y;
-      gtk_widget_get_pointer (gtk_widget_get_toplevel (widget), &x, &y);
+      if (!priv->active_window)
+        {
+          gint x, y;
 
-      /* when the scrollbar appears on screen (mapped),
-       * for example when switching notebook page,
-       * check the position of the pointer
-       * and set the state accordingly. */
-      pager_set_state_from_pointer (scrollbar, x, y);
-    }
-  else
-    {
-      /* on map-event of an active window,
-       * the pager should be active. */
-      priv->can_deactivate_pager = FALSE;
-      os_pager_set_active (priv->pager, TRUE, FALSE);
+          gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
+
+          /* when the scrollbar appears on screen (mapped),
+           * for example when switching notebook page,
+           * check the position of the pointer
+           * and set the state accordingly. */
+          pager_set_state_from_pointer (scrollbar, x, y);
+        }
+      else
+        {
+          /* on map-event of an active window,
+           * the pager should be active. */
+          priv->can_deactivate_pager = FALSE;
+          os_pager_set_active (priv->pager, TRUE, FALSE);
+        }
     }
 
   if (priv->fullsize == FALSE)
     os_pager_show (priv->pager);
 
-  if (gtk_widget_get_realized (widget) && priv->filter == FALSE)
+  if (!is_insensitive (scrollbar))
     {
-      priv->filter = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
+      priv->proximity = TRUE;
+
+      if (gtk_widget_get_realized (widget) && priv->filter == FALSE)
+        {
+          priv->filter = TRUE;
+          gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
+        }
     }
 }
 
@@ -2967,7 +2997,73 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   gtk_widget_set_allocation (widget, allocation);
 }
 
-#ifndef USE_GTK3
+/* set the scrollbar to be insensitive */
+static void
+set_insensitive (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  priv->proximity = FALSE;
+
+  if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)) && priv->filter == TRUE)
+    {
+      priv->filter = FALSE;
+      gdk_window_remove_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)), window_filter_func, scrollbar);
+    }
+
+  os_pager_set_active (priv->pager, FALSE, FALSE);
+
+  gtk_widget_hide (priv->thumb);
+}
+
+/* set the scrollbar to be sensitive */
+static void
+set_sensitive (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  priv->proximity = TRUE;
+
+  if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)) && priv->filter == FALSE)
+    {
+      priv->filter = TRUE;
+      gdk_window_add_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)), window_filter_func, scrollbar);
+    }
+
+  if (priv->active_window)
+    os_pager_set_active (priv->pager, TRUE, FALSE);
+  else
+    {
+      gint x, y;
+
+      gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
+
+      /* when the window is unfocused,
+       * check the position of the pointer
+       * and set the state accordingly. */
+      pager_set_state_from_pointer (scrollbar, x, y);
+    }
+}
+
+#ifdef USE_GTK3
+static void
+os_scrollbar_state_flags_changed (GtkWidget    *widget,
+                                  GtkStateFlags flags)
+{
+  OsScrollbar *scrollbar;
+
+  scrollbar = OS_SCROLLBAR (widget);
+
+  if ((gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE) != 0)
+    set_insensitive (scrollbar);
+  else
+    set_sensitive (scrollbar);
+}
+#else
 static void
 os_scrollbar_size_request (GtkWidget      *widget,
                            GtkRequisition *requisition)
@@ -2984,6 +3080,20 @@ os_scrollbar_size_request (GtkWidget      *widget,
     requisition->height = 0;
 
   widget->requisition = *requisition;
+}
+
+static void
+os_scrollbar_state_changed (GtkWidget    *widget,
+                            GtkStateType  state)
+{
+  OsScrollbar *scrollbar;
+
+  scrollbar = OS_SCROLLBAR (widget);
+
+  if (gtk_widget_get_state (widget) == GTK_STATE_INSENSITIVE)
+    set_insensitive (scrollbar);
+  else
+    set_sensitive (scrollbar);
 }
 #endif
 
