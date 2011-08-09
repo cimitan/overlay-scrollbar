@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.6-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - does not work in some windows (LP: #822806)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 09 Aug 2011 15:56:40 -0400
+
 overlay-scrollbar (0.2.5-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.

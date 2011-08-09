@@ -1,3 +1,10 @@
+overlay-scrollbar 0.2.6 (August 9, 2011)
+----------------------------------------
+
+Bugs fixed:
+ 822806 overlay scrollbar does not work in some windows
+
+
 overlay-scrollbar 0.2.5 (July 14, 2011)
 ---------------------------------------
 
