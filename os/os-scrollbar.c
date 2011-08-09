@@ -2149,23 +2149,6 @@ window_filter_func (GdkXEvent *gdkxevent,
               }
           }
 
-        /* after a scroll-event, without motion,
-         * pager becomes inactive because the timeout in
-         * leave-notify-event starts,
-         * this call checks the pointer after the scroll-event,
-         * since it enters the window,
-         * then sets the state accordingly. */
-
-        /* FIXME(Cimi) code commented out until I find what and where is wrong. */
-//          if (!priv->active_window && xiev->evtype == XI_Enter)
-//            {
-//              XIEnterEvent *xiee = xev->xcookie.data;
-//
-//              /* if the thumb is mapped, the pager should be active and should remain active. */
-//              if (gtk_widget_get_mapped (priv->thumb))
-//                pager_set_state_from_pointer (scrollbar, xiee->event_x, xiee->event_y);
-//            }
-
         if (os_xevent == OS_XEVENT_LEAVE)
           {
             /* never deactivate the pager in an active window. */
@@ -2417,20 +2400,6 @@ window_filter_func (GdkXEvent *gdkxevent,
                 }
             }
         }
-
-      /* after a scroll-event, without motion,
-       * pager becomes inactive because the timeout in
-       * leave-notify-event starts,
-       * this call checks the pointer after the scroll-event,
-       * since it enters the window,
-       * then sets the state accordingly. */
-       /* if the thumb is mapped, the pager should be active and should remain active. */
-
-  /* FIXME(Cimi) code commented out until I find what and where is wrong. */
-//      if (!priv->active_window &&
-//          xev->type == EnterNotify &&
-//          gtk_widget_get_mapped (priv->thumb))
-//        pager_set_state_from_pointer (scrollbar, xev->xcrossing.x, xev->xcrossing.y);
 
       if (xev->type == LeaveNotify)
         {
