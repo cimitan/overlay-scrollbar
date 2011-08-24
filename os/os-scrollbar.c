@@ -2723,8 +2723,8 @@ os_scrollbar_finalize (GObject *object)
 
 #ifdef USE_GTK3
 static gboolean
-os_scrollbar_draw (GtkWidget      *widget,
-                   cairo_t        *cr)
+os_scrollbar_draw (GtkWidget *widget,
+                   cairo_t   *cr)
 {
   return TRUE;
 }

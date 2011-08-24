@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.7-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Blacklist firefox, firefox-trunk, gimp
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 24 Aug 2011 16:31:01 -0400
+
 overlay-scrollbar (0.2.6-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
