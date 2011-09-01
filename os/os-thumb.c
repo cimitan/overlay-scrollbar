@@ -62,6 +62,8 @@ struct _OsThumbPrivate {
   gboolean use_tolerance;
   gint pointer_x;
   gint pointer_y;
+  gint pointer_x_root;
+  gint pointer_y_root;
   guint32 source_id;
 };
 
@@ -242,6 +244,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
           priv->pointer_x = event->x;
           priv->pointer_y = event->y;
+          priv->pointer_x_root = event->x_root;
+          priv->pointer_y_root = event->y_root;
 
           priv->event |= OS_EVENT_BUTTON_PRESS;
           priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
@@ -914,16 +918,16 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
       }
   }
 
-  if (priv->event & OS_EVENT_BUTTON_PRESS)
+  if (priv->event & OS_EVENT_BUTTON_PRESS &&
+      !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
-      if (abs (priv->pointer_x - event->x) <= TOLERANCE_MOTION &&
-          abs (priv->pointer_y - event->y) <= TOLERANCE_MOTION)
+      if (abs (priv->pointer_x_root - event->x_root) <= TOLERANCE_MOTION &&
+          abs (priv->pointer_y_root - event->y_root) <= TOLERANCE_MOTION)
         return FALSE;
 
-      if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
-        gtk_widget_queue_draw (widget);
-
       priv->event |= OS_EVENT_MOTION_NOTIFY;
+
+      gtk_widget_queue_draw (widget);
     }
 
   return FALSE;
