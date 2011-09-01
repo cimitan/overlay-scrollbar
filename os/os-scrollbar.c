@@ -42,8 +42,11 @@
 /* Rate of the paging. */
 #define RATE_PAGING 30
 
-/* Duration of the paging. */
-#define DURATION_PAGING 1000
+/* Max duration of the paging. */
+#define MAX_DURATION_PAGING 1000
+
+/* Min duration of the paging. */
+#define MIN_DURATION_PAGING 250
 
 /* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
@@ -1295,6 +1298,7 @@ page_down (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
   gdouble new_value;
+  gint32 duration;
 
   priv = scrollbar->priv;
 
@@ -1313,6 +1317,12 @@ page_down (OsScrollbar *scrollbar)
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
+  /* calculate and set the duration */
+  duration = MIN_DURATION_PAGING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
+                                    gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                   (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
+  os_animation_set_duration (priv->animation, duration);
+
   /* start the paging animation. */
   os_animation_start (priv->animation);
 }
@@ -1323,6 +1333,7 @@ page_up (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
   gdouble new_value;
+  gint32 duration;
 
   priv = scrollbar->priv;
 
@@ -1340,6 +1351,12 @@ page_up (OsScrollbar *scrollbar)
   priv->value = CLAMP (new_value,
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
+
+  /* calculate and set the duration */
+  duration = MIN_DURATION_PAGING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
+                                    gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                   (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
+  os_animation_set_duration (priv->animation, duration);
 
   /* start the paging animation. */
   os_animation_start (priv->animation);
@@ -2639,7 +2656,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->window_group = gtk_window_group_new ();
 
-  priv->animation = os_animation_new (RATE_PAGING, DURATION_PAGING,
+  priv->animation = os_animation_new (RATE_PAGING, MAX_DURATION_PAGING,
                                       paging_cb, NULL, scrollbar);
   priv->value = 0;
 
