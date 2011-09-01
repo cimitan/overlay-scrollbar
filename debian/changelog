@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.9-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Page scroll kinetic should depend on the actual scroll (LP: #838733)
+    - thumb does not always change look when dragged (LP: #838258)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 01 Sep 2011 15:13:05 -0400
+
 overlay-scrollbar (0.2.7-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
