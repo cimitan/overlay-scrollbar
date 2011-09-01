@@ -1317,7 +1317,7 @@ page_down (OsScrollbar *scrollbar)
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
-  /* calculate and set the duration */
+  /* calculate and set the duration. */
   duration = MIN_DURATION_PAGING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
                                    (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
@@ -1352,7 +1352,7 @@ page_up (OsScrollbar *scrollbar)
                        gtk_adjustment_get_lower (priv->adjustment),
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
-  /* calculate and set the duration */
+  /* calculate and set the duration. */
   duration = MIN_DURATION_PAGING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
                                    (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
