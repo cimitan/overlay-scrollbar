@@ -2024,15 +2024,15 @@ window_filter_func (GdkXEvent *gdkxevent,
   OsScrollbarPrivate *priv;
   XEvent *xev;
 
-  g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
   xev = gdkxevent;
 
-  g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
-  g_return_val_if_fail (priv->thumb != NULL, GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_PAGER (priv->pager), GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_THUMB (priv->thumb), GDK_FILTER_CONTINUE);
 
   if (!priv->fullsize)
     {
@@ -2321,15 +2321,15 @@ window_filter_func (GdkXEvent *gdkxevent,
   OsScrollbarPrivate *priv;
   XEvent *xev;
 
-  g_return_val_if_fail (OS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
   xev = gdkxevent;
 
-  g_return_val_if_fail (priv->pager != NULL, GDK_FILTER_CONTINUE);
-  g_return_val_if_fail (priv->thumb != NULL, GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_PAGER (priv->pager), GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (OS_IS_THUMB (priv->thumb), GDK_FILTER_CONTINUE);
 
   if (!priv->fullsize)
     {

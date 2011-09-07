@@ -1131,7 +1131,7 @@ os_thumb_resize (OsThumb *thumb,
                  gint     width,
                  gint     height)
 {
-  g_return_if_fail (OS_THUMB (thumb));
+  g_return_if_fail (OS_IS_THUMB (thumb));
 
   gtk_window_resize (GTK_WINDOW (thumb), width, height);
 }
@@ -1149,7 +1149,7 @@ os_thumb_set_detached (OsThumb *thumb,
 {
   OsThumbPrivate *priv;
 
-  g_return_if_fail (OS_THUMB (thumb));
+  g_return_if_fail (OS_IS_THUMB (thumb));
 
   priv = thumb->priv;
 
