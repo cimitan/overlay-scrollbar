@@ -383,7 +383,7 @@ os_pager_connect (OsPager      *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -409,7 +409,7 @@ os_pager_hide (OsPager *pager)
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -451,7 +451,7 @@ os_pager_move_resize (OsPager      *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -481,7 +481,7 @@ os_pager_set_active (OsPager *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -531,7 +531,7 @@ os_pager_set_detached (OsPager *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -662,7 +662,7 @@ os_pager_set_parent (OsPager   *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -718,7 +718,7 @@ os_pager_show (OsPager *pager)
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
@@ -743,7 +743,7 @@ os_pager_size_allocate (OsPager     *pager,
 {
   OsPagerPrivate *priv;
 
-  g_return_if_fail (OS_PAGER (pager));
+  g_return_if_fail (OS_IS_PAGER (pager));
 
   priv = pager->priv;
 
