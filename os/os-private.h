@@ -117,7 +117,7 @@ os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
 #define OS_IS_ANIMATION_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_ANIMATION))
 #define OS_ANIMATION_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_ANIMATION, OsAnimationClass))
+  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_ANIMATION, OsAnimationClass))
 
 typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
 typedef void (*OsAnimationEndFunc)    (gpointer user_data);
@@ -161,15 +161,15 @@ void         os_animation_stop         (OsAnimation        *animation,
 #define OS_THUMB(obj) \
   (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_THUMB, OsThumb))
 #define OS_THUMB_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass),  OS_TYPE_THUMB, OsThumbClass))
+  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_THUMB, OsThumbClass))
 #define OS_IS_THUMB(obj) \
   (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_THUMB))
 #define OS_IS_THUMB_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass),  OS_TYPE_THUMB))
+  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_THUMB))
 #define OS_THUMB_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_THUMB, OsThumbClass))
+  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_THUMB, OsThumbClass))
 
-typedef struct _OsThumb      OsThumb;
+typedef struct _OsThumb OsThumb;
 typedef struct _OsThumbPrivate OsThumbPrivate;
 typedef struct _OsThumbClass OsThumbClass;
 
@@ -206,7 +206,7 @@ void       os_thumb_set_detached (OsThumb *thumb,
 #define OS_IS_PAGER_CLASS(klass) \
   (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_PAGER))
 #define OS_PAGER_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj),  OS_TYPE_PAGER, OsPagerClass))
+  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_PAGER, OsPagerClass))
 
 typedef struct _OsPager OsPager;
 typedef struct _OsPagerPrivate OsPagerPrivate;
