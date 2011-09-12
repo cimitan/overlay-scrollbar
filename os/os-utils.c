@@ -33,26 +33,24 @@ os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
   static const gchar *blacklist[] = {
-    "apport-gtk",
-    "codeblocks",
-    "codelite",
-    "eclipse",
-    "emacs",
-    "emacs23",
-    "firefox",
-    "firefox-bin",
-    "firefox-trunk",
-    "gimp",
-    "gnucash",
-    "gvim",
-    "pgadmin3",
-    "soffice",
-    "synaptic",
-    "thunderbird-bin",
-    "update-manager",
-    "vinagre",
-    "vmplayer",
-    "vmware"
+    "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
+    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-trunk", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.6", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.7", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
+    "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
+    "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
+    "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
+    "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
+    "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
   };
 
   GModule *module;
@@ -60,7 +58,9 @@ os_utils_is_blacklisted (const gchar *program)
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
 
+  /* Black-list of symbols. */
   module = g_module_open (NULL, 0);
+  /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847966 */
   if (g_module_symbol (module, "qt_startup_hook", &func))
     {
       g_module_close (module);
