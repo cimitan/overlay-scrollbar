@@ -59,7 +59,9 @@ os_utils_is_blacklisted (const gchar *program)
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
 
+  /* Black-list of symbols. */
   module = g_module_open (NULL, 0);
+  /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847966 */
   if (g_module_symbol (module, "qt_startup_hook", &func))
     {
       g_module_close (module);
