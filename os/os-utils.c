@@ -33,26 +33,25 @@ os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname(). */
   static const gchar *blacklist[] = {
-    "apport-gtk",
-    "codeblocks",
-    "codelite",
-    "eclipse",
-    "emacs",
-    "emacs23",
-    "firefox",
-    "firefox-bin",
-    "firefox-trunk",
-    "gimp",
-    "gnucash",
-    "gvim",
-    "pgadmin3",
-    "soffice",
-    "synaptic",
-    "thunderbird-bin",
-    "update-manager",
-    "vinagre",
-    "vmplayer",
-    "vmware"
+    "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
+    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-trunk", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.6", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.7", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
+    "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "pgadmin3", /* MAYBE ALREADY FIXED: https://bugs.launchpad.net/ayatana-scrollbar/+bug/769232 */
+    "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
+    "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
+    "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
+    "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
+    "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
   };
 
   GModule *module;
