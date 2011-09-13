@@ -1,6 +1,9 @@
 overlay-scrollbar (0.2.11-0ubuntu1) UNRELEASED; urgency=low
 
   * New upstream release.
+    Updated blacklist:
+    - added gimp-2.6, gimp-2.7, gimp-2.8.
+    - removed apport-gtk, codeblocks, codelite, pgadmin3, update-manager.
 
  -- Didier Roche <didrocks@ubuntu.com>  Tue, 13 Sep 2011 15:48:11 +0200
 
