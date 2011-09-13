@@ -1,20 +1,28 @@
+overlay-scrollbar 0.2.11 (September 13, 2011)
+---------------------------------------------
+
+* Updated blacklist:
+ added gimp-2.6, gimp-2.7, gimp-2.8.
+ removed apport-gtk, codeblocks, codelite, pgadmin3, update-manager.
+
+
 overlay-scrollbar 0.2.10 (September 7, 2011)
 --------------------------------------------
 
-Use proper object checks on public functions.
+* Use proper object checks on public functions.
 
 
 overlay-scrollbar 0.2.9 (September 1, 2011)
 -------------------------------------------
 
-Bugs fixed:
+* Bugs fixed:
  838733 Page scroll kinetic should depend on the actual scroll
 
 
 overlay-scrollbar 0.2.8 (September 1, 2011)
 -------------------------------------------
 
-Bugs fixed:
+* Bugs fixed:
  838258 thumb does not always change look when dragged
 
 
@@ -27,7 +35,7 @@ overlay-scrollbar 0.2.7 (August 24, 2011)
 overlay-scrollbar 0.2.6 (August 9, 2011)
 ----------------------------------------
 
-Bugs fixed:
+* Bugs fixed:
  822806 overlay scrollbar does not work in some windows
 
 
