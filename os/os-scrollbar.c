@@ -1970,26 +1970,26 @@ check_proximity (OsScrollbar *scrollbar,
     case OS_SIDE_RIGHT:
       return (x >= priv->pager_all.x + priv->pager_all.width - PROXIMITY_SIZE &&
               x <= priv->pager_all.x + priv->pager_all.width) &&
-             (y >= priv->pager_all.y + priv->overlay.y &&
-              y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height);
+             (y >= priv->pager_all.y &&
+              y <= priv->pager_all.y + priv->pager_all.height);
       break;
     case OS_SIDE_BOTTOM:
       return (y >= priv->pager_all.y + priv->pager_all.height - PROXIMITY_SIZE &&
               y <= priv->pager_all.y + priv->pager_all.height) &&
-             (x >= priv->pager_all.x + priv->overlay.x &&
-              x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width);
+             (x >= priv->pager_all.x &&
+              x <= priv->pager_all.x + priv->pager_all.width);
       break;
     case OS_SIDE_LEFT:
       return (x <= priv->pager_all.x + priv->pager_all.width + PROXIMITY_SIZE &&
               x >= priv->pager_all.x) &&
-             (y >= priv->pager_all.y + priv->overlay.y &&
-              y <= priv->pager_all.y + priv->overlay.y + priv->overlay.height);
+             (y >= priv->pager_all.y &&
+              y <= priv->pager_all.y + priv->pager_all.height);
       break;
     case OS_SIDE_TOP:
       return (y <= priv->pager_all.y + priv->pager_all.height + PROXIMITY_SIZE &&
               y >= priv->pager_all.y) &&
-             (x >= priv->pager_all.x + priv->overlay.x &&
-              x <= priv->pager_all.x + priv->overlay.x + priv->overlay.width);
+             (x >= priv->pager_all.x &&
+              x <= priv->pager_all.x + priv->pager_all.width);
       break;
     default:
       break;
@@ -2105,60 +2105,58 @@ window_filter_func (GdkXEvent *gdkxevent,
               {
                 if (check_proximity (scrollbar, event_x, event_y))
                   {
+                    gint x, y, x_pos, y_pos;
+
                     priv->can_hide = FALSE;
 
                     if (priv->lock_position)
                       return GDK_FILTER_CONTINUE;
 
-                    if (priv->overlay.height > priv->slider.height)
-                      {
-                        gint x, y, x_pos, y_pos;
+                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                        gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                    x = priv->thumb_all.x;
+                    y = CLAMP (event_y - priv->slider.height / 2,
+                               priv->thumb_all.y + priv->overlay.y,
+                               priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-                        x = priv->thumb_all.x;
-                        y = CLAMP (event_y - priv->slider.height / 2,
-                                   priv->thumb_all.y + priv->overlay.y,
-                                   priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                    move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                        move_thumb (scrollbar, x_pos + x, y_pos + y);
-                      }
-                    else
-                      {
-                        move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                      }
+                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                     * maybe I could use a new state or a trigger. */
+                    priv->event |= OS_EVENT_VALUE_CHANGED;
 
                     gtk_widget_show (priv->thumb);
+
+                    update_visual_connection (scrollbar);
                   }
               }
             else
               {
                 if (check_proximity (scrollbar, event_x, event_y))
                   {
+                    gint x, y, x_pos, y_pos;
+
                     priv->can_hide = FALSE;
 
                     if (priv->lock_position)
                       return GDK_FILTER_CONTINUE;
 
-                    if (priv->overlay.width > priv->slider.width)
-                      {
-                        gint x, y, x_pos, y_pos;
+                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                        gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                    x = CLAMP (event_x - priv->slider.width / 2,
+                               priv->thumb_all.x + priv->overlay.x,
+                               priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                    y = priv->thumb_all.y;
 
-                        x = CLAMP (event_x - priv->slider.width / 2,
-                                   priv->thumb_all.x + priv->overlay.x,
-                                   priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
-                        y = priv->thumb_all.y;
+                    move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                        move_thumb (scrollbar, x_pos + x, y_pos + y);
-                      }
-                    else
-                      {
-                        move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                      }
+                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                     * maybe I could use a new state or a trigger. */
+                    priv->event |= OS_EVENT_VALUE_CHANGED;
 
                     gtk_widget_show (priv->thumb);
+
+                    update_visual_connection (scrollbar);
                   }
               }
           }
@@ -2209,6 +2207,8 @@ window_filter_func (GdkXEvent *gdkxevent,
               {
                 if (check_proximity (scrollbar, event_x, event_y))
                   {
+                    gint x, y, x_pos, y_pos;
+
                     priv->can_hide = FALSE;
 
                     if (priv->source_hide_thumb_id != 0)
@@ -2220,27 +2220,22 @@ window_filter_func (GdkXEvent *gdkxevent,
                     if (priv->lock_position)
                       return GDK_FILTER_CONTINUE;
 
-                    if (priv->overlay.height > priv->slider.height)
-                      {
-                        gint x, y, x_pos, y_pos;
+                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                        gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                    x = priv->thumb_all.x;
+                    y = CLAMP (event_y - priv->slider.height / 2,
+                               priv->thumb_all.y,
+                               priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
 
-                        x = priv->thumb_all.x;
-                        y = CLAMP (event_y - priv->slider.height / 2,
-                                   priv->thumb_all.y + priv->overlay.y,
-                                   priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                    move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                        move_thumb (scrollbar, x_pos + x, y_pos + y);
-                      }
-                    else
-                      {
-                        move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                      }
+                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                     * maybe I could use a new state or a trigger. */
+                    priv->event |= OS_EVENT_VALUE_CHANGED;
 
-                    os_pager_set_detached (priv->pager, FALSE);
-                    os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                     gtk_widget_show (priv->thumb);
+
+                    update_visual_connection (scrollbar);
                   }
                 else
                   {
@@ -2258,6 +2253,8 @@ window_filter_func (GdkXEvent *gdkxevent,
               {
                 if (check_proximity (scrollbar, event_x, event_y))
                   {
+                    gint x, y, x_pos, y_pos;
+
                     priv->can_hide = FALSE;
 
                     if (priv->source_hide_thumb_id != 0)
@@ -2269,27 +2266,22 @@ window_filter_func (GdkXEvent *gdkxevent,
                     if (priv->lock_position)
                       return GDK_FILTER_CONTINUE;
 
-                    if (priv->overlay.width > priv->slider.width)
-                      {
-                        gint x, y, x_pos, y_pos;
+                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                        gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                    x = CLAMP (event_x - priv->slider.width / 2,
+                               priv->thumb_all.x + priv->overlay.x,
+                               priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                    y = priv->thumb_all.y;
 
-                        x = CLAMP (event_x - priv->slider.width / 2,
-                                   priv->thumb_all.x + priv->overlay.x,
-                                   priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
-                        y = priv->thumb_all.y;
+                    move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                        move_thumb (scrollbar, x_pos + x, y_pos + y);
-                      }
-                    else
-                      {
-                        move_thumb (scrollbar, priv->win_x + priv->slider.x, priv->win_y);
-                      }
+                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                     * maybe I could use a new state or a trigger. */
+                    priv->event |= OS_EVENT_VALUE_CHANGED;
 
-                    os_pager_set_detached (priv->pager, FALSE);
-                    os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                     gtk_widget_show (priv->thumb);
+
+                    update_visual_connection (scrollbar);
                   }
                 else
                   {
@@ -2345,6 +2337,8 @@ window_filter_func (GdkXEvent *gdkxevent,
             {
               if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
                 {
+                  gint x, y, x_pos, y_pos;
+
                   priv->can_hide = FALSE;
 
                   if (priv->source_hide_thumb_id != 0)
@@ -2356,31 +2350,30 @@ window_filter_func (GdkXEvent *gdkxevent,
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
 
-                  if (priv->overlay.height > priv->slider.height)
-                    {
-                      gint x, y, x_pos, y_pos;
+                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                  x = priv->thumb_all.x;
+                  y = CLAMP (xev->xbutton.y - priv->slider.height / 2,
+                             priv->thumb_all.y + priv->overlay.y,
+                             priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-                      x = priv->thumb_all.x;
-                      y = CLAMP (xev->xbutton.y - priv->slider.height / 2,
-                                 priv->thumb_all.y + priv->overlay.y,
-                                 priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                  move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                      move_thumb (scrollbar, x_pos + x, y_pos + y);
-                    }
-                  else
-                    {
-                      move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                    }
+                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                   * maybe I could use a new state or a trigger. */
+                  priv->event |= OS_EVENT_VALUE_CHANGED;
 
                   gtk_widget_show (priv->thumb);
+
+                  update_visual_connection (scrollbar);
                 }
             }
           else
             {
               if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
                 {
+                  gint x, y, x_pos, y_pos;
+
                   priv->can_hide = FALSE;
 
                   if (priv->source_hide_thumb_id != 0)
@@ -2392,25 +2385,22 @@ window_filter_func (GdkXEvent *gdkxevent,
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
 
-                  if (priv->overlay.width > priv->slider.width)
-                    {
-                      gint x, y, x_pos, y_pos;
+                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                  x = CLAMP (xev->xbutton.x - priv->slider.width / 2,
+                             priv->thumb_all.x + priv->overlay.x,
+                             priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                  y = priv->thumb_all.y;
 
-                      x = CLAMP (xev->xbutton.x - priv->slider.width / 2,
-                                 priv->thumb_all.x + priv->overlay.x,
-                                 priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
-                      y = priv->thumb_all.y;
+                  move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                      move_thumb (scrollbar, x_pos + x, y_pos + y);
-                    }
-                  else
-                    {
-                      move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                    }
+                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                   * maybe I could use a new state or a trigger. */
+                  priv->event |= OS_EVENT_VALUE_CHANGED;
 
                   gtk_widget_show (priv->thumb);
+
+                  update_visual_connection (scrollbar);
                 }
             }
         }
@@ -2461,32 +2451,29 @@ window_filter_func (GdkXEvent *gdkxevent,
             {
               if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
                 {
+                  gint x, y, x_pos, y_pos;
+
                   priv->can_hide = FALSE;
 
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
 
-                  if (priv->overlay.height > priv->slider.height)
-                    {
-                      gint x, y, x_pos, y_pos;
+                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                  x = priv->thumb_all.x;
+                  y = CLAMP (xev->xmotion.y - priv->slider.height / 2,
+                             priv->thumb_all.y + priv->overlay.y,
+                             priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
 
-                      x = priv->thumb_all.x;
-                      y = CLAMP (xev->xmotion.y - priv->slider.height / 2,
-                                 priv->thumb_all.y + priv->overlay.y,
-                                 priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                  move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                      move_thumb (scrollbar, x_pos + x, y_pos + y);
-                    }
-                  else
-                    {
-                      move_thumb (scrollbar, priv->win_x, priv->win_y + priv->slider.y);
-                    }
+                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                   * maybe I could use a new state or a trigger. */
+                  priv->event |= OS_EVENT_VALUE_CHANGED;
 
-                  os_pager_set_detached (priv->pager, FALSE);
-                  os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                   gtk_widget_show (priv->thumb);
+
+                  update_visual_connection (scrollbar);
                 }
               else
                 {
@@ -2504,32 +2491,29 @@ window_filter_func (GdkXEvent *gdkxevent,
             {
               if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
                 {
+                  gint x, y, x_pos, y_pos;
+
                   priv->can_hide = FALSE;
 
                   if (priv->lock_position)
                     return GDK_FILTER_CONTINUE;
 
-                  if (priv->overlay.width > priv->slider.width)
-                    {
-                      gint x, y, x_pos, y_pos;
+                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-                      gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                  x = CLAMP (xev->xmotion.x - priv->slider.width / 2,
+                             priv->thumb_all.x + priv->overlay.x,
+                             priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                  y = priv->thumb_all.y;
 
-                      x = CLAMP (xev->xmotion.x - priv->slider.width / 2,
-                                 priv->thumb_all.x + priv->overlay.x,
-                                 priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
-                      y = priv->thumb_all.y;
+                  move_thumb (scrollbar, x_pos + x, y_pos + y);
 
-                      move_thumb (scrollbar, x_pos + x, y_pos + y);
-                    }
-                  else
-                    {
-                      move_thumb (scrollbar, priv->win_x + priv->slider.x, priv->win_y);
-                    }
+                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
+                   * maybe I could use a new state or a trigger. */
+                  priv->event |= OS_EVENT_VALUE_CHANGED;
 
-                  os_pager_set_detached (priv->pager, FALSE);
-                  os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
                   gtk_widget_show (priv->thumb);
+
+                  update_visual_connection (scrollbar);
                 }
               else
                 {
