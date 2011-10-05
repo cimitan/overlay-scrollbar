@@ -15,12 +15,12 @@ source_h = \
 	os-scrollbar.h
 
 source_c = \
-	$(srcdir)/os-log.c \
-	$(srcdir)/os-utils.c \
 	$(srcdir)/os-animation.c \
+	$(srcdir)/os-log.c \
 	$(srcdir)/os-pager.c \
+	$(srcdir)/os-scrollbar.c \
 	$(srcdir)/os-thumb.c \
-	$(srcdir)/os-scrollbar.c
+	$(srcdir)/os-utils.c
 
 osincludedir = $(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
 osinclude_HEADERS = $(source_h)

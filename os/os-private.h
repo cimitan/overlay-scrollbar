@@ -107,25 +107,20 @@ os_log_message (OsLogLevel level, const gchar *function, const gchar *file,
 
 /* os-animation.c */
 
-#define OS_TYPE_ANIMATION (os_animation_get_type ())
-#define OS_ANIMATION(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_ANIMATION, OsAnimation))
-#define OS_ANIMATION_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_ANIMATION, OsAnimationClass))
-#define OS_IS_ANIMATION(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_ANIMATION))
-#define OS_IS_ANIMATION_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_ANIMATION))
-#define OS_ANIMATION_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_ANIMATION, OsAnimationClass))
+#define OS_TYPE_ANIMATION            (os_animation_get_type ())
+#define OS_ANIMATION(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_ANIMATION, OsAnimation))
+#define OS_ANIMATION_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_ANIMATION, OsAnimationClass))
+#define OS_IS_ANIMATION(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_ANIMATION))
+#define OS_IS_ANIMATION_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_ANIMATION))
+#define OS_ANIMATION_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_ANIMATION, OsAnimationClass))
 
 typedef void (*OsAnimationUpdateFunc) (gfloat weight, gpointer user_data);
 typedef void (*OsAnimationEndFunc)    (gpointer user_data);
 typedef void (*OsAnimationStopFunc)   (gpointer user_data);
 
 typedef struct _OsAnimation OsAnimation;
-typedef struct _OsAnimationPrivate OsAnimationPrivate;
 typedef struct _OsAnimationClass OsAnimationClass;
+typedef struct _OsAnimationPrivate OsAnimationPrivate;
 
 struct _OsAnimation {
   GObject parent_instance;
@@ -158,20 +153,15 @@ void         os_animation_stop         (OsAnimation        *animation,
 /* os-thumb.c */
 
 #define OS_TYPE_THUMB (os_thumb_get_type ())
-#define OS_THUMB(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_THUMB, OsThumb))
-#define OS_THUMB_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_THUMB, OsThumbClass))
-#define OS_IS_THUMB(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_THUMB))
-#define OS_IS_THUMB_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_THUMB))
-#define OS_THUMB_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_THUMB, OsThumbClass))
+#define OS_THUMB(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_THUMB, OsThumb))
+#define OS_THUMB_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_THUMB, OsThumbClass))
+#define OS_IS_THUMB(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_THUMB))
+#define OS_IS_THUMB_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_THUMB))
+#define OS_THUMB_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_THUMB, OsThumbClass))
 
 typedef struct _OsThumb OsThumb;
-typedef struct _OsThumbPrivate OsThumbPrivate;
 typedef struct _OsThumbClass OsThumbClass;
+typedef struct _OsThumbPrivate OsThumbPrivate;
 
 struct _OsThumb {
   GtkWindow parent_object;
@@ -196,21 +186,16 @@ void       os_thumb_set_detached (OsThumb *thumb,
 
 /* os-pager.c */
 
-#define OS_TYPE_PAGER (os_pager_get_type ())
-#define OS_PAGER(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_PAGER, OsPager))
-#define OS_PAGER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_PAGER, OsPagerClass))
-#define OS_IS_PAGER(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_PAGER))
-#define OS_IS_PAGER_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_PAGER))
-#define OS_PAGER_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_PAGER, OsPagerClass))
+#define OS_TYPE_PAGER            (os_pager_get_type ())
+#define OS_PAGER(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_PAGER, OsPager))
+#define OS_PAGER_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_PAGER, OsPagerClass))
+#define OS_IS_PAGER(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_PAGER))
+#define OS_IS_PAGER_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_PAGER))
+#define OS_PAGER_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_PAGER, OsPagerClass))
 
 typedef struct _OsPager OsPager;
-typedef struct _OsPagerPrivate OsPagerPrivate;
 typedef struct _OsPagerClass OsPagerClass;
+typedef struct _OsPagerPrivate OsPagerPrivate;
 
 struct _OsPager {
   GObject parent_instance;
@@ -226,27 +211,27 @@ GType    os_pager_get_type      (void) G_GNUC_CONST;
 
 OsPager* os_pager_new           (void);
 
-void     os_pager_hide          (OsPager *overlay);
+void     os_pager_hide          (OsPager *pager);
 
-void     os_pager_connect       (OsPager     *overlay,
+void     os_pager_connect       (OsPager     *pager,
                                  GdkRectangle mask);
 
-void     os_pager_move_resize   (OsPager     *overlay,
+void     os_pager_move_resize   (OsPager     *pager,
                                  GdkRectangle mask);
 
-void     os_pager_set_active    (OsPager *overlay,
+void     os_pager_set_active    (OsPager *pager,
                                  gboolean active,
                                  gboolean animate);
 
-void     os_pager_set_detached  (OsPager *overlay,
+void     os_pager_set_detached  (OsPager *pager,
                                  gboolean detached);
 
 void     os_pager_set_parent    (OsPager   *pager,
                                  GtkWidget *parent);
 
-void     os_pager_show          (OsPager *overlay);
+void     os_pager_show          (OsPager *pager);
 
-void     os_pager_size_allocate (OsPager     *overlay,
+void     os_pager_size_allocate (OsPager     *pager,
                                  GdkRectangle rectangle);
 
 G_END_DECLS
