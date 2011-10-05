@@ -327,6 +327,46 @@ calc_workarea (Display *display,
     }
 }
 
+/* Traduce coordinates into GtkRange values. */
+static gdouble
+coord_to_value (OsScrollbar *scrollbar,
+                gint         coord)
+{
+  OsScrollbarPrivate *priv;
+  gdouble frac;
+  gdouble value;
+  gint    trough_length;
+  gint    slider_length;
+
+  priv = scrollbar->priv;
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      trough_length = priv->trough.height;
+      slider_length = MAX (priv->slider.height, priv->overlay.height);
+    }
+  else
+    {
+      trough_length = priv->trough.width;
+      slider_length = MAX (priv->slider.width, priv->overlay.width);
+    }
+
+  if (trough_length == slider_length)
+    frac = 1.0;
+  else
+    frac = (MAX (0, coord) / (gdouble) (trough_length - slider_length));
+
+  value = gtk_adjustment_get_lower (priv->adjustment) + frac * (gtk_adjustment_get_upper (priv->adjustment) -
+                                                                gtk_adjustment_get_lower (priv->adjustment) -
+                                                                gtk_adjustment_get_page_size (priv->adjustment));
+
+  value = CLAMP (value,
+                 gtk_adjustment_get_lower (priv->adjustment),
+                 gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
+
+  return value;
+}
+
 /* Deactivate the pager if it's the case. */
 static void
 deactivate_pager (OsScrollbar *scrollbar)
@@ -1251,7 +1291,8 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 {
   if (event->type == GDK_BUTTON_PRESS)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           OsScrollbar *scrollbar;
           OsScrollbarPrivate *priv;
@@ -1269,6 +1310,34 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
           priv->detached_scroll = FALSE;
+
+          if (event->button == 2)
+            {
+              /* Reconnect the thumb with the pager. */
+              gdouble new_value;
+              gint c, delta;
+
+              if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+                {
+                  priv->slide_initial_slider_position = event->y_root - priv->win_y - event->y;
+                  priv->slide_initial_coordinate = event->y_root;
+
+                  delta = event->y_root - priv->slide_initial_coordinate;
+                }
+              else
+                {
+                  priv->slide_initial_slider_position = event->x_root - priv->win_x - event->x;
+                  priv->slide_initial_coordinate = event->x_root;
+
+                  delta = event->x_root - priv->slide_initial_coordinate;
+                }
+
+              c = priv->slide_initial_slider_position + delta;
+
+              new_value = coord_to_value (scrollbar, c);
+
+              gtk_adjustment_set_value (priv->adjustment, new_value);
+            }
 
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1366,7 +1435,8 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 {
   if (event->type == GDK_BUTTON_RELEASE)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           OsScrollbar *scrollbar;
           OsScrollbarPrivate *priv;
@@ -1376,7 +1446,9 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
-          if (!(priv->event & OS_EVENT_MOTION_NOTIFY) && !priv->detached_scroll)
+          if (event->button == 1 &&
+              !(priv->event & OS_EVENT_MOTION_NOTIFY) &&
+              !priv->detached_scroll)
             {
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
@@ -1540,46 +1612,6 @@ thumb_map_cb (GtkWidget *widget,
       gdk_error_trap_pop ();
 #endif
     }
-}
-
-/* Traduce coordinates into GtkRange values. */
-static gdouble
-coord_to_value (OsScrollbar *scrollbar,
-                gint         coord)
-{
-  OsScrollbarPrivate *priv;
-  gdouble frac;
-  gdouble value;
-  gint    trough_length;
-  gint    slider_length;
-
-  priv = scrollbar->priv;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      trough_length = priv->trough.height;
-      slider_length = MAX (priv->slider.height, priv->overlay.height);
-    }
-  else
-    {
-      trough_length = priv->trough.width;
-      slider_length = MAX (priv->slider.width, priv->overlay.width);
-    }
-
-  if (trough_length == slider_length)
-    frac = 1.0;
-  else
-    frac = (MAX (0, coord) / (gdouble) (trough_length - slider_length));
-
-  value = gtk_adjustment_get_lower (priv->adjustment) + frac * (gtk_adjustment_get_upper (priv->adjustment) -
-                                                                gtk_adjustment_get_lower (priv->adjustment) -
-                                                                gtk_adjustment_get_page_size (priv->adjustment));
-
-  value = CLAMP (value,
-                 gtk_adjustment_get_lower (priv->adjustment),
-                 gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
-
-  return value;
 }
 
 /* From pointer movement, set adjustment value. */
