@@ -2148,8 +2148,8 @@ window_filter_func (GdkXEvent *gdkxevent,
 
                     x = priv->thumb_all.x;
                     y = CLAMP (event_y - priv->slider.height / 2,
-                               priv->thumb_all.y + priv->overlay.y,
-                               priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                               priv->thumb_all.y,
+                               priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
 
                     move_thumb (scrollbar, x_pos + x, y_pos + y);
 
@@ -2176,8 +2176,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                     gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                     x = CLAMP (event_x - priv->slider.width / 2,
-                               priv->thumb_all.x + priv->overlay.x,
-                               priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                               priv->thumb_all.x,
+                               priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
                     y = priv->thumb_all.y;
 
                     move_thumb (scrollbar, x_pos + x, y_pos + y);
@@ -2301,8 +2301,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                     gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                     x = CLAMP (event_x - priv->slider.width / 2,
-                               priv->thumb_all.x + priv->overlay.x,
-                               priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                               priv->thumb_all.x,
+                               priv->thumb_all.x + priv->thumb_all.width + - priv->slider.width);
                     y = priv->thumb_all.y;
 
                     move_thumb (scrollbar, x_pos + x, y_pos + y);
@@ -2386,8 +2386,8 @@ window_filter_func (GdkXEvent *gdkxevent,
 
                   x = priv->thumb_all.x;
                   y = CLAMP (xev->xbutton.y - priv->slider.height / 2,
-                             priv->thumb_all.y + priv->overlay.y,
-                             priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                             priv->thumb_all.y,
+                             priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
 
                   move_thumb (scrollbar, x_pos + x, y_pos + y);
 
@@ -2420,8 +2420,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                   x = CLAMP (xev->xbutton.x - priv->slider.width / 2,
-                             priv->thumb_all.x + priv->overlay.x,
-                             priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                             priv->thumb_all.x,
+                             priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
                   y = priv->thumb_all.y;
 
                   move_thumb (scrollbar, x_pos + x, y_pos + y);
@@ -2494,8 +2494,8 @@ window_filter_func (GdkXEvent *gdkxevent,
 
                   x = priv->thumb_all.x;
                   y = CLAMP (xev->xmotion.y - priv->slider.height / 2,
-                             priv->thumb_all.y + priv->overlay.y,
-                             priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+                             priv->thumb_all.y,
+                             priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
 
                   move_thumb (scrollbar, x_pos + x, y_pos + y);
 
@@ -2533,8 +2533,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
                   x = CLAMP (xev->xmotion.x - priv->slider.width / 2,
-                             priv->thumb_all.x + priv->overlay.x,
-                             priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+                             priv->thumb_all.x,
+                             priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
                   y = priv->thumb_all.y;
 
                   move_thumb (scrollbar, x_pos + x, y_pos + y);
