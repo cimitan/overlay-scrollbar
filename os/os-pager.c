@@ -24,9 +24,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "os-private.h"
+
 #include <cairo-xlib.h>
 #include <gdk/gdkx.h>
-#include "os-private.h"
 
 /* Rate of the fade. */
 #define RATE_FADE 30
@@ -48,7 +49,7 @@ struct _OsPagerPrivate {
   GdkWindow *connection_window;
   GtkWidget *parent;
   GdkRectangle mask;
-  GdkRectangle connection_mask; /* in theory not needed, but easier to read. */
+  GdkRectangle connection_mask; /* In theory not needed, but easier to read. */
   GdkRectangle allocation;
   OsAnimation *animation;
   gboolean active;
@@ -61,9 +62,7 @@ struct _OsPagerPrivate {
 static void os_pager_dispose (GObject *object);
 static void os_pager_finalize (GObject *object);
 
-/* Private functions */
-
-/* draw on the connection_window */
+/* Draw on the connection_window. */
 static void
 draw_connection (OsPager *pager)
 {
@@ -99,7 +98,7 @@ draw_connection (OsPager *pager)
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
-/* draw on the pager_window */
+/* Draw on the pager_window. */
 static void
 draw_pager (OsPager *pager)
 {
@@ -163,7 +162,7 @@ draw_pager (OsPager *pager)
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
 
-/* callback called by the change-state animation */
+/* Callback called by the change-state animation. */
 static void
 change_state_cb (gfloat   weight,
                  gpointer user_data)
@@ -183,7 +182,7 @@ change_state_cb (gfloat   weight,
   draw_pager (pager);
 }
 
-/* stop_func called by the change-state animation */
+/* Stop function called by the change-state animation. */
 static void
 change_state_stop_cb (gpointer user_data)
 {
@@ -199,7 +198,7 @@ change_state_stop_cb (gpointer user_data)
   draw_pager (pager);
 }
 
-/* callback called when the Gtk+ theme changes */
+/* Callback called when the Gtk+ theme changes. */
 static void
 notify_gtk_theme_name_cb (GObject*    gobject,
                           GParamSpec* pspec,
@@ -220,7 +219,7 @@ notify_gtk_theme_name_cb (GObject*    gobject,
   draw_pager (pager);
 }
 
-/* check if two GdkRectangle are different */
+/* Check if two GdkRectangle are different. */
 static gboolean
 rectangle_changed (GdkRectangle rectangle1,
                    GdkRectangle rectangle2)
@@ -350,14 +349,14 @@ os_pager_finalize (GObject *object)
  * Creates a new #OsPager instance.
  *
  * Returns: the new #OsPager instance.
- */
+ **/
 OsPager*
 os_pager_new (void)
 {
   return g_object_new (OS_TYPE_PAGER, NULL);
 }
 
-/* move a mask on the connection_window, fake movement */
+/* Move a mask on the connection_window, fake movement. */
 static void
 mask_connection (OsPager *pager)
 {
@@ -418,14 +417,14 @@ os_pager_hide (OsPager *pager)
   if (priv->parent == NULL)
     return;
 
-  /* if there's an animation currently running, stop it. */
+  /* If there's an animation currently running, stop it. */
   os_animation_stop (priv->animation, change_state_stop_cb);
 
   gdk_window_hide (priv->connection_window);
   gdk_window_hide (priv->pager_window);
 }
 
-/* move a mask on the pager_window, fake movement */
+/* Move a mask on the pager_window, fake movement. */
 static void
 mask_pager (OsPager *pager)
 {
@@ -485,7 +484,7 @@ os_pager_set_active (OsPager *pager,
 
   priv = pager->priv;
 
-  /* set the state and draw even if there's an animation running, that is
+  /* Set the state and draw even if there's an animation running, that is
    * (!animate && os_animation_is_running (priv->animation)). */
   if ((priv->active != active) ||
       (!animate && os_animation_is_running (priv->animation)))
@@ -552,7 +551,7 @@ os_pager_set_detached (OsPager *pager,
     }
 }
 
-/* create connection_window and pager_window */
+/* Create connection_window and pager_window. */
 static void
 create_windows (OsPager *pager)
 {
@@ -602,7 +601,7 @@ create_windows (OsPager *pager)
   attributes.colormap = gtk_widget_get_colormap (priv->parent);
 #endif
 
-  /* connection_window */
+  /* connection_window. */
   priv->connection_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                             &attributes,
 #ifdef USE_GTK3
@@ -616,7 +615,7 @@ create_windows (OsPager *pager)
   gdk_window_set_transient_for (priv->connection_window,
                                 gtk_widget_get_window (priv->parent));
 
-  /* FIXME(Cimi) maybe this is not required with 0 as event mask */
+  /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->connection_window,
 #ifdef USE_GTK3
                                          cairo_region_create (),
@@ -625,7 +624,7 @@ create_windows (OsPager *pager)
 #endif
                                          0, 0);
 
-  /* pager_window */
+  /* pager_window. */
   priv->pager_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                        &attributes,
 #ifdef USE_GTK3
@@ -639,7 +638,7 @@ create_windows (OsPager *pager)
   gdk_window_set_transient_for (priv->pager_window,
                                 gtk_widget_get_window (priv->parent));
 
-  /* FIXME(Cimi) maybe this is not required with 0 as event mask */
+  /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->pager_window,
 #ifdef USE_GTK3
                                          cairo_region_create (),
@@ -666,7 +665,7 @@ os_pager_set_parent (OsPager   *pager,
 
   priv = pager->priv;
 
-  /* stop currently running animation. */
+  /* Stop currently running animation. */
   if (priv->animation != NULL)
     os_animation_stop (priv->animation, NULL);
 

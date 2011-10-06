@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb1) oneiric; urgency=low
+
+  * experimental new thumb functionality
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 06 Oct 2011 14:44:46 -0400
+
 overlay-scrollbar (0.2.11-0ubuntu1) oneiric; urgency=low
 
   * New upstream release.
