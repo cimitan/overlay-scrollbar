@@ -39,14 +39,19 @@
 
 G_BEGIN_DECLS
 
+typedef struct
+{
+  gint x;
+  gint y;
+} OsCoordinate;
+
 typedef enum
 {
   OS_EVENT_NONE = 0,
   OS_EVENT_BUTTON_PRESS = 1,
   OS_EVENT_ENTER_NOTIFY = 2,
-  OS_EVENT_MOTION_NOTIFY = 4,
-  OS_EVENT_VALUE_CHANGED = 8
-} OsEvent;
+  OS_EVENT_MOTION_NOTIFY = 4
+} OsEventFlags;
 
 /* os-log.c */
 

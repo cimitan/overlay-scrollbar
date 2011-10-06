@@ -58,6 +58,9 @@
 /* Timeout before hiding in ms, after leaving the thumb. */
 #define TIMEOUT_THUMB_HIDE 200
 
+/* Timeout before showing in ms, after entering the proximity. */
+#define TIMEOUT_THUMB_SHOW 100
+
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
 
@@ -71,12 +74,27 @@ typedef enum
 
 typedef enum
 {
+  OS_STATE_NONE = 0,
+  OS_STATE_DETACHED = 1,
+  OS_STATE_FULLSIZE = 2,
+  OS_STATE_INTERNAL = 4,
+  OS_STATE_LOCKED = 8
+} OsStateFlags;
+
+typedef enum
+{
   OS_STRUT_SIDE_NONE = 0,
   OS_STRUT_SIDE_TOP = 1,
   OS_STRUT_SIDE_BOTTOM = 2,
   OS_STRUT_SIDE_LEFT = 4,
   OS_STRUT_SIDE_RIGHT = 8
-} OsStrutSide;
+} OsStrutSideFlags;
+
+typedef struct
+{
+  gboolean proximity;
+  gboolean running;
+} OsWindowFilter;
 
 struct _OsScrollbarPrivate
 {
@@ -90,29 +108,24 @@ struct _OsScrollbarPrivate
   GtkWidget *thumb;
   GtkWindowGroup *window_group;
   OsAnimation *animation;
+  OsCoordinate pointer;
+  OsCoordinate toplevel;
+  OsEventFlags event;
+  OsStateFlags state;
   OsPager *pager;
   OsSide side;
-  OsEvent event;
+  OsWindowFilter filter;
   gboolean active_window;
-  gboolean can_deactivate_pager;
-  gboolean can_hide;
-  gboolean detached_scroll;
-  gboolean filter;
-  gboolean fullsize;
-  gboolean internal;
-  gboolean lock_position;
-  gboolean proximity;
-  gboolean toplevel_button_press;
+  gboolean deactivable_pager;
+  gboolean hidable_thumb;
+  gboolean window_button_press; /* FIXME(Cimi) to replace with X11 input events. */
   gdouble value;
-  gint win_x;
-  gint win_y;
   gint slide_initial_slider_position;
   gint slide_initial_coordinate;
-  gint pointer_x;
-  gint pointer_y;
   gint64 present_time;
   guint32 source_deactivate_pager_id;
   guint32 source_hide_thumb_id;
+  guint32 source_show_thumb_id;
   guint32 source_unlock_thumb_id;
 };
 
@@ -375,7 +388,7 @@ deactivate_pager (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  if (priv->pager != NULL && priv->can_deactivate_pager)
+  if (priv->pager != NULL && priv->deactivable_pager)
     os_pager_set_active (priv->pager, FALSE, TRUE);
 }
 
@@ -405,7 +418,7 @@ hide_thumb (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  if (priv->can_hide)
+  if (priv->hidable_thumb)
     gtk_widget_hide (priv->thumb);
 }
 
@@ -521,7 +534,7 @@ sanitize_x (OsScrollbar *scrollbar,
 
       for (i = 0; i < cairo_region_num_rectangles (struts_region); i++)
         {
-          OsStrutSide strut_side;
+          OsStrutSideFlags strut_side;
           gint count;
 
           cairo_region_get_rectangle (struts_region, i, &tmp_rect);
@@ -588,7 +601,7 @@ sanitize_x (OsScrollbar *scrollbar,
       (n_monitor != gdk_screen_get_monitor_at_point (screen, monitor_x + priv->thumb_all.width, y) ||
        monitor_x + priv->thumb_all.width >= screen_width))
     {
-      priv->internal = TRUE;
+      priv->state |= OS_STATE_INTERNAL;
       return MAX (x - priv->thumb_all.width, screen_width - priv->thumb_all.width);
     }
 
@@ -596,12 +609,12 @@ sanitize_x (OsScrollbar *scrollbar,
       (n_monitor != gdk_screen_get_monitor_at_point (screen, monitor_x - priv->thumb_all.width, y) ||
        monitor_x - priv->thumb_all.width <= screen_x))
     {
-      priv->internal = TRUE;
+      priv->state |= OS_STATE_INTERNAL;
       return MAX (x, screen_x);
     }
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    priv->internal = FALSE;
+    priv->state &= ~(OS_STATE_INTERNAL);
 
   return x;
 }
@@ -664,7 +677,7 @@ sanitize_y (OsScrollbar *scrollbar,
 
       for (i = 0; i < cairo_region_num_rectangles (struts_region); i++)
         {
-          OsStrutSide strut_side;
+          OsStrutSideFlags strut_side;
           gint count;
 
           cairo_region_get_rectangle (struts_region, i, &tmp_rect);
@@ -731,7 +744,7 @@ sanitize_y (OsScrollbar *scrollbar,
       (n_monitor != gdk_screen_get_monitor_at_point (screen, x, monitor_y + priv->thumb_all.height) ||
        monitor_y + priv->thumb_all.height >= screen_height))
     {
-      priv->internal = TRUE;
+      priv->state |= OS_STATE_INTERNAL;
       return MAX (y - priv->thumb_all.height, screen_height - priv->thumb_all.height);
     }
 
@@ -739,12 +752,12 @@ sanitize_y (OsScrollbar *scrollbar,
       (n_monitor != gdk_screen_get_monitor_at_point (screen, x, monitor_y - priv->thumb_all.height) ||
        monitor_y - priv->thumb_all.height <= screen_y))
     {
-      priv->internal = TRUE;
+      priv->state |= OS_STATE_INTERNAL;
       return MAX (y, screen_y);
     }
 
   if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
-    priv->internal = FALSE;
+    priv->state &= ~(OS_STATE_INTERNAL);
 
   return y;
 }
@@ -919,8 +932,8 @@ unlock_thumb_cb (gpointer user_data)
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  if (priv->can_hide)
-    priv->lock_position = FALSE;
+  if (priv->hidable_thumb)
+    priv->state &= ~(OS_STATE_LOCKED);
 
   priv->source_unlock_thumb_id = 0;
 
@@ -948,14 +961,14 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   if (gtk_adjustment_get_upper (adjustment) - gtk_adjustment_get_lower (adjustment) >
       gtk_adjustment_get_page_size (adjustment))
     {
-      priv->fullsize = FALSE;
-      if (priv->proximity != FALSE)
+      priv->state &= ~(OS_STATE_FULLSIZE);
+      if (priv->filter.proximity)
         os_pager_show (priv->pager);
     }
   else
     {
-      priv->fullsize = TRUE;
-      if (priv->proximity != FALSE)
+      priv->state |= OS_STATE_FULLSIZE;
+      if (priv->filter.proximity)
         {
           os_pager_hide (priv->pager);
 
@@ -986,72 +999,80 @@ update_visual_connection (OsScrollbar *scrollbar)
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      if (priv->win_y + priv->overlay.y >= y_pos + priv->slider.height)
+      if (priv->toplevel.y + priv->overlay.y >= y_pos + priv->slider.height)
         {
           GdkRectangle mask;
 
           mask.x = 0;
-          mask.y = y_pos + priv->slider.height / 2 - priv->win_y;
+          mask.y = y_pos + priv->slider.height / 2 - priv->toplevel.y;
           mask.width = priv->pager_all.width;
           mask.height = priv->overlay.y - mask.y;
 
+          priv->state |= OS_STATE_DETACHED;
+
           os_pager_connect (priv->pager, mask);
           os_pager_set_detached (priv->pager, TRUE);
-
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->win_y + priv->overlay.y + priv->overlay.height <= y_pos)
+      else if (priv->toplevel.y + priv->overlay.y + priv->overlay.height <= y_pos)
         {
           GdkRectangle mask;
 
           mask.x = 0;
           mask.y = priv->overlay.y + priv->overlay.height;
           mask.width = priv->pager_all.width;
-          mask.height = y_pos + priv->slider.height / 2 - priv->win_y - mask.y;
+          mask.height = y_pos + priv->slider.height / 2 - priv->toplevel.y - mask.y;
+
+          priv->state |= OS_STATE_DETACHED;
 
           os_pager_connect (priv->pager, mask);
           os_pager_set_detached (priv->pager, TRUE);
-
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
       else 
         {
+          priv->state &= ~(OS_STATE_DETACHED);
+
           os_pager_set_detached (priv->pager, FALSE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
         }
     }
   else
     {
-      if (priv->win_x + priv->overlay.x >= x_pos + priv->slider.width)
+      if (priv->toplevel.x + priv->overlay.x >= x_pos + priv->slider.width)
         {
           GdkRectangle mask;
 
-          mask.x = x_pos + priv->slider.width / 2 - priv->win_x;
+          mask.x = x_pos + priv->slider.width / 2 - priv->toplevel.x;
           mask.y = 0;
           mask.width = priv->overlay.x - mask.x;
           mask.height = priv->pager_all.height;
 
+          priv->state |= OS_STATE_DETACHED;
+
           os_pager_connect (priv->pager, mask);
           os_pager_set_detached (priv->pager, TRUE);
-
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->win_x + priv->overlay.x + priv->overlay.width <= x_pos)
+      else if (priv->toplevel.x + priv->overlay.x + priv->overlay.width <= x_pos)
         {
           GdkRectangle mask;
 
           mask.x = priv->overlay.x + priv->overlay.width;
           mask.y = 0;
-          mask.width = x_pos + priv->slider.width / 2 - priv->win_x - mask.x;
+          mask.width = x_pos + priv->slider.width / 2 - priv->toplevel.x - mask.x;
           mask.height = priv->pager_all.height;
+
+          priv->state |= OS_STATE_DETACHED;
 
           os_pager_connect (priv->pager, mask);
           os_pager_set_detached (priv->pager, TRUE);
-
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
       else
         {
+          priv->state &= ~(OS_STATE_DETACHED);
+
           os_pager_set_detached (priv->pager, FALSE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
         }
@@ -1076,16 +1097,7 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
     gtk_widget_hide (priv->thumb);
 
   if (gtk_widget_get_mapped (priv->thumb))
-    {
-      /* If we're dragging the thumb, it can't be detached. */
-      if (priv->event & OS_EVENT_MOTION_NOTIFY)
-        {
-          os_pager_set_detached (priv->pager, FALSE);
-          os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
-        }
-      else
-        update_visual_connection (scrollbar);
-    }
+    update_visual_connection (scrollbar);
 
   move_pager (scrollbar);
 }
@@ -1110,12 +1122,12 @@ pager_set_state_from_pointer (OsScrollbar *scrollbar,
   if ((x > allocation.x && x < allocation.x + allocation.width) &&
       (y > allocation.y && y < allocation.y + allocation.height))
     {
-      priv->can_deactivate_pager = FALSE;
+      priv->deactivable_pager = FALSE;
       os_pager_set_active (priv->pager, TRUE, TRUE);
     }
   else
     {
-      priv->can_deactivate_pager = TRUE;
+      priv->deactivable_pager = TRUE;
       os_pager_set_active (priv->pager, FALSE, TRUE);
     }
 }
@@ -1153,7 +1165,7 @@ root_gfunc (gpointer data,
 
           priv->active_window = TRUE;
 
-          priv->can_deactivate_pager = FALSE;
+          priv->deactivable_pager = FALSE;
           os_pager_set_active (priv->pager, TRUE, TRUE);
         }
       else if (priv->active_window)
@@ -1192,7 +1204,7 @@ root_gfunc (gpointer data,
           else
             {
               /* If the pointer is outside of the window, set it inactive. */
-              priv->can_deactivate_pager = TRUE;
+              priv->deactivable_pager = TRUE;
               os_pager_set_active (priv->pager, FALSE, TRUE);
             }
 
@@ -1309,8 +1321,6 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           priv->event |= OS_EVENT_BUTTON_PRESS;
           priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
-          priv->detached_scroll = FALSE;
-
           if (event->button == 2)
             {
               /* Reconnect the thumb with the pager. */
@@ -1319,14 +1329,14 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  priv->slide_initial_slider_position = event->y_root - priv->win_y - event->y;
+                  priv->slide_initial_slider_position = event->y_root - priv->toplevel.y - event->y;
                   priv->slide_initial_coordinate = event->y_root;
 
                   delta = event->y_root - priv->slide_initial_coordinate;
                 }
               else
                 {
-                  priv->slide_initial_slider_position = event->x_root - priv->win_x - event->x;
+                  priv->slide_initial_slider_position = event->x_root - priv->toplevel.x - event->x;
                   priv->slide_initial_coordinate = event->x_root;
 
                   delta = event->x_root - priv->slide_initial_coordinate;
@@ -1350,8 +1360,8 @@ thumb_button_press_event_cb (GtkWidget      *widget,
               priv->slide_initial_coordinate = event->x_root;
             }
 
-          priv->pointer_x = event->x;
-          priv->pointer_y = event->y;
+          priv->pointer.x = event->x;
+          priv->pointer.y = event->y;
         }
     }
 
@@ -1447,25 +1457,22 @@ thumb_button_release_event_cb (GtkWidget      *widget,
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
           if (event->button == 1 &&
-              !(priv->event & OS_EVENT_MOTION_NOTIFY) &&
-              !priv->detached_scroll)
+              !(priv->event & OS_EVENT_MOTION_NOTIFY))
             {
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  if (priv->pointer_y < priv->slider.height / 2)
+                  if (priv->pointer.y < priv->slider.height / 2)
                     page_up (scrollbar);
                   else
                     page_down (scrollbar);
                 }
               else
                 {
-                  if (priv->pointer_x < priv->slider.width / 2)
+                  if (priv->pointer.x < priv->slider.width / 2)
                     page_up (scrollbar);
                   else
                     page_down (scrollbar);
                 }
-
-              priv->event |= OS_EVENT_VALUE_CHANGED;
             }
 
           priv->event &= ~(OS_EVENT_BUTTON_PRESS | OS_EVENT_MOTION_NOTIFY);
@@ -1488,11 +1495,11 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
 
   priv->event |= OS_EVENT_ENTER_NOTIFY;
 
-  priv->can_deactivate_pager = FALSE;
-  priv->can_hide = FALSE;
+  priv->deactivable_pager = FALSE;
+  priv->hidable_thumb = FALSE;
 
-  if (priv->internal)
-    priv->lock_position = TRUE;
+  if (priv->state & OS_STATE_INTERNAL)
+    priv->state |= OS_STATE_LOCKED;
 
   return FALSE;
 }
@@ -1515,7 +1522,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
       /* Never deactivate the pager in an active window. */
       if (!priv->active_window)
         {
-          priv->can_deactivate_pager = TRUE;
+          priv->deactivable_pager = TRUE;
 
           if (priv->source_deactivate_pager_id != 0)
             g_source_remove (priv->source_deactivate_pager_id);
@@ -1525,7 +1532,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                                                             scrollbar);
         }
 
-      priv->can_hide = TRUE;
+      priv->hidable_thumb = TRUE;
 
       if (priv->source_hide_thumb_id != 0)
         g_source_remove (priv->source_hide_thumb_id);
@@ -1554,7 +1561,7 @@ thumb_map_cb (GtkWidget *widget,
   priv = scrollbar->priv;
 
   /* Immediately set the pager to be active. */
-  priv->can_deactivate_pager = FALSE;
+  priv->deactivable_pager = FALSE;
   os_pager_set_active (priv->pager, TRUE, FALSE);
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
@@ -1654,184 +1661,103 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
     {
       gint x, y;
 
-      /* Thumb and pager are detached.
-       * Detached scroll: keep the thumb detached during the scroll,
-       * update the visual connection when reaching an edge. */
-      if (priv->event & OS_EVENT_VALUE_CHANGED)
-        {
-          /* Return if the mouse movement is small. */
-          if (abs (priv->pointer_x - event->x) <= TOLERANCE_MOTION &&
-              abs (priv->pointer_y - event->y) <= TOLERANCE_MOTION)
-            return FALSE;
+      /* Return if the mouse movement is small. */
+      if (!(priv->event & OS_EVENT_MOTION_NOTIFY) &&
+          abs (priv->pointer.x - event->x) <= TOLERANCE_MOTION &&
+          abs (priv->pointer.y - event->y) <= TOLERANCE_MOTION)
+        return FALSE;
 
-          priv->detached_scroll = TRUE;
-
-          /* Stop the paging animation if it's running. */
-          os_animation_stop (priv->animation, NULL);
-
-          /* Limit x and y within the allocation. */
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-            {
-              x = priv->win_x;
-              y = CLAMP (event->y_root - priv->pointer_y,
-                         priv->win_y,
-                         priv->win_y + priv->thumb_all.height - priv->slider.height);
-            }
-          else
-            {
-              x = CLAMP (event->x_root - priv->pointer_x,
-                         priv->win_x,
-                         priv->win_x + priv->thumb_all.width - priv->slider.width);
-              y = priv->win_y;
-            }
-
-          /* Fine scroll while detached,
-           * do not scroll when hitting an edge. */
-          if ((priv->orientation == GTK_ORIENTATION_VERTICAL &&
-               y > priv->win_y &&
-               y < priv->win_y + priv->thumb_all.height - priv->slider.height) ||
-              (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-               x > priv->win_x &&
-               x < priv->win_x + priv->thumb_all.width - priv->slider.width))
-            capture_movement (scrollbar, event->x_root, event->y_root);
-
-          move_thumb (scrollbar, x, y);
-
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-            {
-              if (gtk_adjustment_get_value (priv->adjustment) == 0)
-                {
-                  update_visual_connection (scrollbar);                
-
-                  if (priv->overlay.height > priv->slider.height)
-                    {
-                      priv->slide_initial_slider_position = 0;
-                      priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
-                    }
-                  else
-                    {
-                      priv->slide_initial_slider_position = 0;
-                      priv->slide_initial_coordinate = event->y_root;
-                    }
-                }
-              else if (priv->overlay.y + priv->overlay.height >= priv->trough.height)
-                {
-                  update_visual_connection (scrollbar);
-
-                  if (priv->overlay.height > priv->slider.height)
-                    {
-                      priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
-                      priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
-                    }
-                  else
-                    {
-                      priv->slide_initial_slider_position = priv->trough.height - priv->slider.height;
-                      priv->slide_initial_coordinate = event->y_root;
-                    }
-                }
-            }
-          else
-            {
-              if (gtk_adjustment_get_value (priv->adjustment) == 0)
-                {
-                  update_visual_connection (scrollbar);                
-
-                  if (priv->overlay.width > priv->slider.width)
-                    {
-                      priv->slide_initial_slider_position = 0;
-                      priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
-                    }
-                  else
-                    {
-                      priv->slide_initial_slider_position = 0;
-                      priv->slide_initial_coordinate = event->x_root;
-                    }
-                }
-              else if (priv->overlay.x + priv->overlay.width >= priv->trough.width)
-                {
-                  update_visual_connection (scrollbar);
-
-                  if (priv->overlay.width > priv->slider.width)
-                    {
-                      priv->slide_initial_slider_position = priv->trough.width - priv->overlay.width;
-                      priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
-                    }
-                  else
-                    {
-                      priv->slide_initial_slider_position = priv->trough.width - priv->slider.width;
-                      priv->slide_initial_coordinate = event->x_root;
-                    }
-                }
-            }
-
-          return FALSE;            
-        }
-
-      OS_DCHECK (!priv->detached_scroll);
-
-      /* Thumb and pager are connected.
-       * Normal scroll: keep the thumb in sync with the pager,
-       * do not update the visual connection. */
       priv->event |= OS_EVENT_MOTION_NOTIFY;
 
-      capture_movement (scrollbar, event->x_root, event->y_root);
+      /* Stop the paging animation if it's running. */
+      os_animation_stop (priv->animation, NULL);
+
+      /* Limit x and y within the allocation. */
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        {
+          x = priv->toplevel.x;
+          y = CLAMP (event->y_root - priv->pointer.y,
+                     priv->toplevel.y,
+                     priv->toplevel.y + priv->thumb_all.height - priv->slider.height);
+        }
+      else
+        {
+          x = CLAMP (event->x_root - priv->pointer.x,
+                     priv->toplevel.x,
+                     priv->toplevel.x + priv->thumb_all.width - priv->slider.width);
+          y = priv->toplevel.y;
+        }
+
+      /* Fine scroll while detached,
+       * do not scroll when hitting an edge. */
+      if ((priv->orientation == GTK_ORIENTATION_VERTICAL &&
+           y > priv->toplevel.y &&
+           y < priv->toplevel.y + priv->thumb_all.height - priv->slider.height) ||
+          (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
+           x > priv->toplevel.x &&
+           x < priv->toplevel.x + priv->thumb_all.width - priv->slider.width))
+        capture_movement (scrollbar, event->x_root, event->y_root);
+
+      move_thumb (scrollbar, x, y);
 
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          if (priv->overlay.height > priv->slider.height)
+          if (gtk_adjustment_get_value (priv->adjustment) == 0)
             {
-              /* Limit x and y within the overlay. */
-              x = priv->win_x;
-              y = CLAMP (event->y_root - priv->pointer_y,
-                         priv->win_y + priv->overlay.y,
-                         priv->win_y + priv->overlay.y + priv->overlay.height - priv->slider.height);
-
-              if (gtk_adjustment_get_value (priv->adjustment) == 0)
+              if (priv->overlay.height > priv->slider.height)
                 {
                   priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->toplevel.y + priv->pointer.y);
                 }
-              else if (priv->overlay.y + priv->overlay.height >= priv->trough.height)
+              else
                 {
-                  priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->win_y + priv->pointer_y);
+                  priv->slide_initial_slider_position = 0;
+                  priv->slide_initial_coordinate = event->y_root;
                 }
             }
-          else
+          else if (priv->overlay.y + priv->overlay.height >= priv->trough.height)
             {
-              x = priv->win_x;
-              y = priv->win_y + priv->slider.y;
+              if (priv->overlay.height > priv->slider.height)
+                {
+                  priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->toplevel.y + priv->pointer.y);
+                }
+              else
+                {
+                  priv->slide_initial_slider_position = priv->trough.height - priv->slider.height;
+                  priv->slide_initial_coordinate = event->y_root;
+                }
             }
         }
       else
         {
-          if (priv->overlay.width > priv->slider.width)
+          if (gtk_adjustment_get_value (priv->adjustment) == 0)
             {
-              /* Limit x and y within the overlay. */
-              x = CLAMP (event->x_root - priv->pointer_x,
-                         priv->win_x + priv->overlay.x,
-                         priv->win_x + priv->overlay.x + priv->overlay.width - priv->slider.width);
-              y = priv->win_y;
-
-              if (gtk_adjustment_get_value (priv->adjustment) == 0)
+              if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
+                  priv->slide_initial_coordinate = MAX (event->x_root, priv->toplevel.x + priv->pointer.x);
                 }
-              else if (priv->overlay.x + priv->overlay.width >= priv->trough.width)
+              else
+                {
+                  priv->slide_initial_slider_position = 0;
+                  priv->slide_initial_coordinate = event->x_root;
+                }
+            }
+          else if (priv->overlay.x + priv->overlay.width >= priv->trough.width)
+            {
+              if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = priv->trough.width - priv->overlay.width;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->win_x + priv->pointer_x);
+                  priv->slide_initial_coordinate = MAX (event->x_root, priv->toplevel.x + priv->pointer.x);
+                }
+              else
+                {
+                  priv->slide_initial_slider_position = priv->trough.width - priv->slider.width;
+                  priv->slide_initial_coordinate = event->x_root;
                 }
             }
-          else
-            {
-              x = priv->win_x + priv->slider.x;
-              y = priv->win_y;
-            }
-        }
-
-      move_thumb (scrollbar, x, y);
+        }          
     }
 
   return FALSE;
@@ -1871,8 +1797,6 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   /* Stop the paging animation if it's running. */
   os_animation_stop (priv->animation, NULL);
 
-  priv->event |= OS_EVENT_VALUE_CHANGED;
-
   delta = get_wheel_delta (scrollbar, event->direction);
 
   gtk_adjustment_set_value (priv->adjustment,
@@ -1896,8 +1820,6 @@ thumb_unmap_cb (GtkWidget *widget,
 
   priv->event = OS_EVENT_NONE;
 
-  priv->detached_scroll = FALSE;
-
   os_pager_set_detached (priv->pager, FALSE);
 }
 
@@ -1916,8 +1838,8 @@ store_toplevel_position (OsScrollbar *scrollbar)
    * Is that the same with gdk_window_get_origin? */
   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
-  priv->win_x = x_pos + priv->thumb_all.x;
-  priv->win_y = y_pos + priv->thumb_all.y;
+  priv->toplevel.x = x_pos + priv->thumb_all.x;
+  priv->toplevel.y = y_pos + priv->thumb_all.y;
 }
 
 static gboolean
@@ -1969,7 +1891,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
         }
       else
         {
-          priv->can_deactivate_pager = FALSE;
+          priv->deactivable_pager = FALSE;
           os_pager_set_active (priv->pager, TRUE, TRUE);
         }
     }
@@ -1977,7 +1899,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   if (current_time > end_time)
     gtk_widget_hide (priv->thumb);
 
-  priv->lock_position = FALSE;
+  priv->state &= ~(OS_STATE_LOCKED);
 
   calc_layout_pager (scrollbar, gtk_adjustment_get_value (priv->adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
@@ -1987,11 +1909,44 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   return FALSE;
 }
 
+/* widget's window functions. */
+
+/* Move the thumb in the proximity area. */
+static void
+adjust_thumb_position (OsScrollbar *scrollbar,
+                       gdouble      event_x,
+                       gdouble      event_y)
+{
+  OsScrollbarPrivate *priv;
+  gint x, y, x_pos, y_pos;
+
+  priv = scrollbar->priv;
+
+  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      x = priv->thumb_all.x;
+      y = CLAMP (event_y - priv->slider.height / 2,
+                 priv->thumb_all.y,
+                 priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
+    }
+  else
+    {
+      x = CLAMP (event_x - priv->slider.width / 2,
+                 priv->thumb_all.x,
+                 priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
+      y = priv->thumb_all.y;
+    }
+
+  move_thumb (scrollbar, x_pos + x, y_pos + y);
+}
+
 /* Checks if the pointer is in the proximity area. */
 static gboolean
 check_proximity (OsScrollbar *scrollbar,
-                 gint x,
-                 gint y)
+                 gint         x,
+                 gint         y)
 {
   OsScrollbarPrivate *priv;
 
@@ -2030,6 +1985,57 @@ check_proximity (OsScrollbar *scrollbar,
   return FALSE;
 }
 
+/* Callback that shows the thumb if it's the case. */
+static gboolean
+show_thumb_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  if (!priv->hidable_thumb)
+    {
+      gtk_widget_show (priv->thumb);
+
+      update_visual_connection (scrollbar);
+    }
+
+  priv->source_show_thumb_id = 0;
+
+  return FALSE;
+}
+
+/* Adds a timeout to reveal the thumb. */
+static void
+show_thumb (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  if (priv->state & OS_STATE_INTERNAL)
+    {
+      /* If the scrollbar is close to one edge of the screen,
+       * show it immediately, ignoring the timeout,
+       * to preserve Fitts' law. */
+      if (priv->source_show_thumb_id != 0)
+        {
+          g_source_remove (priv->source_show_thumb_id);
+          priv->source_show_thumb_id = 0;
+        }
+
+      gtk_widget_show (priv->thumb);
+
+      update_visual_connection (scrollbar);
+    }
+  else if (priv->source_show_thumb_id == 0)
+    priv->source_show_thumb_id = g_timeout_add (TIMEOUT_THUMB_SHOW,
+                                                show_thumb_cb,
+                                                scrollbar);
+}
+
 /* Filter function applied to the toplevel window. */
 #ifdef USE_GTK3
 typedef enum
@@ -2060,7 +2066,7 @@ window_filter_func (GdkXEvent *gdkxevent,
   g_return_val_if_fail (OS_IS_PAGER (priv->pager), GDK_FILTER_CONTINUE);
   g_return_val_if_fail (OS_IS_THUMB (priv->thumb), GDK_FILTER_CONTINUE);
 
-  if (!priv->fullsize)
+  if (!(priv->state & OS_STATE_FULLSIZE))
     {
       OsXEvent os_xevent;
       gdouble event_x, event_y;
@@ -2124,72 +2130,34 @@ window_filter_func (GdkXEvent *gdkxevent,
 
         if (os_xevent == OS_XEVENT_BUTTON_PRESS)
           {
-            priv->toplevel_button_press = TRUE;
+            priv->window_button_press = TRUE;
+
+            if (priv->source_show_thumb_id != 0)
+              {
+                g_source_remove (priv->source_show_thumb_id);
+                priv->source_show_thumb_id = 0;
+              }
+
             gtk_widget_hide (priv->thumb);
           }
 
-        if (priv->toplevel_button_press && os_xevent == OS_XEVENT_BUTTON_RELEASE)
+        if (priv->window_button_press && os_xevent == OS_XEVENT_BUTTON_RELEASE)
           {
-            priv->toplevel_button_press = FALSE;
+            priv->window_button_press = FALSE;
 
             /* Proximity area. */
-            if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            if (check_proximity (scrollbar, event_x, event_y))
               {
-                if (check_proximity (scrollbar, event_x, event_y))
-                  {
-                    gint x, y, x_pos, y_pos;
+                priv->hidable_thumb = FALSE;
 
-                    priv->can_hide = FALSE;
+                if (priv->state & OS_STATE_LOCKED)
+                  return GDK_FILTER_CONTINUE;
 
-                    if (priv->lock_position)
-                      return GDK_FILTER_CONTINUE;
+                adjust_thumb_position (scrollbar, event_x, event_y);
 
-                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+                gtk_widget_show (priv->thumb);
 
-                    x = priv->thumb_all.x;
-                    y = CLAMP (event_y - priv->slider.height / 2,
-                               priv->thumb_all.y,
-                               priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
-
-                    move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                     * maybe I could use a new state or a trigger. */
-                    priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                    gtk_widget_show (priv->thumb);
-
-                    update_visual_connection (scrollbar);
-                  }
-              }
-            else
-              {
-                if (check_proximity (scrollbar, event_x, event_y))
-                  {
-                    gint x, y, x_pos, y_pos;
-
-                    priv->can_hide = FALSE;
-
-                    if (priv->lock_position)
-                      return GDK_FILTER_CONTINUE;
-
-                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                    x = CLAMP (event_x - priv->slider.width / 2,
-                               priv->thumb_all.x,
-                               priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
-                    y = priv->thumb_all.y;
-
-                    move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                     * maybe I could use a new state or a trigger. */
-                    priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                    gtk_widget_show (priv->thumb);
-
-                    update_visual_connection (scrollbar);
-                  }
+                update_visual_connection (scrollbar);
               }
           }
 
@@ -2198,7 +2166,7 @@ window_filter_func (GdkXEvent *gdkxevent,
             /* Never deactivate the pager in an active window. */
             if (!priv->active_window)
               {
-                priv->can_deactivate_pager = TRUE;
+                priv->deactivable_pager = TRUE;
 
                 if (priv->source_deactivate_pager_id != 0)
                   g_source_remove (priv->source_deactivate_pager_id);
@@ -2208,8 +2176,14 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                                   scrollbar);
               }
 
-            priv->toplevel_button_press = FALSE;
-            priv->can_hide = TRUE;
+            priv->window_button_press = FALSE;
+            priv->hidable_thumb = TRUE;
+
+            if (priv->source_show_thumb_id != 0)
+              {
+                g_source_remove (priv->source_show_thumb_id);
+                priv->source_show_thumb_id = 0;
+              }
 
             if (priv->source_hide_thumb_id != 0)
               g_source_remove (priv->source_hide_thumb_id);
@@ -2227,7 +2201,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           }
 
         /* Get the motion_notify_event trough XEvent. */
-        if (!priv->toplevel_button_press && os_xevent == OS_XEVENT_MOTION)
+        if (!priv->window_button_press && os_xevent == OS_XEVENT_MOTION)
           {
             /* React to motion_notify_event
              * and set the state accordingly. */
@@ -2235,97 +2209,39 @@ window_filter_func (GdkXEvent *gdkxevent,
               pager_set_state_from_pointer (scrollbar, event_x, event_y);
 
             /* Proximity area. */
-            if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            if (check_proximity (scrollbar, event_x, event_y))
               {
-                if (check_proximity (scrollbar, event_x, event_y))
+                priv->hidable_thumb = FALSE;
+
+                if (priv->source_hide_thumb_id != 0)
                   {
-                    gint x, y, x_pos, y_pos;
-
-                    priv->can_hide = FALSE;
-
-                    if (priv->source_hide_thumb_id != 0)
-                      {
-                        g_source_remove (priv->source_hide_thumb_id);
-                        priv->source_hide_thumb_id = 0;
-                      }
-
-                    if (priv->lock_position)
-                      return GDK_FILTER_CONTINUE;
-
-                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                    x = priv->thumb_all.x;
-                    y = CLAMP (event_y - priv->slider.height / 2,
-                               priv->thumb_all.y,
-                               priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
-
-                    move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                     * maybe I could use a new state or a trigger. */
-                    priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                    gtk_widget_show (priv->thumb);
-
-                    update_visual_connection (scrollbar);
+                    g_source_remove (priv->source_hide_thumb_id);
+                    priv->source_hide_thumb_id = 0;
                   }
-                else
-                  {
-                    priv->can_hide = TRUE;
-                    priv->lock_position = FALSE;
 
-                    if (gtk_widget_get_mapped (priv->thumb) &&
-                        priv->source_hide_thumb_id == 0)
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                  hide_thumb_cb,
-                                                                  scrollbar);
-                  }
+                if (priv->state & OS_STATE_LOCKED)
+                  return GDK_FILTER_CONTINUE;
+
+                adjust_thumb_position (scrollbar, event_x, event_y);
+
+                show_thumb (scrollbar);
               }
             else
               {
-                if (check_proximity (scrollbar, event_x, event_y))
+                priv->hidable_thumb = TRUE;
+                priv->state &= ~(OS_STATE_LOCKED);
+
+                if (priv->source_show_thumb_id != 0)
                   {
-                    gint x, y, x_pos, y_pos;
-
-                    priv->can_hide = FALSE;
-
-                    if (priv->source_hide_thumb_id != 0)
-                      {
-                        g_source_remove (priv->source_hide_thumb_id);
-                        priv->source_hide_thumb_id = 0;
-                      }
-
-                    if (priv->lock_position)
-                      return GDK_FILTER_CONTINUE;
-
-                    gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                    x = CLAMP (event_x - priv->slider.width / 2,
-                               priv->thumb_all.x,
-                               priv->thumb_all.x + priv->thumb_all.width + - priv->slider.width);
-                    y = priv->thumb_all.y;
-
-                    move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                    /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                     * maybe I could use a new state or a trigger. */
-                    priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                    gtk_widget_show (priv->thumb);
-
-                    update_visual_connection (scrollbar);
+                    g_source_remove (priv->source_show_thumb_id);
+                    priv->source_show_thumb_id = 0;
                   }
-                else
-                  {
-                    priv->can_hide = TRUE;
-                    priv->lock_position = FALSE;
 
-                    if (gtk_widget_get_mapped (priv->thumb) &&
-                        priv->source_hide_thumb_id == 0)
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                  hide_thumb_cb,
-                                                                  scrollbar);
-                  }
+                if (gtk_widget_get_mapped (priv->thumb) &&
+                    priv->source_hide_thumb_id == 0)
+                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                              hide_thumb_cb,
+                                                              scrollbar);
               }
         }
     }
@@ -2352,88 +2268,38 @@ window_filter_func (GdkXEvent *gdkxevent,
   g_return_val_if_fail (OS_IS_PAGER (priv->pager), GDK_FILTER_CONTINUE);
   g_return_val_if_fail (OS_IS_THUMB (priv->thumb), GDK_FILTER_CONTINUE);
 
-  if (!priv->fullsize)
+  if (!(priv->state & OS_STATE_FULLSIZE))
     {
       if (xev->type == ButtonPress)
         {
-          priv->toplevel_button_press = TRUE;
+          priv->window_button_press = TRUE;
+
+          if (priv->source_show_thumb_id != 0)
+            {
+              g_source_remove (priv->source_show_thumb_id);
+              priv->source_show_thumb_id = 0;
+            }
+
           gtk_widget_hide (priv->thumb);
         }
 
-      if (priv->toplevel_button_press && xev->type == ButtonRelease)
+      if (priv->window_button_press && xev->type == ButtonRelease)
         {
-          priv->toplevel_button_press = FALSE;
+          priv->window_button_press = FALSE;
 
           /* Proximity area. */
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+          if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
             {
-              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
-                {
-                  gint x, y, x_pos, y_pos;
+              priv->hidable_thumb = FALSE;
 
-                  priv->can_hide = FALSE;
+              if (priv->state & OS_STATE_LOCKED)
+                return GDK_FILTER_CONTINUE;
 
-                  if (priv->source_hide_thumb_id != 0)
-                    {
-                      g_source_remove (priv->source_hide_thumb_id);
-                      priv->source_hide_thumb_id = 0;
-                    }
+              adjust_thumb_position (scrollbar, xev->xbutton.x, xev->xbutton.y);
 
-                  if (priv->lock_position)
-                    return GDK_FILTER_CONTINUE;
+              gtk_widget_show (priv->thumb);
 
-                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                  x = priv->thumb_all.x;
-                  y = CLAMP (xev->xbutton.y - priv->slider.height / 2,
-                             priv->thumb_all.y,
-                             priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
-
-                  move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                   * maybe I could use a new state or a trigger. */
-                  priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                  gtk_widget_show (priv->thumb);
-
-                  update_visual_connection (scrollbar);
-                }
-            }
-          else
-            {
-              if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
-                {
-                  gint x, y, x_pos, y_pos;
-
-                  priv->can_hide = FALSE;
-
-                  if (priv->source_hide_thumb_id != 0)
-                    {
-                      g_source_remove (priv->source_hide_thumb_id);
-                      priv->source_hide_thumb_id = 0;
-                    }
-
-                  if (priv->lock_position)
-                    return GDK_FILTER_CONTINUE;
-
-                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                  x = CLAMP (xev->xbutton.x - priv->slider.width / 2,
-                             priv->thumb_all.x,
-                             priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
-                  y = priv->thumb_all.y;
-
-                  move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                   * maybe I could use a new state or a trigger. */
-                  priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                  gtk_widget_show (priv->thumb);
-
-                  update_visual_connection (scrollbar);
-                }
+              update_visual_connection (scrollbar);
             }
         }
 
@@ -2442,7 +2308,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           /* Never deactivate the pager in an active window. */
           if (!priv->active_window)
             {
-              priv->can_deactivate_pager = TRUE;
+              priv->deactivable_pager = TRUE;
 
               if (priv->source_deactivate_pager_id != 0)
                 g_source_remove (priv->source_deactivate_pager_id);
@@ -2452,8 +2318,14 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                                 scrollbar);
             }
 
-          priv->toplevel_button_press = FALSE;
-          priv->can_hide = TRUE;
+          priv->window_button_press = FALSE;
+          priv->hidable_thumb = TRUE;
+
+          if (priv->source_show_thumb_id != 0)
+            {
+              g_source_remove (priv->source_show_thumb_id);
+              priv->source_show_thumb_id = 0;
+            }
 
           if (priv->source_hide_thumb_id != 0)
             g_source_remove (priv->source_hide_thumb_id);
@@ -2471,7 +2343,7 @@ window_filter_func (GdkXEvent *gdkxevent,
         }
 
       /* Get the motion_notify_event trough XEvent. */
-      if (!priv->toplevel_button_press && xev->type == MotionNotify)
+      if (!priv->window_button_press && xev->type == MotionNotify)
         {
           /* React to motion_notify_event
            * and set the state accordingly. */
@@ -2479,85 +2351,39 @@ window_filter_func (GdkXEvent *gdkxevent,
             pager_set_state_from_pointer (scrollbar, xev->xmotion.x, xev->xmotion.y);
 
           /* Proximity area. */
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+          if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
             {
-              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
+              priv->hidable_thumb = FALSE;
+
+              if (priv->source_hide_thumb_id != 0)
                 {
-                  gint x, y, x_pos, y_pos;
-
-                  priv->can_hide = FALSE;
-
-                  if (priv->lock_position)
-                    return GDK_FILTER_CONTINUE;
-
-                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                  x = priv->thumb_all.x;
-                  y = CLAMP (xev->xmotion.y - priv->slider.height / 2,
-                             priv->thumb_all.y,
-                             priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
-
-                  move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                   * maybe I could use a new state or a trigger. */
-                  priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                  gtk_widget_show (priv->thumb);
-
-                  update_visual_connection (scrollbar);
+                  g_source_remove (priv->source_hide_thumb_id);
+                  priv->source_hide_thumb_id = 0;
                 }
-              else
-                {
-                  priv->can_hide = TRUE;
-                  priv->lock_position = FALSE;
 
-                  if (gtk_widget_get_mapped (priv->thumb) &&
-                      priv->source_hide_thumb_id == 0)
-                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                hide_thumb_cb,
-                                                                scrollbar);
-                }
+              if (priv->state & OS_STATE_LOCKED)
+                return GDK_FILTER_CONTINUE;
+
+              adjust_thumb_position (scrollbar, xev->xmotion.x, xev->xmotion.y);
+
+              show_thumb (scrollbar);
             }
           else
             {
-              if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
+              priv->hidable_thumb = TRUE;
+              priv->state &= ~(OS_STATE_LOCKED);
+
+              if (priv->source_show_thumb_id != 0)
                 {
-                  gint x, y, x_pos, y_pos;
-
-                  priv->can_hide = FALSE;
-
-                  if (priv->lock_position)
-                    return GDK_FILTER_CONTINUE;
-
-                  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-                  x = CLAMP (xev->xmotion.x - priv->slider.width / 2,
-                             priv->thumb_all.x,
-                             priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
-                  y = priv->thumb_all.y;
-
-                  move_thumb (scrollbar, x_pos + x, y_pos + y);
-
-                  /* FIXME(Cimi) I'm reusing OS_EVENT_VALUE_CHANGED,
-                   * maybe I could use a new state or a trigger. */
-                  priv->event |= OS_EVENT_VALUE_CHANGED;
-
-                  gtk_widget_show (priv->thumb);
-
-                  update_visual_connection (scrollbar);
+                  g_source_remove (priv->source_show_thumb_id);
+                  priv->source_show_thumb_id = 0;
                 }
-              else
-                {
-                  priv->can_hide = TRUE;
-                  priv->lock_position = FALSE;
 
-                  if (gtk_widget_get_mapped (priv->thumb) &&
-                      priv->source_hide_thumb_id == 0)
-                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                hide_thumb_cb,
-                                                                scrollbar);
-                }
+              if (gtk_widget_get_mapped (priv->thumb) &&
+                  priv->source_hide_thumb_id == 0)
+                priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                            hide_thumb_cb,
+                                                            scrollbar);
             }
         }
     }
@@ -2565,6 +2391,44 @@ window_filter_func (GdkXEvent *gdkxevent,
   return GDK_FILTER_CONTINUE;
 }
 #endif
+
+/* Add the window filter function. */
+static void
+add_window_filter (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  /* Don't add duplicated filters. */
+  if (!priv->filter.running &&
+      gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
+    {
+      priv->filter.running = TRUE;
+      gdk_window_add_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
+                             window_filter_func,
+                             scrollbar);
+    }
+}
+
+/* Remove the window filter function. */
+static void
+remove_window_filter (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  /* Remove only if the filter is running. */
+  if (priv->filter.running &&
+      gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
+    {
+      priv->filter.running = FALSE;
+      gdk_window_remove_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
+                                window_filter_func,
+                                scrollbar);
+    }
+}
 
 G_DEFINE_TYPE (OsScrollbar, os_scrollbar, GTK_TYPE_SCROLLBAR);
 
@@ -2650,19 +2514,26 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->event = OS_EVENT_NONE;
 
-  priv->active_window = FALSE;
-  priv->can_deactivate_pager = TRUE;
-  priv->can_hide = TRUE;
-  priv->detached_scroll = FALSE;
-  priv->filter = FALSE;
-  priv->fullsize = FALSE;
-  priv->internal = FALSE;
-  priv->lock_position = FALSE;
-  priv->proximity = FALSE;
-  priv->toplevel_button_press = FALSE;
+  priv->state = OS_STATE_NONE;
+
   priv->side = OS_SIDE_RIGHT;
+
+  priv->filter.proximity = FALSE;
+  priv->filter.running = FALSE;
+
+  priv->active_window = FALSE;
+  priv->deactivable_pager = TRUE;
+  priv->hidable_thumb = TRUE;
+  priv->window_button_press = FALSE;
+
+  priv->pointer.x = 0;
+  priv->pointer.y = 0;
+  priv->toplevel.x = 0;
+  priv->toplevel.y = 0;
+
   priv->source_deactivate_pager_id = 0;
   priv->source_hide_thumb_id = 0;
+  priv->source_show_thumb_id = 0;
   priv->source_unlock_thumb_id = 0;
 
   priv->pager = os_pager_new ();
@@ -2868,23 +2739,18 @@ os_scrollbar_map (GtkWidget *widget)
         {
           /* On map-event of an active window,
            * the pager should be active. */
-          priv->can_deactivate_pager = FALSE;
+          priv->deactivable_pager = FALSE;
           os_pager_set_active (priv->pager, TRUE, FALSE);
         }
     }
 
-  if (priv->fullsize == FALSE)
+  if (!(priv->state & OS_STATE_FULLSIZE))
     os_pager_show (priv->pager);
 
   if (!is_insensitive (scrollbar))
     {
-      priv->proximity = TRUE;
-
-      if (gtk_widget_get_realized (widget) && priv->filter == FALSE)
-        {
-          priv->filter = TRUE;
-          gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
-        }
+      priv->filter.proximity = TRUE;
+      add_window_filter (scrollbar);
     }
 }
 
@@ -2905,11 +2771,8 @@ os_scrollbar_realize (GtkWidget *widget)
                          gdk_window_get_events (gtk_widget_get_window (widget)) |
                          GDK_POINTER_MOTION_MASK);
 
-  if (priv->filter == FALSE && priv->proximity == TRUE)
-    {
-      priv->filter =  TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
-    }
+  if (priv->filter.proximity)
+    add_window_filter (scrollbar);
 
   g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                     G_CALLBACK (toplevel_configure_event_cb), scrollbar);
@@ -3063,13 +2926,8 @@ set_insensitive (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  priv->proximity = FALSE;
-
-  if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)) && priv->filter == TRUE)
-    {
-      priv->filter = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)), window_filter_func, scrollbar);
-    }
+  priv->filter.proximity = FALSE;
+  remove_window_filter (scrollbar);
 
   os_pager_set_active (priv->pager, FALSE, FALSE);
 
@@ -3084,13 +2942,8 @@ set_sensitive (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  priv->proximity = TRUE;
-
-  if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)) && priv->filter == FALSE)
-    {
-      priv->filter = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)), window_filter_func, scrollbar);
-    }
+  priv->filter.proximity = TRUE;
+  add_window_filter (scrollbar);
 
   if (priv->active_window)
     os_pager_set_active (priv->pager, TRUE, FALSE);
@@ -3166,17 +3019,12 @@ os_scrollbar_unmap (GtkWidget *widget)
 
   GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unmap (widget);
 
-  priv->proximity = FALSE;
-
   os_pager_hide (priv->pager);
 
   gtk_widget_hide (priv->thumb);
 
-  if (gtk_widget_get_realized (widget) && priv->filter == TRUE)
-    {
-      priv->filter = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
-    }
+  priv->filter.proximity = FALSE;
+  remove_window_filter (scrollbar);
 }
 
 static void
@@ -3192,7 +3040,7 @@ os_scrollbar_unrealize (GtkWidget *widget)
 
   gtk_widget_hide (priv->thumb);
 
-  priv->filter = FALSE;
+  priv->filter.running = FALSE;
   gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
 
   g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
