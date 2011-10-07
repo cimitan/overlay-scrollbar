@@ -60,7 +60,6 @@ struct _OsBarPrivate {
   gboolean detached;
   gboolean visible;
   gfloat weight;
-  gulong handler_id;
 };
 
 static void os_bar_dispose (GObject *object);
@@ -350,8 +349,8 @@ os_bar_init (OsBar *bar)
   priv->tail_animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_TAIL,
                                            retract_tail_cb, NULL, bar);
 
-  priv->handler_id = g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
-                                       G_CALLBACK (notify_gtk_theme_name_cb), bar);
+  g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
+                    G_CALLBACK (notify_gtk_theme_name_cb), bar);
 }
 
 static void
@@ -404,9 +403,6 @@ os_bar_dispose (GObject *object)
     }
 
   os_bar_set_parent (bar, NULL);
-
-  g_signal_handler_disconnect (gtk_settings_get_default (),
-                               priv->handler_id);
 
   G_OBJECT_CLASS (os_bar_parent_class)->dispose (object);
 }
