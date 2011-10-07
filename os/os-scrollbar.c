@@ -986,9 +986,9 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
   move_bar (scrollbar);
 }
 
-/* Update the visual connection between bar and thumb. */
+/* Update the tail (visual connection) between bar and thumb. */
 static void
-update_visual_connection (OsScrollbar *scrollbar)
+update_tail (OsScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
   gint x_pos, y_pos;
@@ -1097,7 +1097,7 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
     gtk_widget_hide (priv->thumb);
 
   if (gtk_widget_get_mapped (priv->thumb))
-    update_visual_connection (scrollbar);
+    update_tail (scrollbar);
 
   move_bar (scrollbar);
 }
@@ -1999,7 +1999,7 @@ show_thumb_cb (gpointer user_data)
     {
       gtk_widget_show (priv->thumb);
 
-      update_visual_connection (scrollbar);
+      update_tail (scrollbar);
     }
 
   priv->source_show_thumb_id = 0;
@@ -2015,6 +2015,13 @@ show_thumb (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
+  /* Just update the tail if the thumb is already mapped. */
+  if (gtk_widget_get_mapped (priv->thumb))
+    {
+      update_tail (scrollbar);
+      return;
+    }
+
   if (priv->state & OS_STATE_INTERNAL)
     {
       /* If the scrollbar is close to one edge of the screen,
@@ -2028,7 +2035,7 @@ show_thumb (OsScrollbar *scrollbar)
 
       gtk_widget_show (priv->thumb);
 
-      update_visual_connection (scrollbar);
+      update_tail (scrollbar);
     }
   else if (priv->source_show_thumb_id == 0)
     priv->source_show_thumb_id = g_timeout_add (TIMEOUT_THUMB_SHOW,
@@ -2157,7 +2164,7 @@ window_filter_func (GdkXEvent *gdkxevent,
 
                 gtk_widget_show (priv->thumb);
 
-                update_visual_connection (scrollbar);
+                update_tail (scrollbar);
               }
           }
 
@@ -2299,7 +2306,7 @@ window_filter_func (GdkXEvent *gdkxevent,
 
               gtk_widget_show (priv->thumb);
 
-              update_visual_connection (scrollbar);
+              update_tail (scrollbar);
             }
         }
 
