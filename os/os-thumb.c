@@ -240,7 +240,8 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_PRESS)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_add (widget);
 
@@ -276,7 +277,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_RELEASE)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_remove (widget);
 

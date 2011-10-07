@@ -1741,6 +1741,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         {
           if (gtk_adjustment_get_value (priv->adjustment) == 0)
             {
+              if (priv->state & OS_STATE_DETACHED)
+                update_tail (scrollbar);
+
               if (priv->overlay.height > priv->slider.height)
                 {
                   priv->slide_initial_slider_position = 0;
@@ -1754,6 +1757,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
             }
           else if (priv->overlay.y + priv->overlay.height >= priv->trough.height)
             {
+              if (priv->state & OS_STATE_DETACHED)
+                update_tail (scrollbar);
+
               if (priv->overlay.height > priv->slider.height)
                 {
                   priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
@@ -1770,6 +1776,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         {
           if (gtk_adjustment_get_value (priv->adjustment) == 0)
             {
+              if (priv->state & OS_STATE_DETACHED)
+                update_tail (scrollbar);
+
               if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = 0;
@@ -1783,6 +1792,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
             }
           else if (priv->overlay.x + priv->overlay.width >= priv->trough.width)
             {
+              if (priv->state & OS_STATE_DETACHED)
+                update_tail (scrollbar);
+
               if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = priv->trough.width - priv->overlay.width;
