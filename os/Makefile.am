@@ -16,8 +16,8 @@ source_h = \
 
 source_c = \
 	$(srcdir)/os-animation.c \
+	$(srcdir)/os-bar.c \
 	$(srcdir)/os-log.c \
-	$(srcdir)/os-pager.c \
 	$(srcdir)/os-scrollbar.c \
 	$(srcdir)/os-thumb.c \
 	$(srcdir)/os-utils.c
