@@ -5,5 +5,5 @@ def add_info(report):
         report['Tags'] = report.get('Tags', '') + ' ayatana-scrollbar-scrollbar'
     if report.has_key("Stacktrace") and "os-thumb.c" in report["Stacktrace"]:
         report['Tags'] = report.get('Tags', '') + ' ayatana-scrollbar-thumb'
-    if report.has_key("Stacktrace") and "os-pager.c" in report["Stacktrace"]:
-        report['Tags'] = report.get('Tags', '') + ' ayatana-scrollbar-pager'
+    if report.has_key("Stacktrace") and "os-bar.c" in report["Stacktrace"]:
+        report['Tags'] = report.get('Tags', '') + ' ayatana-scrollbar-bar'

@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb2) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+  * debian/ayatana-scrollbar.py
+    - s/pager/bar/g
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 07 Oct 2011 12:12:35 -0400
+
 overlay-scrollbar (0.2.11-0ubuntu1+newthumb1) oneiric; urgency=low
 
   * experimental new thumb functionality
