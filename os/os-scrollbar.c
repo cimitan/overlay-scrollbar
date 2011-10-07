@@ -40,14 +40,17 @@
 /* Size of the proximity effect in pixels. */
 #define PROXIMITY_SIZE 30
 
-/* Rate of the paging. */
-#define RATE_PAGING 30
+/* Rate of the scrolling. */
+#define RATE_SCROLLING 30
 
-/* Max duration of the paging. */
-#define MAX_DURATION_PAGING 1000
+/* Max duration of the jump. */
+#define MAX_DURATION_JUMP 400
 
-/* Min duration of the paging. */
-#define MIN_DURATION_PAGING 250
+/* Max duration of the scrolling. */
+#define MAX_DURATION_SCROLLING 1000
+
+/* Min duration of the scrolling. */
+#define MIN_DURATION_SCROLLING 250
 
 /* Timeout assumed for PropertyNotify _NET_ACTIVE_WINDOW event. */
 #define TIMEOUT_PRESENT_WINDOW 400
@@ -805,10 +808,10 @@ notify_orientation_cb (GObject *object,
   swap_thumb (scrollbar, os_thumb_new (priv->orientation));
 }
 
-/* Callback called by the paging animation. */
+/* Callback called by the scrolling animation. */
 static void
-paging_cb (gfloat   weight,
-           gpointer user_data)
+scrolling_cb (gfloat   weight,
+              gpointer user_data)
 {
   gdouble new_value;
   OsScrollbar *scrollbar;
@@ -1324,8 +1327,8 @@ thumb_button_press_event_cb (GtkWidget      *widget,
           if (event->button == 2)
             {
               /* Reconnect the thumb with the bar. */
-              gdouble new_value;
               gint c, delta;
+              gint32 duration;
 
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
@@ -1344,9 +1347,25 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
               c = priv->slide_initial_slider_position + delta;
 
-              new_value = coord_to_value (scrollbar, c);
+              /* If a scrolling animation is running,
+               * stop it and add the new value. */
+              os_animation_stop (priv->animation, NULL);
 
-              gtk_adjustment_set_value (priv->adjustment, new_value);
+              priv->value = coord_to_value (scrollbar, c);
+
+              /* Calculate and set the duration. */
+              if (priv->value > gtk_adjustment_get_value (priv->adjustment))
+                duration = MIN_DURATION_SCROLLING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
+                                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                                    (MAX_DURATION_JUMP - MIN_DURATION_SCROLLING);
+              else
+                duration = MIN_DURATION_SCROLLING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
+                                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                                    (MAX_DURATION_JUMP - MIN_DURATION_SCROLLING);
+              os_animation_set_duration (priv->animation, duration);
+
+              /* Start the scrolling animation. */
+              os_animation_start (priv->animation);
             }
 
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
@@ -1378,7 +1397,7 @@ page_down (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  /* If a paging animation is running,
+  /* If a scrolling animation is running,
    * stop it and add the new value. */
   if (os_animation_is_running (priv->animation))
     {
@@ -1394,12 +1413,12 @@ page_down (OsScrollbar *scrollbar)
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
   /* Calculate and set the duration. */
-  duration = MIN_DURATION_PAGING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
-                                    gtk_adjustment_get_page_increment (priv->adjustment)) *
-                                   (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
+  duration = MIN_DURATION_SCROLLING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
+                                       gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                      (MAX_DURATION_SCROLLING - MIN_DURATION_SCROLLING);
   os_animation_set_duration (priv->animation, duration);
 
-  /* Start the paging animation. */
+  /* Start the scrolling animation. */
   os_animation_start (priv->animation);
 }
 
@@ -1413,7 +1432,7 @@ page_up (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  /* If a paging animation is running,
+  /* If a scrolling animation is running,
    * stop it and subtract the new value. */
   if (os_animation_is_running (priv->animation))
     {
@@ -1429,12 +1448,12 @@ page_up (OsScrollbar *scrollbar)
                        gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_page_size (priv->adjustment));
 
   /* Calculate and set the duration. */
-  duration = MIN_DURATION_PAGING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
-                                    gtk_adjustment_get_page_increment (priv->adjustment)) *
-                                   (MAX_DURATION_PAGING - MIN_DURATION_PAGING);
+  duration = MIN_DURATION_SCROLLING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
+                                       gtk_adjustment_get_page_increment (priv->adjustment)) *
+                                      (MAX_DURATION_SCROLLING - MIN_DURATION_SCROLLING);
   os_animation_set_duration (priv->animation, duration);
 
-  /* Start the paging animation. */
+  /* Start the scrolling animation. */
   os_animation_start (priv->animation);
 }
 
@@ -1669,7 +1688,25 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
       priv->event |= OS_EVENT_MOTION_NOTIFY;
 
-      /* Stop the paging animation if it's running. */
+      /* Begore stopping the animation,
+       * check if it's a jump through middle click.
+       * In this case we need to update the slide values
+       * with the current position. */
+      if (os_animation_is_running (priv->animation) &&
+          (event->state & GDK_BUTTON2_MASK))
+        {
+          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+            {
+              priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
+              priv->slide_initial_coordinate = event->y_root;
+            }
+          else
+            {
+              priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
+              priv->slide_initial_coordinate = event->x_root;
+            }
+        }
+      /* Stop the animation now. */
       os_animation_stop (priv->animation, NULL);
 
       /* Limit x and y within the allocation. */
@@ -1794,7 +1831,7 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  /* Stop the paging animation if it's running. */
+  /* Stop the scrolling animation if it's running. */
   os_animation_stop (priv->animation, NULL);
 
   delta = get_wheel_delta (scrollbar, event->direction);
@@ -2547,8 +2584,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->window_group = gtk_window_group_new ();
 
-  priv->animation = os_animation_new (RATE_PAGING, MAX_DURATION_PAGING,
-                                      paging_cb, NULL, scrollbar);
+  priv->animation = os_animation_new (RATE_SCROLLING, MAX_DURATION_SCROLLING,
+                                      scrolling_cb, NULL, scrollbar);
   priv->value = 0;
 
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
