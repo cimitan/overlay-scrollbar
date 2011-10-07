@@ -75,7 +75,8 @@ typedef enum
   OS_STATE_DETACHED = 1,
   OS_STATE_FULLSIZE = 2,
   OS_STATE_INTERNAL = 4,
-  OS_STATE_LOCKED = 8
+  OS_STATE_LOCKED = 8,
+  OS_STATE_RECONNECTING = 16
 } OsStateFlags;
 
 typedef enum
@@ -107,7 +108,7 @@ struct _OsScrollbarPrivate
   OsAnimation *animation;
   OsBar *bar;
   OsCoordinate pointer;
-  OsCoordinate toplevel;
+  OsCoordinate thumb_win;
   OsEventFlags event;
   OsStateFlags state;
   OsSide side;
@@ -287,6 +288,23 @@ calc_layout_slider (OsScrollbar *scrollbar,
 
       priv->slider.x = x;
     }
+}
+
+/* Calculate the position of the thumb window. */
+static void
+calc_thumb_window_position (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+  gint x_pos, y_pos;
+
+  priv = scrollbar->priv;
+
+  /* In reality, I'm storing widget's window, not the toplevel.
+   * Is that the same with gdk_window_get_origin? */
+  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+
+  priv->thumb_win.x = x_pos + priv->thumb_all.x;
+  priv->thumb_win.y = y_pos + priv->thumb_all.y;
 }
 
 /* Calculate the workarea using _UNITY_NET_WORKAREA_REGION. */
@@ -829,6 +847,20 @@ scrolling_cb (gfloat   weight,
   gtk_adjustment_set_value (priv->adjustment, new_value);
 }
 
+/* End function called by the scrolling animation. */
+static void
+scrolling_end_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+
+  priv = scrollbar->priv;
+
+  priv->state &= ~(OS_STATE_RECONNECTING);
+}
+
 /* Swap adjustment pointer. */
 static void
 swap_adjustment (OsScrollbar   *scrollbar,
@@ -996,12 +1028,12 @@ update_tail (OsScrollbar *scrollbar)
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      if (priv->toplevel.y + priv->overlay.y >= y_pos + priv->slider.height)
+      if (priv->thumb_win.y + priv->overlay.y >= y_pos + priv->slider.height)
         {
           GdkRectangle mask;
 
           mask.x = 0;
-          mask.y = y_pos + priv->slider.height / 2 - priv->toplevel.y;
+          mask.y = y_pos + priv->slider.height / 2 - priv->thumb_win.y;
           mask.width = priv->bar_all.width;
           mask.height = priv->overlay.y - mask.y;
 
@@ -1011,14 +1043,14 @@ update_tail (OsScrollbar *scrollbar)
           os_bar_set_detached (priv->bar, TRUE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->toplevel.y + priv->overlay.y + priv->overlay.height <= y_pos)
+      else if (priv->thumb_win.y + priv->overlay.y + priv->overlay.height <= y_pos)
         {
           GdkRectangle mask;
 
           mask.x = 0;
           mask.y = priv->overlay.y + priv->overlay.height;
           mask.width = priv->bar_all.width;
-          mask.height = y_pos + priv->slider.height / 2 - priv->toplevel.y - mask.y;
+          mask.height = y_pos + priv->slider.height / 2 - priv->thumb_win.y - mask.y;
 
           priv->state |= OS_STATE_DETACHED;
 
@@ -1036,11 +1068,11 @@ update_tail (OsScrollbar *scrollbar)
     }
   else
     {
-      if (priv->toplevel.x + priv->overlay.x >= x_pos + priv->slider.width)
+      if (priv->thumb_win.x + priv->overlay.x >= x_pos + priv->slider.width)
         {
           GdkRectangle mask;
 
-          mask.x = x_pos + priv->slider.width / 2 - priv->toplevel.x;
+          mask.x = x_pos + priv->slider.width / 2 - priv->thumb_win.x;
           mask.y = 0;
           mask.width = priv->overlay.x - mask.x;
           mask.height = priv->bar_all.height;
@@ -1051,13 +1083,13 @@ update_tail (OsScrollbar *scrollbar)
           os_bar_set_detached (priv->bar, TRUE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->toplevel.x + priv->overlay.x + priv->overlay.width <= x_pos)
+      else if (priv->thumb_win.x + priv->overlay.x + priv->overlay.width <= x_pos)
         {
           GdkRectangle mask;
 
           mask.x = priv->overlay.x + priv->overlay.width;
           mask.y = 0;
-          mask.width = x_pos + priv->slider.width / 2 - priv->toplevel.x - mask.x;
+          mask.width = x_pos + priv->slider.width / 2 - priv->thumb_win.x - mask.x;
           mask.height = priv->bar_all.height;
 
           priv->state |= OS_STATE_DETACHED;
@@ -1324,16 +1356,18 @@ thumb_button_press_event_cb (GtkWidget      *widget,
               gint c, delta;
               gint32 duration;
 
+              priv->state |= OS_STATE_RECONNECTING;
+
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
-                  priv->slide_initial_slider_position = event->y_root - priv->toplevel.y - event->y;
+                  priv->slide_initial_slider_position = event->y_root - priv->thumb_win.y - event->y;
                   priv->slide_initial_coordinate = event->y_root;
 
                   delta = event->y_root - priv->slide_initial_coordinate;
                 }
               else
                 {
-                  priv->slide_initial_slider_position = event->x_root - priv->toplevel.x - event->x;
+                  priv->slide_initial_slider_position = event->x_root - priv->thumb_win.x - event->x;
                   priv->slide_initial_coordinate = event->x_root;
 
                   delta = event->x_root - priv->slide_initial_coordinate;
@@ -1676,7 +1710,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
     {
       gint x, y;
 
-      /* Return if the mouse movement is small. */
+      /* Use tolerance at the first calls to this motion notify event. */
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY) &&
           abs (priv->pointer.x - event->x) <= TOLERANCE_MOTION &&
           abs (priv->pointer.y - event->y) <= TOLERANCE_MOTION)
@@ -1684,12 +1718,12 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
       priv->event |= OS_EVENT_MOTION_NOTIFY;
 
-      /* Begore stopping the animation,
-       * check if it's a jump through middle click.
+      /* Before stopping the animation,
+       * check if it's reconnecting.
        * In this case we need to update the slide values
        * with the current position. */
       if (os_animation_is_running (priv->animation) &&
-          (event->state & GDK_BUTTON2_MASK))
+          (priv->state & OS_STATE_RECONNECTING))
         {
           if (priv->orientation == GTK_ORIENTATION_VERTICAL)
             {
@@ -1708,34 +1742,53 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
       /* Limit x and y within the allocation. */
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          x = priv->toplevel.x;
+          x = priv->thumb_win.x;
           y = CLAMP (event->y_root - priv->pointer.y,
-                     priv->toplevel.y,
-                     priv->toplevel.y + priv->thumb_all.height - priv->slider.height);
+                     priv->thumb_win.y,
+                     priv->thumb_win.y + priv->thumb_all.height - priv->slider.height);
         }
       else
         {
           x = CLAMP (event->x_root - priv->pointer.x,
-                     priv->toplevel.x,
-                     priv->toplevel.x + priv->thumb_all.width - priv->slider.width);
-          y = priv->toplevel.y;
+                     priv->thumb_win.x,
+                     priv->thumb_win.x + priv->thumb_all.width - priv->slider.width);
+          y = priv->thumb_win.y;
         }
 
       /* Fine scroll while detached,
        * do not scroll when hitting an edge. */
       if ((priv->orientation == GTK_ORIENTATION_VERTICAL &&
-           y > priv->toplevel.y &&
-           y < priv->toplevel.y + priv->thumb_all.height - priv->slider.height) ||
+           y > priv->thumb_win.y &&
+           y < priv->thumb_win.y + priv->thumb_all.height - priv->slider.height) ||
           (priv->orientation == GTK_ORIENTATION_HORIZONTAL &&
-           x > priv->toplevel.x &&
-           x < priv->toplevel.x + priv->thumb_all.width - priv->slider.width))
+           x > priv->thumb_win.x &&
+           x < priv->thumb_win.x + priv->thumb_all.width - priv->slider.width))
         capture_movement (scrollbar, event->x_root, event->y_root);
+      else if (!(priv->state & OS_STATE_DETACHED))
+        {
+          /* If the thumb is not detached, proceed with reconnection. */
+          priv->state |= OS_STATE_RECONNECTING;
+
+          /* Animate scrolling till reaches the edge. */
+          if ((priv->orientation == GTK_ORIENTATION_VERTICAL && y <= priv->thumb_win.y) ||
+              (priv->orientation == GTK_ORIENTATION_HORIZONTAL && x <= priv->thumb_win.x))
+            priv->value = gtk_adjustment_get_lower (priv->adjustment);
+          else
+            priv->value = gtk_adjustment_get_upper (priv->adjustment) -
+                          gtk_adjustment_get_page_size (priv->adjustment);
+
+          os_animation_set_duration (priv->animation, MIN_DURATION_SCROLLING);
+
+          /* Start the scrolling animation. */
+          os_animation_start (priv->animation);
+        }
 
       move_thumb (scrollbar, x, y);
 
+      /* Adjust slide values in some special situations. */
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          if (gtk_adjustment_get_value (priv->adjustment) == 0)
+          if (gtk_adjustment_get_value (priv->adjustment) == gtk_adjustment_get_lower (priv->adjustment))
             {
               if (priv->state & OS_STATE_DETACHED)
                 update_tail (scrollbar);
@@ -1743,7 +1796,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (priv->overlay.height > priv->slider.height)
                 {
                   priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->toplevel.y + priv->pointer.y);
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->thumb_win.y + priv->pointer.y);
                 }
               else
                 {
@@ -1759,7 +1812,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (priv->overlay.height > priv->slider.height)
                 {
                   priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->toplevel.y + priv->pointer.y);
+                  priv->slide_initial_coordinate = MAX (event->y_root, priv->thumb_win.y + priv->pointer.y);
                 }
               else
                 {
@@ -1778,7 +1831,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->toplevel.x + priv->pointer.x);
+                  priv->slide_initial_coordinate = MAX (event->x_root, priv->thumb_win.x + priv->pointer.x);
                 }
               else
                 {
@@ -1794,7 +1847,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (priv->overlay.width > priv->slider.width)
                 {
                   priv->slide_initial_slider_position = priv->trough.width - priv->overlay.width;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->toplevel.x + priv->pointer.x);
+                  priv->slide_initial_coordinate = MAX (event->x_root, priv->thumb_win.x + priv->pointer.x);
                 }
               else
                 {
@@ -1870,23 +1923,6 @@ thumb_unmap_cb (GtkWidget *widget,
 
 /* Toplevel functions. */
 
-/* Store the position of the toplevel window. */
-static void
-store_toplevel_position (OsScrollbar *scrollbar)
-{
-  OsScrollbarPrivate *priv;
-  gint x_pos, y_pos;
-
-  priv = scrollbar->priv;
-
-  /* In reality, I'm storing widget's window, not the toplevel.
-   * Is that the same with gdk_window_get_origin? */
-  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-  priv->toplevel.x = x_pos + priv->thumb_all.x;
-  priv->toplevel.y = y_pos + priv->thumb_all.y;
-}
-
 static gboolean
 toplevel_configure_event_cb (GtkWidget         *widget,
                              GdkEventConfigure *event,
@@ -1949,7 +1985,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
 
-  store_toplevel_position (scrollbar);
+  calc_thumb_window_position (scrollbar);
 
   return FALSE;
 }
@@ -2580,8 +2616,8 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->pointer.x = 0;
   priv->pointer.y = 0;
-  priv->toplevel.x = 0;
-  priv->toplevel.y = 0;
+  priv->thumb_win.x = 0;
+  priv->thumb_win.y = 0;
 
   priv->source_deactivate_bar_id = 0;
   priv->source_hide_thumb_id = 0;
@@ -2593,7 +2629,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
   priv->window_group = gtk_window_group_new ();
 
   priv->animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_SCROLLING,
-                                      scrolling_cb, NULL, scrollbar);
+                                      scrolling_cb, scrolling_end_cb, scrollbar);
   priv->value = 0;
 
   g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
@@ -2833,7 +2869,7 @@ os_scrollbar_realize (GtkWidget *widget)
 
   os_bar_set_parent (priv->bar, widget);
 
-  store_toplevel_position (scrollbar);
+  calc_thumb_window_position (scrollbar);
 }
 
 static void
@@ -2965,7 +3001,7 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   move_bar (scrollbar);
 
   if (gtk_widget_get_realized (widget))
-    store_toplevel_position (scrollbar);
+    calc_thumb_window_position (scrollbar);
 
   gtk_widget_set_allocation (widget, allocation);
 }
