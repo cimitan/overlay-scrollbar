@@ -30,6 +30,9 @@
 #pragma GCC visibility push(hidden)
 #endif /* __GNUC__ */
 
+/* Rate of the animations (frames per second). */
+#define RATE_ANIMATION 30
+
 /* Size of the thumb in pixels. */
 #define THUMB_WIDTH  17
 #define THUMB_HEIGHT 69

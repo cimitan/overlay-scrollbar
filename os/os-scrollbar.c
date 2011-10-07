@@ -40,12 +40,6 @@
 /* Size of the proximity effect in pixels. */
 #define PROXIMITY_SIZE 30
 
-/* Rate of the scrolling. */
-#define RATE_SCROLLING 30
-
-/* Max duration of the jump. */
-#define MAX_DURATION_JUMP 400
-
 /* Max duration of the scrolling. */
 #define MAX_DURATION_SCROLLING 1000
 
@@ -1356,12 +1350,14 @@ thumb_button_press_event_cb (GtkWidget      *widget,
               /* Calculate and set the duration. */
               if (priv->value > gtk_adjustment_get_value (priv->adjustment))
                 duration = MIN_DURATION_SCROLLING + ((priv->value - gtk_adjustment_get_value (priv->adjustment)) /
-                                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
-                                                    (MAX_DURATION_JUMP - MIN_DURATION_SCROLLING);
+                                                     (gtk_adjustment_get_upper (priv->adjustment) -
+                                                      gtk_adjustment_get_lower (priv->adjustment))) *
+                                                    (MAX_DURATION_SCROLLING - MIN_DURATION_SCROLLING);
               else
                 duration = MIN_DURATION_SCROLLING + ((gtk_adjustment_get_value (priv->adjustment) - priv->value) /
-                                                     gtk_adjustment_get_page_increment (priv->adjustment)) *
-                                                    (MAX_DURATION_JUMP - MIN_DURATION_SCROLLING);
+                                                     (gtk_adjustment_get_upper (priv->adjustment) -
+                                                      gtk_adjustment_get_lower (priv->adjustment))) *
+                                                    (MAX_DURATION_SCROLLING - MIN_DURATION_SCROLLING);
               os_animation_set_duration (priv->animation, duration);
 
               /* Start the scrolling animation. */
@@ -2596,7 +2592,7 @@ os_scrollbar_init (OsScrollbar *scrollbar)
 
   priv->window_group = gtk_window_group_new ();
 
-  priv->animation = os_animation_new (RATE_SCROLLING, MAX_DURATION_SCROLLING,
+  priv->animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_SCROLLING,
                                       scrolling_cb, NULL, scrollbar);
   priv->value = 0;
 

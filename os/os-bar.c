@@ -29,14 +29,17 @@
 #include <cairo-xlib.h>
 #include <gdk/gdkx.h>
 
-/* Rate of the fade. */
-#define RATE_FADE 30
-
 /* Duration of the fade-in. */
 #define DURATION_FADE_IN 200
 
 /* Duration of the fade-out. */
 #define DURATION_FADE_OUT 400
+
+/* Max duration of the retracting tail. */
+#define MAX_DURATION_TAIL 600
+
+/* Min duration of the retracting tail. */
+#define MIN_DURATION_TAIL 100
 
 #ifdef USE_GTK3
 #define SHAPE_REGION(x) (cairo_region_create_rectangle (x))
@@ -45,13 +48,14 @@
 #endif
 
 struct _OsBarPrivate {
-  GdkWindow *bar_window;
-  GdkWindow *tail_window;
-  GtkWidget *parent;
   GdkRectangle bar_mask;
   GdkRectangle tail_mask; /* In theory not needed, but easier to read. */
   GdkRectangle allocation;
-  OsAnimation *animation;
+  GdkWindow *bar_window;
+  GdkWindow *tail_window;
+  GtkWidget *parent;
+  OsAnimation *state_animation;
+  OsAnimation *tail_animation;
   gboolean active;
   gboolean detached;
   gboolean visible;
@@ -232,6 +236,70 @@ rectangle_changed (GdkRectangle rectangle1,
   return FALSE;
 }
 
+/* Callback called by the retract-tail animation. */
+static void
+retract_tail_cb (gfloat   weight,
+                 gpointer user_data)
+{
+  GdkRectangle tail_mask;
+  OsBar *bar;
+  OsBarPrivate *priv;
+
+  bar = OS_BAR (user_data);
+
+  priv = bar->priv;
+
+  if (priv->parent == NULL)
+    return;
+
+  tail_mask = priv->tail_mask;
+
+  if (priv->allocation.height >= priv->allocation.width)
+    {
+      tail_mask.height = tail_mask.height * (1.0 - weight);
+
+      if (priv->tail_mask.y + priv->tail_mask.height < priv->bar_mask.y + priv->bar_mask.height)
+        tail_mask.y = priv->tail_mask.y + priv->tail_mask.height - tail_mask.height;
+    }
+  else
+    {
+      tail_mask.width = tail_mask.width * (1.0 - weight);
+
+      if (priv->tail_mask.x + priv->tail_mask.width < priv->bar_mask.x + priv->bar_mask.width)
+        tail_mask.x = priv->tail_mask.x + priv->tail_mask.width - tail_mask.width;
+    }
+
+  if (weight < 1.0)
+    gdk_window_shape_combine_region (priv->tail_window,
+                                     SHAPE_REGION(&tail_mask),
+                                     0, 0);
+  else
+    {
+      /* Store the new tail_mask ans hide the tail_window. */
+      priv->tail_mask = tail_mask;
+      gdk_window_hide (priv->tail_window);
+    }
+}
+
+/* Stop function called by the retract-tail animation. */
+static void
+retract_tail_stop_cb (gpointer user_data)
+{
+  OsBar *bar;
+  OsBarPrivate *priv;
+
+  bar = OS_BAR (user_data);
+
+  priv = bar->priv;
+
+  if (priv->parent == NULL)
+    return;
+
+  gdk_window_shape_combine_region (priv->tail_window,
+                                   SHAPE_REGION(&priv->tail_mask),
+                                   0, 0);
+}
+
 G_DEFINE_TYPE (OsBar, os_bar, G_TYPE_OBJECT);
 
 static void
@@ -277,8 +345,10 @@ os_bar_init (OsBar *bar)
 
   priv->weight = 1.0f;
 
-  priv->animation = os_animation_new (RATE_FADE, DURATION_FADE_OUT,
-                                      change_state_cb, NULL, bar);
+  priv->state_animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
+                                            change_state_cb, NULL, bar);
+  priv->tail_animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_TAIL,
+                                           retract_tail_cb, NULL, bar);
 
   priv->handler_id = g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
                                        G_CALLBACK (notify_gtk_theme_name_cb), bar);
@@ -293,10 +363,16 @@ os_bar_dispose (GObject *object)
   bar = OS_BAR (object);
   priv = bar->priv;
 
-  if (priv->animation != NULL)
+  if (priv->tail_animation != NULL)
     {
-      g_object_unref (priv->animation);
-      priv->animation = NULL;
+      g_object_unref (priv->tail_animation);
+      priv->tail_animation = NULL;
+    }
+
+  if (priv->state_animation != NULL)
+    {
+      g_object_unref (priv->state_animation);
+      priv->state_animation = NULL;
     }
 
   if (priv->tail_window != NULL)
@@ -386,8 +462,12 @@ os_bar_connect (OsBar       *bar,
 
   priv = bar->priv;
 
-  if (!rectangle_changed (priv->tail_mask, mask))
+  if (!os_animation_is_running (priv->tail_animation) &&
+      !rectangle_changed (priv->tail_mask, mask))
     return;
+
+  /* If there's an animation currently running, stop it. */
+  os_animation_stop (priv->tail_animation, NULL);
 
   priv->tail_mask = mask;
 
@@ -417,11 +497,12 @@ os_bar_hide (OsBar *bar)
   if (priv->parent == NULL)
     return;
 
-  /* If there's an animation currently running, stop it. */
-  os_animation_stop (priv->animation, change_state_stop_cb);
-
+  /* Immediately hide, then stop animations. */
   gdk_window_hide (priv->tail_window);
   gdk_window_hide (priv->bar_window);
+
+  os_animation_stop (priv->tail_animation, retract_tail_stop_cb);
+  os_animation_stop (priv->state_animation, change_state_stop_cb);
 }
 
 /* Move a mask on the bar_window, fake movement. */
@@ -484,10 +565,10 @@ os_bar_set_active (OsBar   *bar,
 
   priv = bar->priv;
 
-  /* Set the state and draw even if there's an animation running, that is
-   * (!animate && os_animation_is_running (priv->animation)). */
+  /* Set the state and draw even if there's a state_animation running, that is
+   * (!animate && os_animation_is_running (priv->state_animation)). */
   if ((priv->active != active) ||
-      (!animate && os_animation_is_running (priv->animation)))
+      (!animate && os_animation_is_running (priv->state_animation)))
     {
       gboolean visible;
 
@@ -499,13 +580,13 @@ os_bar_set_active (OsBar   *bar,
       visible = gdk_window_is_visible (priv->bar_window);
 
       if (visible)
-        os_animation_stop (priv->animation, NULL);
+        os_animation_stop (priv->state_animation, NULL);
 
       if (visible && animate)
         {
-          os_animation_set_duration (priv->animation, priv->active ? DURATION_FADE_IN :
-                                                                     DURATION_FADE_OUT);
-          os_animation_start (priv->animation);
+          os_animation_set_duration (priv->state_animation, priv->active ? DURATION_FADE_IN :
+                                                                           DURATION_FADE_OUT);
+          os_animation_start (priv->state_animation);
         }
 
       if (!visible || !animate)
@@ -543,11 +624,30 @@ os_bar_set_detached (OsBar   *bar,
 
       if (priv->detached)
         {
+          /* If there's an animation currently running, stop it. */
+          os_animation_stop (priv->tail_animation, retract_tail_stop_cb);
+
           gdk_window_show (priv->tail_window);
           gdk_window_raise (priv->bar_window);
         }
       else
-        gdk_window_hide (priv->tail_window);
+        {
+          gint32 duration;
+
+          /* The detached state should already stop this. */
+          OS_DCHECK (!os_animation_is_running (priv->tail_animation));
+
+          /* Calculate and set the duration. */
+          if (priv->allocation.height >= priv->allocation.width)
+            duration = MIN_DURATION_TAIL + ((gdouble) priv->tail_mask.height / priv->allocation.height) *
+                                           (MAX_DURATION_TAIL - MIN_DURATION_TAIL);
+          else
+            duration = MIN_DURATION_TAIL + ((gdouble) priv->tail_mask.width / priv->allocation.width) *
+                                           (MAX_DURATION_TAIL - MIN_DURATION_TAIL);
+          os_animation_set_duration (priv->tail_animation, duration);
+
+          os_animation_start (priv->tail_animation);
+        }
     }
 }
 
@@ -665,9 +765,11 @@ os_bar_set_parent (OsBar     *bar,
 
   priv = bar->priv;
 
-  /* Stop currently running animation. */
-  if (priv->animation != NULL)
-    os_animation_stop (priv->animation, NULL);
+  /* Stop currently running animations. */
+  if (priv->tail_animation != NULL)
+    os_animation_stop (priv->tail_animation, retract_tail_stop_cb);
+  if (priv->state_animation != NULL)
+    os_animation_stop (priv->state_animation, NULL);
 
   if (priv->parent != NULL)
     g_object_unref (priv->parent);

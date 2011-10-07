@@ -29,9 +29,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* Rate of the fade-out. */
-#define RATE_FADE_OUT 30
-
 /* Duration of the fade-out. */
 #define DURATION_FADE_OUT 2000
 
@@ -200,7 +197,7 @@ os_thumb_init (OsThumb *thumb)
   priv->tolerance = FALSE;
 
   priv->source_id = 0;
-  priv->animation = os_animation_new (RATE_FADE_OUT, DURATION_FADE_OUT,
+  priv->animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
                                       fade_out_cb, NULL, thumb);
 
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
