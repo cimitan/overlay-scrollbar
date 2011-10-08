@@ -2758,8 +2758,7 @@ os_scrollbar_get_preferred_width (GtkWidget *widget,
     *minimal_width = *natural_width = 0;
   else
     {
-      /* Smaller than 35 pixels the thumb looks weird. */
-      *minimal_width = 35;
+      *minimal_width = MIN_THUMB_HEIGHT;
       *natural_width = THUMB_HEIGHT;
     }
 }
@@ -2779,8 +2778,7 @@ os_scrollbar_get_preferred_height (GtkWidget *widget,
     *minimal_height = *natural_height = 0;
   else
     {
-      /* Smaller than 35 pixels the thumb looks weird. */
-      *minimal_height = 35;
+      *minimal_height = MIN_THUMB_HEIGHT;
       *natural_height = THUMB_HEIGHT;
     }
 }

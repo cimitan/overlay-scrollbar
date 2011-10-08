@@ -34,6 +34,7 @@
 #define RATE_ANIMATION 30
 
 /* Size of the thumb in pixels. */
+#define MIN_THUMB_HEIGHT 35
 #define THUMB_WIDTH  17
 #define THUMB_HEIGHT 69
 
