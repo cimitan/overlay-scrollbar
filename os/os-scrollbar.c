@@ -1037,11 +1037,15 @@ update_tail (OsScrollbar *scrollbar)
           mask.width = priv->bar_all.width;
           mask.height = priv->overlay.y - mask.y;
 
-          priv->state |= OS_STATE_DETACHED;
-
           os_bar_connect (priv->bar, mask);
-          os_bar_set_detached (priv->bar, TRUE);
-          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+
+          if (!(priv->state & OS_STATE_DETACHED))
+            {
+              priv->state |= OS_STATE_DETACHED;
+
+              os_bar_set_detached (priv->bar, TRUE, FALSE);
+              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+            }
         }
       else if (priv->thumb_win.y + priv->overlay.y + priv->overlay.height <= y_pos)
         {
@@ -1052,17 +1056,21 @@ update_tail (OsScrollbar *scrollbar)
           mask.width = priv->bar_all.width;
           mask.height = y_pos + priv->slider.height / 2 - priv->thumb_win.y - mask.y;
 
-          priv->state |= OS_STATE_DETACHED;
-
           os_bar_connect (priv->bar, mask);
-          os_bar_set_detached (priv->bar, TRUE);
-          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+
+          if (!(priv->state & OS_STATE_DETACHED))
+            {
+              priv->state |= OS_STATE_DETACHED;
+
+              os_bar_set_detached (priv->bar, TRUE, FALSE);
+              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+            }
         }
-      else 
+      else if (priv->state & OS_STATE_DETACHED)
         {
           priv->state &= ~(OS_STATE_DETACHED);
 
-          os_bar_set_detached (priv->bar, FALSE);
+          os_bar_set_detached (priv->bar, FALSE, FALSE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
         }
     }
@@ -1077,11 +1085,15 @@ update_tail (OsScrollbar *scrollbar)
           mask.width = priv->overlay.x - mask.x;
           mask.height = priv->bar_all.height;
 
-          priv->state |= OS_STATE_DETACHED;
-
           os_bar_connect (priv->bar, mask);
-          os_bar_set_detached (priv->bar, TRUE);
-          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+
+          if (!(priv->state & OS_STATE_DETACHED))
+            {
+              priv->state |= OS_STATE_DETACHED;
+
+              os_bar_set_detached (priv->bar, TRUE, FALSE);
+              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+            }
         }
       else if (priv->thumb_win.x + priv->overlay.x + priv->overlay.width <= x_pos)
         {
@@ -1092,17 +1104,21 @@ update_tail (OsScrollbar *scrollbar)
           mask.width = x_pos + priv->slider.width / 2 - priv->thumb_win.x - mask.x;
           mask.height = priv->bar_all.height;
 
-          priv->state |= OS_STATE_DETACHED;
-
           os_bar_connect (priv->bar, mask);
-          os_bar_set_detached (priv->bar, TRUE);
-          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+
+          if (!(priv->state & OS_STATE_DETACHED))
+            {
+              priv->state |= OS_STATE_DETACHED;
+
+              os_bar_set_detached (priv->bar, TRUE, FALSE);
+              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
+            }
         }
-      else
+      else if (priv->state & OS_STATE_DETACHED)
         {
           priv->state &= ~(OS_STATE_DETACHED);
 
-          os_bar_set_detached (priv->bar, FALSE);
+          os_bar_set_detached (priv->bar, FALSE, FALSE);
           os_thumb_set_detached (OS_THUMB (priv->thumb), FALSE);
         }
     }
@@ -1918,7 +1934,7 @@ thumb_unmap_cb (GtkWidget *widget,
 
   priv->event = OS_EVENT_NONE;
 
-  os_bar_set_detached (priv->bar, FALSE);
+  os_bar_set_detached (priv->bar, FALSE, TRUE);
 }
 
 /* Toplevel functions. */

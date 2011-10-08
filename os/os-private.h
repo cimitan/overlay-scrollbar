@@ -198,7 +198,8 @@ void   os_bar_set_active    (OsBar   *bar,
                              gboolean animate);
 
 void   os_bar_set_detached  (OsBar   *bar,
-                             gboolean detached);
+                             gboolean detached,
+                             gboolean animate);
 
 void   os_bar_set_parent    (OsBar     *bar,
                              GtkWidget *parent);
