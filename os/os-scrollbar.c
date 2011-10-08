@@ -1039,13 +1039,10 @@ update_tail (OsScrollbar *scrollbar)
 
           os_bar_connect (priv->bar, mask);
 
-          if (!(priv->state & OS_STATE_DETACHED))
-            {
-              priv->state |= OS_STATE_DETACHED;
+          priv->state |= OS_STATE_DETACHED;
 
-              os_bar_set_detached (priv->bar, TRUE, FALSE);
-              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-            }
+          os_bar_set_detached (priv->bar, TRUE, FALSE);
+          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
       else if (priv->thumb_win.y + priv->overlay.y + priv->overlay.height <= y_pos)
         {
@@ -1058,15 +1055,12 @@ update_tail (OsScrollbar *scrollbar)
 
           os_bar_connect (priv->bar, mask);
 
-          if (!(priv->state & OS_STATE_DETACHED))
-            {
-              priv->state |= OS_STATE_DETACHED;
+          priv->state |= OS_STATE_DETACHED;
 
-              os_bar_set_detached (priv->bar, TRUE, FALSE);
-              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-            }
+          os_bar_set_detached (priv->bar, TRUE, FALSE);
+          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->state & OS_STATE_DETACHED)
+      else
         {
           priv->state &= ~(OS_STATE_DETACHED);
 
@@ -1087,13 +1081,10 @@ update_tail (OsScrollbar *scrollbar)
 
           os_bar_connect (priv->bar, mask);
 
-          if (!(priv->state & OS_STATE_DETACHED))
-            {
-              priv->state |= OS_STATE_DETACHED;
+          priv->state |= OS_STATE_DETACHED;
 
-              os_bar_set_detached (priv->bar, TRUE, FALSE);
-              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-            }
+          os_bar_set_detached (priv->bar, TRUE, FALSE);
+          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
       else if (priv->thumb_win.x + priv->overlay.x + priv->overlay.width <= x_pos)
         {
@@ -1106,15 +1097,12 @@ update_tail (OsScrollbar *scrollbar)
 
           os_bar_connect (priv->bar, mask);
 
-          if (!(priv->state & OS_STATE_DETACHED))
-            {
-              priv->state |= OS_STATE_DETACHED;
+          priv->state |= OS_STATE_DETACHED;
 
-              os_bar_set_detached (priv->bar, TRUE, FALSE);
-              os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
-            }
+          os_bar_set_detached (priv->bar, TRUE, FALSE);
+          os_thumb_set_detached (OS_THUMB (priv->thumb), TRUE);
         }
-      else if (priv->state & OS_STATE_DETACHED)
+      else
         {
           priv->state &= ~(OS_STATE_DETACHED);
 
