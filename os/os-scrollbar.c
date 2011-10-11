@@ -1921,6 +1921,22 @@ thumb_unmap_cb (GtkWidget *widget,
   priv = scrollbar->priv;
 
   priv->event = OS_EVENT_NONE;
+  priv->hidable_thumb = TRUE;
+
+  /* Remove running hide timeout, if there is one. */
+  if (priv->source_hide_thumb_id != 0)
+    {
+      g_source_remove (priv->source_hide_thumb_id);
+      priv->source_hide_thumb_id = 0;
+    }
+
+  /* This could hardly still be running,
+   * but it is not impossible. */
+  if (priv->source_show_thumb_id != 0)
+    {
+      g_source_remove (priv->source_show_thumb_id);
+      priv->source_show_thumb_id = 0;
+    }
 
   os_bar_set_detached (priv->bar, FALSE, TRUE);
 }
@@ -2255,6 +2271,8 @@ window_filter_func (GdkXEvent *gdkxevent,
 
         if (os_xevent == OS_XEVENT_LEAVE)
           {
+            priv->window_button_press = FALSE;
+
             /* Never deactivate the bar in an active window. */
             if (!priv->active_window)
               {
@@ -2268,21 +2286,24 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                                 scrollbar);
               }
 
-            priv->window_button_press = FALSE;
-            priv->hidable_thumb = TRUE;
+            if (gtk_widget_get_mapped (priv->thumb) &&
+                !(priv->event & OS_EVENT_BUTTON_PRESS))
+              {
+                priv->hidable_thumb = TRUE;
+
+                if (priv->source_hide_thumb_id != 0)
+                  g_source_remove (priv->source_hide_thumb_id);
+
+                priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                            hide_thumb_cb,
+                                                            scrollbar);
+              }
 
             if (priv->source_show_thumb_id != 0)
               {
                 g_source_remove (priv->source_show_thumb_id);
                 priv->source_show_thumb_id = 0;
               }
-
-            if (priv->source_hide_thumb_id != 0)
-              g_source_remove (priv->source_hide_thumb_id);
-
-            priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                        hide_thumb_cb,
-                                                        scrollbar);
 
             if (priv->source_unlock_thumb_id != 0)
               g_source_remove (priv->source_unlock_thumb_id);
@@ -2320,7 +2341,6 @@ window_filter_func (GdkXEvent *gdkxevent,
               }
             else
               {
-                priv->hidable_thumb = TRUE;
                 priv->state &= ~(OS_STATE_LOCKED);
 
                 if (priv->source_show_thumb_id != 0)
@@ -2330,10 +2350,15 @@ window_filter_func (GdkXEvent *gdkxevent,
                   }
 
                 if (gtk_widget_get_mapped (priv->thumb) &&
-                    priv->source_hide_thumb_id == 0)
-                  priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                              hide_thumb_cb,
-                                                              scrollbar);
+                    !(priv->event & OS_EVENT_BUTTON_PRESS))
+                  {
+                    priv->hidable_thumb = TRUE;
+
+                    if (priv->source_hide_thumb_id == 0)
+                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                  hide_thumb_cb,
+                                                                  scrollbar);
+                  }
               }
         }
     }
@@ -2397,6 +2422,8 @@ window_filter_func (GdkXEvent *gdkxevent,
 
       if (xev->type == LeaveNotify)
         {
+          priv->window_button_press = FALSE;
+
           /* Never deactivate the bar in an active window. */
           if (!priv->active_window)
             {
@@ -2410,21 +2437,24 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                               scrollbar);
             }
 
-          priv->window_button_press = FALSE;
-          priv->hidable_thumb = TRUE;
+          if (gtk_widget_get_mapped (priv->thumb) &&
+              !(priv->event & OS_EVENT_BUTTON_PRESS))
+            {
+              priv->hidable_thumb = TRUE;
+
+              if (priv->source_hide_thumb_id != 0)
+                g_source_remove (priv->source_hide_thumb_id);
+
+              priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
+                                                          hide_thumb_cb,
+                                                          scrollbar);
+            }
 
           if (priv->source_show_thumb_id != 0)
             {
               g_source_remove (priv->source_show_thumb_id);
               priv->source_show_thumb_id = 0;
             }
-
-          if (priv->source_hide_thumb_id != 0)
-            g_source_remove (priv->source_hide_thumb_id);
-
-          priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                      hide_thumb_cb,
-                                                      scrollbar);
 
           if (priv->source_unlock_thumb_id != 0)
             g_source_remove (priv->source_unlock_thumb_id);
@@ -2462,7 +2492,6 @@ window_filter_func (GdkXEvent *gdkxevent,
             }
           else
             {
-              priv->hidable_thumb = TRUE;
               priv->state &= ~(OS_STATE_LOCKED);
 
               if (priv->source_show_thumb_id != 0)
@@ -2472,10 +2501,15 @@ window_filter_func (GdkXEvent *gdkxevent,
                 }
 
               if (gtk_widget_get_mapped (priv->thumb) &&
-                  priv->source_hide_thumb_id == 0)
-                priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                            hide_thumb_cb,
-                                                            scrollbar);
+                  !(priv->event & OS_EVENT_BUTTON_PRESS))
+                {
+                  priv->hidable_thumb = TRUE;
+
+                  if (priv->source_hide_thumb_id == 0)
+                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                hide_thumb_cb,
+                                                                scrollbar);
+                }
             }
         }
     }
