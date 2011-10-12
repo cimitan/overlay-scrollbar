@@ -1805,24 +1805,27 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
        * check if it's reconnecting.
        * In this case we need to update the slide values
        * with the current position. */
-      if (os_animation_is_running (priv->animation) &&
-          (priv->state & OS_STATE_RECONNECTING))
+      if (os_animation_is_running (priv->animation))
         {
-          if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+          if (priv->state & OS_STATE_RECONNECTING)
             {
-              priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
-              priv->slide_initial_coordinate = event->y_root;
+              /* It's a reconnecting animation. */
+              if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+                {
+                  priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
+                  priv->slide_initial_coordinate = event->y_root;
+                }
+              else
+                {
+                  priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
+                  priv->slide_initial_coordinate = event->x_root;
+                }
             }
           else
             {
-              priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
-              priv->slide_initial_coordinate = event->x_root;
+              /* Stop the paging animation now. */
+              os_animation_stop (priv->animation, NULL);
             }
-        }
-      else
-        {
-          /* Stop the paging animation now. */
-          os_animation_stop (priv->animation, NULL);
         }
 
       /* Behave differently when the thumb is connected or not. */
@@ -2068,6 +2071,25 @@ thumb_scroll_event_cb (GtkWidget      *widget,
                                    gtk_adjustment_get_lower (priv->adjustment),
                                    (gtk_adjustment_get_upper (priv->adjustment) -
                                     gtk_adjustment_get_page_size (priv->adjustment))));
+
+  /* Deal with simultaneous events. */
+  if (priv->event & OS_EVENT_BUTTON_PRESS)
+    {
+      priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
+
+      /* we need to update the slide values
+       * with the current position. */
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        {
+          priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
+          priv->slide_initial_coordinate = event->y_root;
+        }
+      else
+        {
+          priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
+          priv->slide_initial_coordinate = event->x_root;
+        }
+    }
 
   return FALSE;
 }
