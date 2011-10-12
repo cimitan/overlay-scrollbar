@@ -274,7 +274,7 @@ retract_tail_cb (gfloat   weight,
                                      0, 0);
   else
     {
-      /* Store the new tail_mask ans hide the tail_window. */
+      /* Store the new tail_mask and hide the tail_window. */
       priv->tail_mask = tail_mask;
       gdk_window_hide (priv->tail_window);
     }
@@ -546,7 +546,7 @@ os_bar_move_resize (OsBar       *bar,
  * os_bar_set_active:
  * @bar: a #OsBar
  * @active: whether is active or not
- * @animation: whether animate it or not
+ * @animate: whether animate it or not
  *
  * Changes the activity state of @bar.
  **/
@@ -598,12 +598,14 @@ os_bar_set_active (OsBar   *bar,
  * os_bar_set_detached:
  * @bar: a #OsBar
  * @detached: whether the bar is detached or not
+ * @animate: whether animate it or not
  *
  * Changes the detached state of @bar.
  **/
 void
 os_bar_set_detached (OsBar   *bar,
-                     gboolean detached)
+                     gboolean detached,
+                     gboolean animate)
 {
   OsBarPrivate *priv;
 
@@ -620,13 +622,14 @@ os_bar_set_detached (OsBar   *bar,
 
       if (priv->detached)
         {
-          /* If there's an animation currently running, stop it. */
+          /* If there's a tail animation currently running, stop it. */
           os_animation_stop (priv->tail_animation, retract_tail_stop_cb);
 
+          /* No tail connection animation yet. */
           gdk_window_show (priv->tail_window);
           gdk_window_raise (priv->bar_window);
         }
-      else
+      else if (animate)
         {
           gint32 duration;
 
@@ -644,6 +647,8 @@ os_bar_set_detached (OsBar   *bar,
 
           os_animation_start (priv->tail_animation);
         }
+      else
+        gdk_window_hide (priv->tail_window);
     }
 }
 

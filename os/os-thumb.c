@@ -979,6 +979,13 @@ os_thumb_scroll_event (GtkWidget      *widget,
   /* If started, stop the fade-out. */
   os_animation_stop (priv->animation, fade_out_stop_cb);
 
+  if (priv->event & OS_EVENT_MOTION_NOTIFY)
+    {
+      priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
+
+      gtk_widget_queue_draw (widget);
+    }
+
   return FALSE;
 }
 
