@@ -1945,7 +1945,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
        * check if the movement changed the thumb state to connected. */
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          if (gtk_adjustment_get_value (priv->adjustment) == gtk_adjustment_get_lower (priv->adjustment))
+          if (gtk_adjustment_get_value (priv->adjustment) <= gtk_adjustment_get_lower (priv->adjustment))
             {
               if (priv->state & OS_STATE_DETACHED)
                 update_tail (scrollbar);
@@ -1986,7 +1986,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
         }
       else
         {
-          if (gtk_adjustment_get_value (priv->adjustment) == 0)
+          if (gtk_adjustment_get_value (priv->adjustment) <= gtk_adjustment_get_lower (priv->adjustment))
             {
               if (priv->state & OS_STATE_DETACHED)
                 update_tail (scrollbar);
@@ -2024,7 +2024,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                   priv->slide_initial_coordinate = event->x_root;
                 }
             }
-        }          
+        }
     }
 
   return FALSE;
