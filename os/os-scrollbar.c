@@ -1953,16 +1953,8 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (!(priv->state & OS_STATE_CONNECTED))
                 check_connection (scrollbar);
 
-              if (priv->overlay.height > priv->slider.height)
-                {
-                  priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->thumb_win.y + priv->pointer.y);
-                }
-              else
-                {
-                  priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = event->y_root;
-                }
+              priv->slide_initial_slider_position = 0;
+              priv->slide_initial_coordinate = MAX (event->y_root, priv->thumb_win.y + priv->pointer.y);
             }
           else if (priv->overlay.y + priv->overlay.height >= priv->trough.height)
             {
@@ -1972,16 +1964,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (!(priv->state & OS_STATE_CONNECTED))
                 check_connection (scrollbar);
 
-              if (priv->overlay.height > priv->slider.height)
-                {
-                  priv->slide_initial_slider_position = priv->trough.height - priv->overlay.height;
-                  priv->slide_initial_coordinate = MAX (event->y_root, priv->thumb_win.y + priv->pointer.y);
-                }
-              else
-                {
-                  priv->slide_initial_slider_position = priv->trough.height - priv->slider.height;
-                  priv->slide_initial_coordinate = event->y_root;
-                }
+              priv->slide_initial_slider_position = priv->trough.height - MAX (priv->overlay.height, priv->slider.height);
+              priv->slide_initial_coordinate = MIN (event->y_root, (priv->thumb_win.y + priv->trough.height -
+                                                                    priv->slider.height + priv->pointer.y));
             }
         }
       else
@@ -1994,16 +1979,8 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (!(priv->state & OS_STATE_CONNECTED))
                 check_connection (scrollbar);
 
-              if (priv->overlay.width > priv->slider.width)
-                {
-                  priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->thumb_win.x + priv->pointer.x);
-                }
-              else
-                {
-                  priv->slide_initial_slider_position = 0;
-                  priv->slide_initial_coordinate = event->x_root;
-                }
+              priv->slide_initial_slider_position = 0;
+              priv->slide_initial_coordinate = MAX (event->x_root, priv->thumb_win.x + priv->pointer.x);
             }
           else if (priv->overlay.x + priv->overlay.width >= priv->trough.width)
             {
@@ -2013,16 +1990,9 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
               if (!(priv->state & OS_STATE_CONNECTED))
                 check_connection (scrollbar);
 
-              if (priv->overlay.width > priv->slider.width)
-                {
-                  priv->slide_initial_slider_position = priv->trough.width - priv->overlay.width;
-                  priv->slide_initial_coordinate = MAX (event->x_root, priv->thumb_win.x + priv->pointer.x);
-                }
-              else
-                {
-                  priv->slide_initial_slider_position = priv->trough.width - priv->slider.width;
-                  priv->slide_initial_coordinate = event->x_root;
-                }
+              priv->slide_initial_slider_position = priv->trough.width - MAX (priv->overlay.width, priv->slider.width);
+              priv->slide_initial_coordinate = MIN (event->x_root, (priv->thumb_win.x + priv->trough.width -
+                                                                    priv->slider.width + priv->pointer.x));
             }
         }
     }
