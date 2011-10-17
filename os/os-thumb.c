@@ -29,9 +29,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-/* Rate of the fade-out. */
-#define RATE_FADE_OUT 30
-
 /* Duration of the fade-out. */
 #define DURATION_FADE_OUT 2000
 
@@ -57,14 +54,12 @@ struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
   OsAnimation *animation;
-  OsEvent event;
-  gboolean can_rgba;
+  OsCoordinate pointer;
+  OsCoordinate pointer_root;
+  OsEventFlags event;
+  gboolean rgba;
   gboolean detached;
-  gboolean use_tolerance;
-  gint pointer_x;
-  gint pointer_y;
-  gint pointer_x_root;
-  gint pointer_y_root;
+  gboolean tolerance;
   guint32 source_id;
 };
 
@@ -192,12 +187,17 @@ os_thumb_init (OsThumb *thumb)
 
   priv->event = OS_EVENT_NONE;
 
-  priv->can_rgba = FALSE;
+  priv->pointer.x = 0;
+  priv->pointer.y = 0;
+  priv->pointer_root.x = 0;
+  priv->pointer_root.y = 0;
+
+  priv->rgba = FALSE;
   priv->detached = FALSE;
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   priv->source_id = 0;
-  priv->animation = os_animation_new (RATE_FADE_OUT, DURATION_FADE_OUT,
+  priv->animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
                                       fade_out_cb, NULL, thumb);
 
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
@@ -237,19 +237,20 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_PRESS)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_add (widget);
 
-          priv->pointer_x = event->x;
-          priv->pointer_y = event->y;
-          priv->pointer_x_root = event->x_root;
-          priv->pointer_y_root = event->y_root;
+          priv->pointer.x = event->x;
+          priv->pointer.y = event->y;
+          priv->pointer_root.x = event->x_root;
+          priv->pointer_root.y = event->y_root;
 
           priv->event |= OS_EVENT_BUTTON_PRESS;
           priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
-          priv->use_tolerance = TRUE;
+          priv->tolerance = TRUE;
 
           gtk_widget_queue_draw (widget);
         }
@@ -273,7 +274,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_RELEASE)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_remove (widget);
 
@@ -295,7 +297,7 @@ os_thumb_composited_changed (GtkWidget *widget)
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  priv->can_rgba = FALSE;
+  priv->rgba = FALSE;
 
   if (gdk_screen_is_composited (gtk_widget_get_screen (widget)))
     {
@@ -313,7 +315,7 @@ os_thumb_composited_changed (GtkWidget *widget)
       if (gdk_visual_get_depth (visual) == 32 && (red_mask   == 0xff0000 &&
                                                   green_mask == 0x00ff00 &&
                                                   blue_mask  == 0x0000ff))   
-        priv->can_rgba = TRUE;
+        priv->rgba = TRUE;
     }
 
   gtk_widget_queue_draw (widget);
@@ -631,7 +633,7 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  radius = priv->can_rgba ? THUMB_RADIUS : 0;
+  radius = priv->rgba ? THUMB_RADIUS : 0;
 
 #ifdef USE_GTK3
   width = gtk_widget_get_allocated_width (widget);
@@ -690,8 +692,8 @@ os_thumb_expose (GtkWidget      *widget,
   if ((priv->event & OS_EVENT_BUTTON_PRESS) &&
       !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
-      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
-          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
+      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer.y < height / 2)) ||
+          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer.x < width / 2)))
         {
           pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.6);
           pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
@@ -850,7 +852,7 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
       os_animation_stop (priv->animation, NULL);
     }
 
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   return FALSE;
 }
@@ -906,11 +908,11 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
    * see code few lines below. */
   if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
   {
-    if (!priv->use_tolerance ||
-        (abs (priv->pointer_x - event->x) > TOLERANCE_FADE ||
-         abs (priv->pointer_y - event->y) > TOLERANCE_FADE))
+    if (!priv->tolerance ||
+        (abs (priv->pointer.x - event->x) > TOLERANCE_FADE ||
+         abs (priv->pointer.y - event->y) > TOLERANCE_FADE))
       {
-        priv->use_tolerance = FALSE;
+        priv->tolerance = FALSE;
         priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                          timeout_fade_out_cb,
                                          thumb);
@@ -920,8 +922,8 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   if (priv->event & OS_EVENT_BUTTON_PRESS &&
       !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
-      if (abs (priv->pointer_x_root - event->x_root) <= TOLERANCE_MOTION &&
-          abs (priv->pointer_y_root - event->y_root) <= TOLERANCE_MOTION)
+      if (abs (priv->pointer_root.x - event->x_root) <= TOLERANCE_MOTION &&
+          abs (priv->pointer_root.y - event->y_root) <= TOLERANCE_MOTION)
         return FALSE;
 
       priv->event |= OS_EVENT_MOTION_NOTIFY;
@@ -977,6 +979,13 @@ os_thumb_scroll_event (GtkWidget      *widget,
   /* If started, stop the fade-out. */
   os_animation_stop (priv->animation, fade_out_stop_cb);
 
+  if (priv->event & OS_EVENT_MOTION_NOTIFY)
+    {
+      priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
+
+      gtk_widget_queue_draw (widget);
+    }
+
   return FALSE;
 }
 
@@ -991,7 +1000,7 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->event = OS_EVENT_NONE;
 
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   if (priv->grabbed_widget != NULL && gtk_widget_get_mapped (priv->grabbed_widget))
     gtk_grab_add (priv->grabbed_widget);
