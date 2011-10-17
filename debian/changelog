@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb4) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 17 Oct 2011 12:10:15 -0400
+
 overlay-scrollbar (0.2.11-0ubuntu1+newthumb3) oneiric; urgency=low
 
   * merged latest changes from the experimental branch
