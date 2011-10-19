@@ -39,6 +39,7 @@ os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname (). */
   static const gchar *blacklist[] = {
+    "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
     "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
     "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
