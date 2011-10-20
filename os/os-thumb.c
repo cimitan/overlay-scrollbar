@@ -366,6 +366,36 @@ draw_arrow (cairo_t       *cr,
   cairo_restore (cr);
 }
 
+/* Draw a grip using cairo. */
+static void
+draw_grip (cairo_t       *cr,
+           const GdkRGBA *color1,
+           const GdkRGBA *color2,
+           gdouble        x,
+           gdouble        y,
+           gint           nx,
+           gint           ny)
+{
+  gint lx, ly;
+
+  for (ly = 0; ly < ny; ly++)
+    {
+      for (lx = 0; lx < nx; lx++)
+        {
+          gint sx = lx * 3;
+          gint sy = ly * 3;
+
+          cairo_set_source_rgba (cr, color2->red, color2->green, color2->blue, color2->alpha);
+          cairo_rectangle (cr, x + sx, y + sy, 2, 2);
+          cairo_fill (cr);
+
+          cairo_set_source_rgba (cr, color1->red, color1->green, color1->blue, color1->alpha);
+          cairo_rectangle (cr, x + sx, y + sy, 1, 1);
+          cairo_fill (cr);
+        }
+    }
+}
+
 /* Draw a rounded rectangle using cairo. */
 static void
 draw_round_rect (cairo_t *cr,
@@ -756,28 +786,62 @@ os_thumb_expose (GtkWidget      *widget,
 
   shade_gdk_rgba (&bg, 1.2, &bg_bright_line);
 
+  /* Only draw the grip when the thumb is at full height. */
+  if ((priv->orientation == GTK_ORIENTATION_VERTICAL && height == THUMB_HEIGHT - 1) ||
+      (priv->orientation == GTK_ORIENTATION_HORIZONTAL && width == THUMB_HEIGHT - 1) )
+    {
+      GdkRGBA grip_dot_up, grip_dot_down, grip_inset_up, grip_inset_down;
+
+      grip_dot_up = bg_dark_line;
+      grip_dot_up.alpha = 0.74;
+      grip_dot_down = bg_dark_line;
+      grip_dot_down.alpha = 0.86;
+      grip_inset_up = bg_bright_line;
+      grip_inset_up.alpha = priv->event & OS_EVENT_BUTTON_PRESS ? 0.62 : 1.0;
+      grip_inset_down = bg_bright_line;
+      grip_inset_down.alpha = 0.36;
+
+      /* Grip. */
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        {
+          /* Page UP. */
+          draw_grip (cr, &grip_dot_up, &grip_inset_up, 4.5, 15.5, 3, 5);
+
+          /* Page DOWN. */
+          draw_grip (cr, &grip_dot_down, &grip_inset_down, 4.5, height / 2 + 4.5, 3, 5);
+        }
+      else
+        {
+          /* Page UP. */
+          draw_grip (cr, &grip_dot_up, &grip_inset_up, 15.5, 4.5, 5, 3);
+
+          /* Page DOWN. */
+          draw_grip (cr, &grip_dot_down, &grip_inset_down, width / 2 + 4.5, 4.5, 5, 3);
+        }
+    }
+
   /* Separators between the two steppers. */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      cairo_move_to (cr, 2.5, - 1 + height / 2);
-      cairo_line_to (cr, width - 2.5, - 1 + height / 2);
+      cairo_move_to (cr, 2.5, height / 2);
+      cairo_line_to (cr, width - 2.5, height / 2);
       set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, 2.5, height / 2);
-      cairo_line_to (cr, width - 2.5, height / 2);
+      cairo_move_to (cr, 2.5, 1 + height / 2);
+      cairo_line_to (cr, width - 2.5, 1 + height / 2);
       set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
   else
     {
-      cairo_move_to (cr, - 1 + width / 2, 2.5);
-      cairo_line_to (cr, - 1 + width / 2, height - 2.5);
+      cairo_move_to (cr, width / 2, 2.5);
+      cairo_line_to (cr, width / 2, height - 2.5);
       set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, width / 2, 2.5);
-      cairo_line_to (cr, width / 2, height - 2.5);
+      cairo_move_to (cr, 1 + width / 2, 2.5);
+      cairo_line_to (cr, 1 + width / 2, height - 2.5);
       set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
