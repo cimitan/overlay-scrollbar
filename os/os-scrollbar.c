@@ -2182,16 +2182,109 @@ adjust_thumb_position (OsScrollbar *scrollbar,
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
       x = priv->thumb_all.x;
-      y = CLAMP (event_y - priv->slider.height / 2,
-                 priv->thumb_all.y,
-                 priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
+
+      if (priv->overlay.height > priv->slider.height)
+        {
+          /* Overlay (bar) is longer than the slider (thumb).
+           * The thumb is locked within the overlay,
+           * until the mouse is on the middle of page up or page down buttons. */
+
+          if (event_y < priv->thumb_all.y + priv->overlay.y + priv->slider.height / 4)
+            {
+              /* Align to page up. */
+              y = event_y - priv->slider.height / 4;
+            }
+          else if (event_y > priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height / 4)
+            {
+              /* Align to page down. */
+              y = event_y - priv->slider.height * 3 / 4;
+            }
+          else
+            {
+              /* Lock within the overlay. */
+              y = CLAMP (event_y - priv->slider.height / 2,
+                         priv->thumb_all.y + priv->overlay.y,
+                         priv->thumb_all.y + priv->overlay.y + priv->overlay.height - priv->slider.height);
+            }
+        }
+      else
+        {
+          /* Slider (thumb) is longer than (or equal) the overlay (bar).
+           * The thumb is locked to its natural position (priv->slider.y),
+           * until the mouse is on the middle of page up or page down buttons. */
+
+          if (event_y < priv->thumb_all.y + priv->slider.y + priv->slider.height / 4)
+            {
+              /* Align to page up. */
+              y = event_y - priv->slider.height / 4;
+            }
+          else if (event_y > priv->thumb_all.y + priv->slider.y + priv->slider.height - priv->slider.height / 4)
+            {
+              /* Align to page down. */
+              y = event_y - priv->slider.height * 3 / 4;
+            }
+          else
+            {
+              /* Lock to its natural position. */
+              y = priv->thumb_all.y + priv->slider.y;
+            }
+        }
+      /* Restrict y within the thumb allocation. */
+      y = CLAMP (y, priv->thumb_all.y, priv->thumb_all.y + priv->thumb_all.height - priv->slider.height);
     }
   else
     {
-      x = CLAMP (event_x - priv->slider.width / 2,
-                 priv->thumb_all.x,
-                 priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
       y = priv->thumb_all.y;
+
+      if (priv->overlay.width > priv->slider.width)
+        {
+          /* Overlay (bar) is longer than the slider (thumb).
+           * The thumb is locked within the overlay,
+           * until the mouse is on the middle of page up or page down buttons. */
+
+          if (event_x < priv->thumb_all.x + priv->overlay.x + priv->slider.width / 4)
+            {
+              /* Align to page up. */
+              x = event_x - priv->slider.width / 4;
+            }
+          else if (event_x > priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width / 4)
+            {
+              /* Align to page down. */
+              x = event_x - priv->slider.width * 3 / 4;
+            }
+          else
+            {
+              /* Lock within the overlay. */
+              x = CLAMP (event_x - priv->slider.width / 2,
+                         priv->thumb_all.x + priv->overlay.x,
+                         priv->thumb_all.x + priv->overlay.x + priv->overlay.width - priv->slider.width);
+            }
+
+        }
+      else
+        {
+          /* Slider (thumb) is longer than (or equal) the overlay (bar).
+           * The thumb is locked to its natural position (priv->slider.x),
+           * until the mouse is on the middle of page up or page down buttons. */
+
+          if (event_x < priv->thumb_all.x + priv->slider.x + priv->slider.width / 4)
+            {
+              /* Align to page up. */
+              x = event_x - priv->slider.width / 4;
+            }
+          else if (event_x > priv->thumb_all.x + priv->slider.x + priv->slider.width - priv->slider.width / 4)
+            {
+              /* Align to page down. */
+              x = event_x - priv->slider.width * 3 / 4;
+            }
+          else
+            {
+              /* Lock to its natural position. */
+              x = priv->thumb_all.x + priv->slider.x;
+            }
+        }
+      /* Restrict x within the thumb allocation. */
+      x = CLAMP (x, priv->thumb_all.x, priv->thumb_all.x + priv->thumb_all.width - priv->slider.width);
     }
 
   move_thumb (scrollbar, x_pos + x, y_pos + y);
