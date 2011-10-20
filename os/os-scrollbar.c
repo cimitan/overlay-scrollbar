@@ -291,23 +291,6 @@ calc_layout_slider (OsScrollbar *scrollbar,
     }
 }
 
-/* Calculate the position of the thumb window. */
-static void
-calc_thumb_window_position (OsScrollbar *scrollbar)
-{
-  OsScrollbarPrivate *priv;
-  gint x_pos, y_pos;
-
-  priv = scrollbar->priv;
-
-  /* In reality, I'm storing widget's window, not the toplevel.
-   * Is that the same with gdk_window_get_origin? */
-  gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
-
-  priv->thumb_win.x = x_pos + priv->thumb_all.x;
-  priv->thumb_win.y = y_pos + priv->thumb_all.y;
-}
-
 /* Calculate the workarea using _UNITY_NET_WORKAREA_REGION. */
 static void
 calc_workarea (Display *display,
@@ -2159,8 +2142,6 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
 
-  calc_thumb_window_position (scrollbar);
-
   return FALSE;
 }
 
@@ -2178,6 +2159,15 @@ adjust_thumb_position (OsScrollbar *scrollbar,
   priv = scrollbar->priv;
 
   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
+
+  /* Calculate priv->thumb_win.x and priv->thumb_win.y
+   * (thumb window allocation in root coordinates).
+   * I guess it's faster to store these values,
+   * instead calling everytime gdk_window_get_origin (),
+   * because it requires less calls than Gdk, which, in fact,
+   * loops through multiple functions to return them. */
+  priv->thumb_win.x = x_pos + priv->thumb_all.x;
+  priv->thumb_win.y = y_pos + priv->thumb_all.y;
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -3151,8 +3141,6 @@ os_scrollbar_realize (GtkWidget *widget)
   calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
 
   os_bar_set_parent (priv->bar, widget);
-
-  calc_thumb_window_position (scrollbar);
 }
 
 static void
@@ -3282,9 +3270,6 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   os_bar_size_allocate (priv->bar, priv->bar_all);
 
   move_bar (scrollbar);
-
-  if (gtk_widget_get_realized (widget))
-    calc_thumb_window_position (scrollbar);
 
   gtk_widget_set_allocation (widget, allocation);
 }
