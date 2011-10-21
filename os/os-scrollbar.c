@@ -72,7 +72,7 @@ typedef enum
 typedef enum
 {
   OS_STATE_NONE = 0, /* No state. */
-  OS_STATE_CONNECTED = 1, /* Thumb and slider move connected, like a native scrollbar. */
+  OS_STATE_CONNECTED = 1, /* Thumb and bar move connected, like a native scrollbar. */
   OS_STATE_DETACHED = 2, /* The thumb is visually detached from the bar, and you can see the tail. */
   OS_STATE_FULLSIZE = 4, /* The scrollbar is fullsize, so we hide it. */
   OS_STATE_INTERNAL = 8, /* The thumb is touching a strut or a screen edge, it's internal. */
