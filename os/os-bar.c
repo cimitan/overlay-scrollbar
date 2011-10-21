@@ -36,7 +36,7 @@
 #define DURATION_FADE_OUT 400
 
 /* Max duration of the retracting tail. */
-#define MAX_DURATION_TAIL 600
+#define MAX_DURATION_TAIL 300
 
 /* Min duration of the retracting tail. */
 #define MIN_DURATION_TAIL 100
