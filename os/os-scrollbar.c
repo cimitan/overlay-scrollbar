@@ -62,7 +62,7 @@
 #define TIMEOUT_TOPLEVEL_HIDE 200
 
 /* Timeout before starting the scrolling after a press event */
-#define TIMEOUT_PRESS_SCROLL 400
+#define TIMEOUT_PRESS_SCROLL MIN_DURATION_SCROLLING
 
 typedef enum
 {
