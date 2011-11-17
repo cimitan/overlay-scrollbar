@@ -61,6 +61,9 @@
 /* Timeout before hiding in ms, after leaving the toplevel. */
 #define TIMEOUT_TOPLEVEL_HIDE 200
 
+/* Timeout before starting the scrolling after a press event */
+#define TIMEOUT_PRESS_SCROLL 400
+
 typedef enum
 {
   OS_SIDE_TOP,
@@ -126,6 +129,7 @@ struct _OsScrollbarPrivate
   guint32 source_hide_thumb_id;
   guint32 source_show_thumb_id;
   guint32 source_unlock_thumb_id;
+  guint32 source_pressed_thumb_id;
 };
 
 static Atom net_active_window_atom = None;
@@ -145,6 +149,7 @@ static gboolean thumb_leave_notify_event_cb (GtkWidget *widget, GdkEventCrossing
 static void thumb_map_cb (GtkWidget *widget, gpointer user_data);
 static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
+static gboolean thumb_button_press_timeout_cb (gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 
 #ifdef USE_GTK3
@@ -1463,6 +1468,10 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
           priv->pointer.x = event->x;
           priv->pointer.y = event->y;
+
+          priv->source_pressed_thumb_id = g_timeout_add (TIMEOUT_PRESS_SCROLL,
+                                                         thumb_button_press_timeout_cb,
+                                                         scrollbar);
         }
     }
 
@@ -1548,6 +1557,43 @@ page_up (OsScrollbar *scrollbar)
 }
 
 static gboolean
+thumb_button_press_timeout_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+  scrollbar = OS_SCROLLBAR (user_data);
+  priv = scrollbar->priv;
+
+  if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
+    {
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        {
+          priv->slide_initial_slider_position = MIN (priv->slider.y, priv->overlay.y);
+
+          if (priv->pointer.y < priv->slider.height / 2)
+            page_up (scrollbar);
+          else
+            page_down (scrollbar);
+        }
+      else
+        {
+          priv->slide_initial_slider_position = MIN (priv->slider.x, priv->overlay.x);
+
+          if (priv->pointer.x < priv->slider.width / 2)
+            page_up (scrollbar);
+          else
+            page_down (scrollbar);
+        }
+
+      return TRUE;
+    }
+  else
+    {
+      return FALSE;
+    }
+}
+
+static gboolean
 thumb_button_release_event_cb (GtkWidget      *widget,
                                GdkEventButton *event,
                                gpointer        user_data)
@@ -1564,6 +1610,9 @@ thumb_button_release_event_cb (GtkWidget      *widget,
           priv = scrollbar->priv;
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
+
+          g_source_remove(priv->source_pressed_thumb_id);
+          priv->source_pressed_thumb_id = 0;
 
           if (event->button == 1 &&
               !(priv->event & OS_EVENT_MOTION_NOTIFY))
