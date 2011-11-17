@@ -1585,10 +1585,15 @@ thumb_button_press_timeout_cb (gpointer user_data)
             page_down (scrollbar);
         }
 
+      priv->event |= OS_EVENT_SCROLL_PRESS;
+
       return TRUE;
     }
   else
     {
+      priv->event &= ~OS_EVENT_SCROLL_PRESS;
+      priv->source_pressed_thumb_id = 0;
+
       return FALSE;
     }
 }
@@ -1615,7 +1620,8 @@ thumb_button_release_event_cb (GtkWidget      *widget,
           priv->source_pressed_thumb_id = 0;
 
           if (event->button == 1 &&
-              !(priv->event & OS_EVENT_MOTION_NOTIFY))
+              !(priv->event & OS_EVENT_MOTION_NOTIFY) &&
+              !(priv->event & OS_EVENT_SCROLL_PRESS))
             {
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
                 {
@@ -1633,7 +1639,9 @@ thumb_button_release_event_cb (GtkWidget      *widget,
                 }
             }
 
-          priv->event &= ~(OS_EVENT_BUTTON_PRESS | OS_EVENT_MOTION_NOTIFY);
+          priv->event &= ~(OS_EVENT_BUTTON_PRESS |
+                           OS_EVENT_MOTION_NOTIFY |
+                           OS_EVENT_SCROLL_PRESS);
         }
     }
 

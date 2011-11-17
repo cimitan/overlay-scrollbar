@@ -54,7 +54,8 @@ typedef enum
   OS_EVENT_NONE = 0,
   OS_EVENT_BUTTON_PRESS = 1,
   OS_EVENT_ENTER_NOTIFY = 2,
-  OS_EVENT_MOTION_NOTIFY = 4
+  OS_EVENT_MOTION_NOTIFY = 4,
+  OS_EVENT_SCROLL_PRESS = 8
 } OsEventFlags;
 
 /* os-log.c */
