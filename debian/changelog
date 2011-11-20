@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb5) precise; urgency=low
+
+  * build for precise
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Sun, 20 Nov 2011 13:04:08 -0500
+
 overlay-scrollbar (0.2.11-0ubuntu1+newthumb4) oneiric; urgency=low
 
   * merged latest changes from the experimental branch
