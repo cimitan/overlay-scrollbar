@@ -3,8 +3,11 @@ SUBDIRS = \
 	data \
 	build \
 	pkgconfig \
-	os \
-	tests
+	os
+
+if WANT_TESTS
+SUBDIRS += tests
+endif
 
 ACLOCAL_AMFLAGS = -I build
 
