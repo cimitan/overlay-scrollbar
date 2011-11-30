@@ -2068,6 +2068,7 @@ thumb_unmap_cb (GtkWidget *widget,
 
   priv->event = OS_EVENT_NONE;
   priv->hidable_thumb = TRUE;
+  priv->state &= OS_STATE_FULLSIZE;
 
   /* Remove running hide timeout, if there is one. */
   if (priv->source_hide_thumb_id != 0)
@@ -2316,31 +2317,51 @@ check_proximity (OsScrollbar *scrollbar,
                  gint         y)
 {
   OsScrollbarPrivate *priv;
+  gint proximity_size;
 
   priv = scrollbar->priv;
+
+  proximity_size = PROXIMITY_SIZE;
+
+  /* If the thumb is internal, enlarge the proximity area. */
+  if (priv->state & OS_STATE_INTERNAL)
+    {
+      gint x_pos, y_pos;
+
+      gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos, &y_pos);
+
+      /* This absolute value to add is obtained subtracting
+       * the real position of the thumb from the theoretical position.
+       * This difference should consist exactly in the amount of pixels (of the thumb)
+       * falling in the proximity, that is the value we want to enlarge this area. */
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        proximity_size += abs (priv->thumb_win.x - x_pos);
+      else
+        proximity_size += abs (priv->thumb_win.y - y_pos);
+    }
 
   switch (priv->side)
   {
     case OS_SIDE_RIGHT:
-      return (x >= priv->bar_all.x + priv->bar_all.width - PROXIMITY_SIZE &&
+      return (x >= priv->bar_all.x + priv->bar_all.width - proximity_size &&
               x <= priv->bar_all.x + priv->bar_all.width) &&
              (y >= priv->bar_all.y &&
               y <= priv->bar_all.y + priv->bar_all.height);
       break;
     case OS_SIDE_BOTTOM:
-      return (y >= priv->bar_all.y + priv->bar_all.height - PROXIMITY_SIZE &&
+      return (y >= priv->bar_all.y + priv->bar_all.height - proximity_size &&
               y <= priv->bar_all.y + priv->bar_all.height) &&
              (x >= priv->bar_all.x &&
               x <= priv->bar_all.x + priv->bar_all.width);
       break;
     case OS_SIDE_LEFT:
-      return (x <= priv->bar_all.x + priv->bar_all.width + PROXIMITY_SIZE &&
+      return (x <= priv->bar_all.x + priv->bar_all.width + proximity_size &&
               x >= priv->bar_all.x) &&
              (y >= priv->bar_all.y &&
               y <= priv->bar_all.y + priv->bar_all.height);
       break;
     case OS_SIDE_TOP:
-      return (y <= priv->bar_all.y + priv->bar_all.height + PROXIMITY_SIZE &&
+      return (y <= priv->bar_all.y + priv->bar_all.height + proximity_size &&
               y >= priv->bar_all.y) &&
              (x >= priv->bar_all.x &&
               x <= priv->bar_all.x + priv->bar_all.width);
