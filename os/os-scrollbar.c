@@ -1627,8 +1627,10 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   /* When exiting the thumb horizontally (or vertically),
    * in LOCKED state, remove the lock. */
   if ((priv->state & OS_STATE_LOCKED) &&
-      ((priv->orientation == GTK_ORIENTATION_VERTICAL && event->x < 0) ||
-       (priv->orientation == GTK_ORIENTATION_HORIZONTAL && event->y < 0)))
+      ((priv->side == OS_SIDE_RIGHT && event->x < 0) ||
+       (priv->side == OS_SIDE_BOTTOM && event->y < 0) ||
+       (priv->side == OS_SIDE_LEFT && event->x - priv->thumb_all.width >= 0) ||
+       (priv->side == OS_SIDE_TOP && event->y - priv->thumb_all.height >= 0)))
     priv->state &= ~(OS_STATE_LOCKED);
 
   /* Add the timeouts only if you are
@@ -2178,8 +2180,10 @@ adjust_thumb_position (OsScrollbar *scrollbar,
        * unlock it. Viceversa for the horizontal orientation.
        * The flag OS_STATE_LOCKED is set only for a mapped thumb,
        * so we can freely ask for its position and do our calculations. */
-      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && x_pos + event_x <= x_pos_t) ||
-          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && y_pos + event_y <= y_pos_t))
+      if ((priv->side == OS_SIDE_RIGHT && x_pos + event_x <= x_pos_t) ||
+          (priv->side == OS_SIDE_BOTTOM && y_pos + event_y <= y_pos_t) ||
+          (priv->side == OS_SIDE_LEFT && x_pos + event_x >= x_pos_t + priv->thumb_all.width) ||
+          (priv->side == OS_SIDE_TOP && y_pos + event_y >= y_pos_t + priv->thumb_all.height))
         priv->state &= ~(OS_STATE_LOCKED);
       else
         return;
