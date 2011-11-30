@@ -1624,6 +1624,13 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
+  /* When exiting the thumb horizontally (or vertically),
+   * in LOCKED state, remove the lock. */
+  if ((priv->state & OS_STATE_LOCKED) &&
+      ((priv->orientation == GTK_ORIENTATION_VERTICAL && event->x < 0) ||
+       (priv->orientation == GTK_ORIENTATION_HORIZONTAL && event->y < 0)))
+    priv->state &= ~(OS_STATE_LOCKED);
+
   /* Add the timeouts only if you are
    * not interacting with the thumb. */
   if (!(priv->event & OS_EVENT_BUTTON_PRESS))
@@ -2160,6 +2167,24 @@ adjust_thumb_position (OsScrollbar *scrollbar,
 
   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
+  if (priv->state & OS_STATE_LOCKED)
+    {
+      gint x_pos_t, y_pos_t;
+
+      gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos_t, &y_pos_t);
+
+      /* If the pointer is moving in the area of the proximity
+       * at the left of the thumb (so, not vertically intercepting the thumb),
+       * unlock it. Viceversa for the horizontal orientation.
+       * The flag OS_STATE_LOCKED is set only for a mapped thumb,
+       * so we can freely ask for its position and do our calculations. */
+      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && x_pos + event_x <= x_pos_t) ||
+          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && y_pos + event_y <= y_pos_t))
+        priv->state &= ~(OS_STATE_LOCKED);
+      else
+        return;
+    }
+
   /* Calculate priv->thumb_win.x and priv->thumb_win.y
    * (thumb window allocation in root coordinates).
    * I guess it's faster to store these values,
@@ -2382,7 +2407,6 @@ show_thumb (OsScrollbar *scrollbar)
 }
 
 /* Filter function applied to the toplevel window. */
-#ifdef USE_GTK3
 typedef enum
 {
   OS_XEVENT_NONE,
@@ -2421,6 +2445,7 @@ window_filter_func (GdkXEvent *gdkxevent,
       event_x = 0;
       event_y = 0;
 
+#ifdef USE_GTK3
       if (xev->type == GenericEvent)
         {
           /* Deal with XInput 2 events. */
@@ -2450,6 +2475,7 @@ window_filter_func (GdkXEvent *gdkxevent,
         }
       else
         {
+#endif
           /* Deal with X core events, when apps (like rhythmbox),
            * are using gdk_disable_miltidevice (). */
           if (xev->type == ButtonPress)
@@ -2471,7 +2497,9 @@ window_filter_func (GdkXEvent *gdkxevent,
               event_x = xev->xmotion.x;
               event_y = xev->xmotion.y;
             }
+#ifdef USE_GTK3
         }
+#endif
 
         if (os_xevent == OS_XEVENT_BUTTON_PRESS)
           {
@@ -2495,14 +2523,12 @@ window_filter_func (GdkXEvent *gdkxevent,
               {
                 priv->hidable_thumb = FALSE;
 
+                adjust_thumb_position (scrollbar, event_x, event_y);
+
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                adjust_thumb_position (scrollbar, event_x, event_y);
-
-                gtk_widget_show (priv->thumb);
-
-                update_tail (scrollbar);
+                show_thumb (scrollbar);
               }
           }
 
@@ -2569,10 +2595,10 @@ window_filter_func (GdkXEvent *gdkxevent,
                     priv->source_hide_thumb_id = 0;
                   }
 
+                adjust_thumb_position (scrollbar, event_x, event_y);
+
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
-
-                adjust_thumb_position (scrollbar, event_x, event_y);
 
                 show_thumb (scrollbar);
               }
@@ -2602,158 +2628,6 @@ window_filter_func (GdkXEvent *gdkxevent,
 
   return GDK_FILTER_CONTINUE;
 }
-#else
-static GdkFilterReturn
-window_filter_func (GdkXEvent *gdkxevent,
-                    GdkEvent  *event,
-                    gpointer   user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-  XEvent *xev;
-
-  g_return_val_if_fail (OS_IS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
-
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
-
-  xev = gdkxevent;
-
-  g_return_val_if_fail (OS_IS_BAR (priv->bar), GDK_FILTER_CONTINUE);
-  g_return_val_if_fail (OS_IS_THUMB (priv->thumb), GDK_FILTER_CONTINUE);
-
-  if (!(priv->state & OS_STATE_FULLSIZE))
-    {
-      if (xev->type == ButtonPress)
-        {
-          priv->window_button_press = TRUE;
-
-          if (priv->source_show_thumb_id != 0)
-            {
-              g_source_remove (priv->source_show_thumb_id);
-              priv->source_show_thumb_id = 0;
-            }
-
-          gtk_widget_hide (priv->thumb);
-        }
-
-      if (priv->window_button_press && xev->type == ButtonRelease)
-        {
-          priv->window_button_press = FALSE;
-
-          /* Proximity area. */
-          if (check_proximity (scrollbar, xev->xbutton.x, xev->xbutton.y))
-            {
-              priv->hidable_thumb = FALSE;
-
-              if (priv->state & OS_STATE_LOCKED)
-                return GDK_FILTER_CONTINUE;
-
-              adjust_thumb_position (scrollbar, xev->xbutton.x, xev->xbutton.y);
-
-              gtk_widget_show (priv->thumb);
-
-              update_tail (scrollbar);
-            }
-        }
-
-      if (xev->type == LeaveNotify)
-        {
-          priv->window_button_press = FALSE;
-
-          /* Never deactivate the bar in an active window. */
-          if (!priv->active_window)
-            {
-              priv->deactivable_bar = TRUE;
-
-              if (priv->source_deactivate_bar_id != 0)
-                g_source_remove (priv->source_deactivate_bar_id);
-
-              priv->source_deactivate_bar_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                              deactivate_bar_cb,
-                                                              scrollbar);
-            }
-
-          if (gtk_widget_get_mapped (priv->thumb) &&
-              !(priv->event & OS_EVENT_BUTTON_PRESS))
-            {
-              priv->hidable_thumb = TRUE;
-
-              if (priv->source_hide_thumb_id != 0)
-                g_source_remove (priv->source_hide_thumb_id);
-
-              priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                          hide_thumb_cb,
-                                                          scrollbar);
-            }
-
-          if (priv->source_show_thumb_id != 0)
-            {
-              g_source_remove (priv->source_show_thumb_id);
-              priv->source_show_thumb_id = 0;
-            }
-
-          if (priv->source_unlock_thumb_id != 0)
-            g_source_remove (priv->source_unlock_thumb_id);
-
-          priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                                                        unlock_thumb_cb,
-                                                        scrollbar);
-        }
-
-      /* Get the motion_notify_event trough XEvent. */
-      if (!priv->window_button_press && xev->type == MotionNotify)
-        {
-          /* React to motion_notify_event
-           * and set the state accordingly. */
-          if (!is_insensitive (scrollbar) && !priv->active_window)
-            bar_set_state_from_pointer (scrollbar, xev->xmotion.x, xev->xmotion.y);
-
-          /* Proximity area. */
-          if (check_proximity (scrollbar, xev->xmotion.x, xev->xmotion.y))
-            {
-              priv->hidable_thumb = FALSE;
-
-              if (priv->source_hide_thumb_id != 0)
-                {
-                  g_source_remove (priv->source_hide_thumb_id);
-                  priv->source_hide_thumb_id = 0;
-                }
-
-              if (priv->state & OS_STATE_LOCKED)
-                return GDK_FILTER_CONTINUE;
-
-              adjust_thumb_position (scrollbar, xev->xmotion.x, xev->xmotion.y);
-
-              show_thumb (scrollbar);
-            }
-          else
-            {
-              priv->state &= ~(OS_STATE_LOCKED);
-
-              if (priv->source_show_thumb_id != 0)
-                {
-                  g_source_remove (priv->source_show_thumb_id);
-                  priv->source_show_thumb_id = 0;
-                }
-
-              if (gtk_widget_get_mapped (priv->thumb) &&
-                  !(priv->event & OS_EVENT_BUTTON_PRESS))
-                {
-                  priv->hidable_thumb = TRUE;
-
-                  if (priv->source_hide_thumb_id == 0)
-                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                                                                hide_thumb_cb,
-                                                                scrollbar);
-                }
-            }
-        }
-    }
-
-  return GDK_FILTER_CONTINUE;
-}
-#endif
 
 /* Add the window filter function. */
 static void
@@ -3130,7 +3004,7 @@ os_scrollbar_realize (GtkWidget *widget)
 
   gdk_window_set_events (gtk_widget_get_window (widget),
                          gdk_window_get_events (gtk_widget_get_window (widget)) |
-                         GDK_POINTER_MOTION_MASK);
+                         GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 
   if (priv->filter.proximity)
     add_window_filter (scrollbar);
