@@ -3008,7 +3008,9 @@ os_scrollbar_realize (GtkWidget *widget)
 
   gdk_window_set_events (gtk_widget_get_window (widget),
                          gdk_window_get_events (gtk_widget_get_window (widget)) |
-                         GDK_POINTER_MOTION_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+                         GDK_BUTTON_PRESS_MASK |
+                         GDK_BUTTON_RELEASE_MASK |
+                         GDK_POINTER_MOTION_MASK);
 
   if (priv->filter.proximity)
     add_window_filter (scrollbar);
