@@ -71,31 +71,31 @@ typedef enum {
 
 typedef enum
 {
-  OS_SIDE_TOP,
-  OS_SIDE_BOTTOM,
-  OS_SIDE_LEFT,
-  OS_SIDE_RIGHT
+  OS_SIDE_TOP, /* Scrollbar is at top. */
+  OS_SIDE_BOTTOM, /* Scrollbar is at bottom. */
+  OS_SIDE_LEFT, /* Scrollbar is at left. */
+  OS_SIDE_RIGHT /* Scrollbar is at right. */
 } OsSide;
 
 typedef enum
 {
-  OS_STATE_NONE = 0,
-  OS_STATE_CONNECTED = 1,
-  OS_STATE_DETACHED = 2,
-  OS_STATE_FINE_SCROLL = 4,
-  OS_STATE_FULLSIZE = 8,
-  OS_STATE_INTERNAL = 16,
-  OS_STATE_LOCKED = 32,
-  OS_STATE_RECONNECTING = 64
+  OS_STATE_NONE = 0, /* No state. */
+  OS_STATE_CONNECTED = 1, /* Thumb and bar move connected, like a native scrollbar. */
+  OS_STATE_DETACHED = 2, /* The thumb is visually detached from the bar, and you can see the tail. */
+  OS_STATE_FINE_SCROLL = 4, /* A fine scroll is currently running, the modifier key must be pressed. */
+  OS_STATE_FULLSIZE = 8, /* The scrollbar is fullsize, so we hide it. */
+  OS_STATE_INTERNAL = 16, /* The thumb is touching a strut or a screen edge, it's internal. */
+  OS_STATE_LOCKED = 32, /* Thumb is locked in its position when moving in the proximity area. */
+  OS_STATE_RECONNECTING = 64 /* The thumb is reconnecting with the bar, there's likely an animation in progress. */
 } OsStateFlags;
 
 typedef enum
 {
-  OS_STRUT_SIDE_NONE = 0,
-  OS_STRUT_SIDE_TOP = 1,
-  OS_STRUT_SIDE_BOTTOM = 2,
-  OS_STRUT_SIDE_LEFT = 4,
-  OS_STRUT_SIDE_RIGHT = 8
+  OS_STRUT_SIDE_NONE = 0, /* No strut. */
+  OS_STRUT_SIDE_TOP = 1, /* Strut at top. */
+  OS_STRUT_SIDE_BOTTOM = 2, /* Strut at bottom. */
+  OS_STRUT_SIDE_LEFT = 4, /* Strut at left. */
+  OS_STRUT_SIDE_RIGHT = 8 /* Strut at right. */
 } OsStrutSideFlags;
 
 typedef struct
@@ -996,10 +996,46 @@ scrolling_end_cb (gpointer user_data)
 
   priv = scrollbar->priv;
 
-  priv->state &= ~(OS_STATE_RECONNECTING);
+  /* Only update the slide values at the end of a reconnection,
+   * with the button pressed, otherwise it's not needed. */
+  if ((priv->state & OS_STATE_RECONNECTING) &&
+      (priv->event & OS_EVENT_BUTTON_PRESS))
+    {
+      gint x_pos, y_pos;
 
+      gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos, &y_pos);
+
+      calc_precise_slide_values (scrollbar, x_pos + priv->pointer.x, y_pos + priv->pointer.y);
+    }
+
+  /* Check if the thumb can be considered connected after the animation. */
   check_connection (scrollbar);
+
+  /* Unset OS_STATE_RECONNECTING since the animation ended. */
+  priv->state &= ~(OS_STATE_RECONNECTING);
 }
+
+/* Stop function called by the scrolling animation. */
+static void
+scrolling_stop_cb (gpointer user_data)
+{
+  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = OS_SCROLLBAR (user_data);
+
+  priv = scrollbar->priv;
+
+  /* No slide values update here,
+   * handle them separately! */
+
+  /* Check if the thumb can be considered connected after the animation. */
+  check_connection (scrollbar);
+
+  /* Unset OS_STATE_RECONNECTING since the animation ended. */
+  priv->state &= ~(OS_STATE_RECONNECTING);
+}
+
 
 /* Swap adjustment pointer. */
 static void
@@ -1521,29 +1557,17 @@ thumb_button_press_event_cb (GtkWidget      *widget,
             {
               /* Reconnect the thumb with the bar. */
               gdouble new_value;
-              gint c, delta;
+              gfloat c;
               gint32 duration;
 
               if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-                {
-                  priv->slide_initial_slider_position = event->y_root - priv->thumb_win.y - event->y;
-                  priv->slide_initial_coordinate = event->y_root;
-
-                  delta = event->y_root - priv->slide_initial_coordinate;
-                }
+                c = event->y_root - priv->thumb_win.y - event->y;
               else
-                {
-                  priv->slide_initial_slider_position = event->x_root - priv->thumb_win.x - event->x;
-                  priv->slide_initial_coordinate = event->x_root;
-
-                  delta = event->x_root - priv->slide_initial_coordinate;
-                }
-
-              c = priv->slide_initial_slider_position + delta;
+                c = event->x_root - priv->thumb_win.x - event->x;
 
               /* If a scrolling animation is running,
                * stop it and add the new value. */
-              os_animation_stop (priv->animation, NULL);
+              os_animation_stop (priv->animation, scrolling_stop_cb);
 
               new_value = coord_to_value (scrollbar, c);
 
@@ -1603,7 +1627,7 @@ scroll_down (OsScrollbar *scrollbar,
    * stop it and add the new value. */
   if (os_animation_is_running (priv->animation))
     {
-      os_animation_stop (priv->animation, NULL);
+      os_animation_stop (priv->animation, scrolling_stop_cb);
       new_value = priv->value + increment;
     }
   else
@@ -1650,7 +1674,7 @@ scroll_up (OsScrollbar *scrollbar,
    * stop it and subtract the new value. */
   if (os_animation_is_running (priv->animation))
     {
-      os_animation_stop (priv->animation, NULL);
+      os_animation_stop (priv->animation, scrolling_stop_cb);
       new_value = priv->value - increment;
     }
   else
@@ -1950,7 +1974,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           else
             {
               /* Stop the paging animation now. */
-              os_animation_stop (priv->animation, NULL);
+              os_animation_stop (priv->animation, scrolling_stop_cb);
             }
         }
 
