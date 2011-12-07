@@ -28,12 +28,12 @@
 #include "os-private.h"
 
 struct _OsAnimationPrivate {
-  OsAnimationUpdateFunc update_func;
   OsAnimationEndFunc end_func;
-  gpointer user_data;
+  OsAnimationUpdateFunc update_func;
   gint64 start_time;
   gint64 duration;
   gint32 rate;
+  gpointer user_data;
   guint32 source_id;
 };
 
@@ -105,7 +105,7 @@ os_animation_finalize (GObject *object)
  * Creates a new OsAnimation
  *
  * Returns: the pointer to the #OsAnimation
- */
+ **/
 OsAnimation*
 os_animation_new (gint32                rate,
                   gint32                duration,
@@ -171,7 +171,7 @@ os_animation_set_duration (OsAnimation *animation,
   priv->duration = (gint64) duration * G_GINT64_CONSTANT (1000);
 }
 
-/* callback called by the animation */
+/* Callback called by the animation. */
 static gboolean
 update_cb (gpointer user_data)
 {

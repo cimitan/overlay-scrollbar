@@ -25,11 +25,9 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "os-private.h"
-#include "math.h"
-#include <stdlib.h>
 
-/* Rate of the fade-out. */
-#define RATE_FADE_OUT 30
+#include <math.h>
+#include <stdlib.h>
 
 /* Duration of the fade-out. */
 #define DURATION_FADE_OUT 2000
@@ -56,14 +54,12 @@ struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
   OsAnimation *animation;
-  OsEvent event;
-  gboolean can_rgba;
+  OsCoordinate pointer;
+  OsCoordinate pointer_root;
+  OsEventFlags event;
+  gboolean rgba;
   gboolean detached;
-  gboolean use_tolerance;
-  gint pointer_x;
-  gint pointer_y;
-  gint pointer_x_root;
-  gint pointer_y_root;
+  gboolean tolerance;
   guint32 source_id;
 };
 
@@ -93,9 +89,7 @@ static void os_thumb_finalize (GObject *object);
 static void os_thumb_get_property (GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
 static void os_thumb_set_property (GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
 
-/* Private functions */
-
-/* callback called by the fade-out animation */
+/* Callback called by the fade-out animation. */
 static void
 fade_out_cb (gfloat   weight,
              gpointer user_data)
@@ -110,7 +104,7 @@ fade_out_cb (gfloat   weight,
     gtk_widget_hide (GTK_WIDGET (thumb));
 }
 
-/* stop_func called by the fade-out animation */
+/* Stop function called by the fade-out animation. */
 static void
 fade_out_stop_cb (gpointer user_data)
 {
@@ -121,7 +115,7 @@ fade_out_stop_cb (gpointer user_data)
   gtk_window_set_opacity (GTK_WINDOW (thumb), 1.0f);
 }
 
-/* timeout before starting the fade-out animation */
+/* Timeout before starting the fade-out animation. */
 static gboolean
 timeout_fade_out_cb (gpointer user_data)
 {
@@ -193,12 +187,17 @@ os_thumb_init (OsThumb *thumb)
 
   priv->event = OS_EVENT_NONE;
 
-  priv->can_rgba = FALSE;
+  priv->pointer.x = 0;
+  priv->pointer.y = 0;
+  priv->pointer_root.x = 0;
+  priv->pointer_root.y = 0;
+
+  priv->rgba = FALSE;
   priv->detached = FALSE;
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   priv->source_id = 0;
-  priv->animation = os_animation_new (RATE_FADE_OUT, DURATION_FADE_OUT,
+  priv->animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
                                       fade_out_cb, NULL, thumb);
 
   gtk_window_set_skip_pager_hint (GTK_WINDOW (thumb), TRUE);
@@ -238,19 +237,20 @@ os_thumb_button_press_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_PRESS)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_add (widget);
 
-          priv->pointer_x = event->x;
-          priv->pointer_y = event->y;
-          priv->pointer_x_root = event->x_root;
-          priv->pointer_y_root = event->y_root;
+          priv->pointer.x = event->x;
+          priv->pointer.y = event->y;
+          priv->pointer_root.x = event->x_root;
+          priv->pointer_root.y = event->y_root;
 
           priv->event |= OS_EVENT_BUTTON_PRESS;
           priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
 
-          priv->use_tolerance = TRUE;
+          priv->tolerance = TRUE;
 
           gtk_widget_queue_draw (widget);
         }
@@ -274,7 +274,8 @@ os_thumb_button_release_event (GtkWidget      *widget,
 
   if (event->type == GDK_BUTTON_RELEASE)
     {
-      if (event->button == 1)
+      if (event->button == 1 ||
+          event->button == 2)
         {
           gtk_grab_remove (widget);
 
@@ -296,7 +297,7 @@ os_thumb_composited_changed (GtkWidget *widget)
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  priv->can_rgba = FALSE;
+  priv->rgba = FALSE;
 
   if (gdk_screen_is_composited (gtk_widget_get_screen (widget)))
     {
@@ -314,13 +315,13 @@ os_thumb_composited_changed (GtkWidget *widget)
       if (gdk_visual_get_depth (visual) == 32 && (red_mask   == 0xff0000 &&
                                                   green_mask == 0x00ff00 &&
                                                   blue_mask  == 0x0000ff))   
-        priv->can_rgba = TRUE;
+        priv->rgba = TRUE;
     }
 
   gtk_widget_queue_draw (widget);
 }
 
-/* simplified wrapper of cairo_pattern_add_color_stop_rgba */
+/* Simplified wrapper of cairo_pattern_add_color_stop_rgba. */
 static void
 pattern_add_gdk_rgba_stop (cairo_pattern_t *pat,
                            gdouble          stop,
@@ -330,7 +331,7 @@ pattern_add_gdk_rgba_stop (cairo_pattern_t *pat,
   cairo_pattern_add_color_stop_rgba (pat, stop, color->red, color->green, color->blue, alpha);
 }
 
-/* simplified wrapper of cairo_set_source_rgba */
+/* Simplified wrapper of cairo_set_source_rgba. */
 static void
 set_source_gdk_rgba (cairo_t       *cr,
                      const GdkRGBA *color,
@@ -339,7 +340,7 @@ set_source_gdk_rgba (cairo_t       *cr,
   cairo_set_source_rgba (cr, color->red, color->green, color->blue, alpha);
 }
 
-/* draw an arrow using cairo */
+/* Draw an arrow using cairo. */
 static void
 draw_arrow (cairo_t       *cr,
             const GdkRGBA *color,
@@ -365,7 +366,37 @@ draw_arrow (cairo_t       *cr,
   cairo_restore (cr);
 }
 
-/* draw a rounded rectangle using cairo */
+/* Draw a grip using cairo. */
+static void
+draw_grip (cairo_t       *cr,
+           const GdkRGBA *color1,
+           const GdkRGBA *color2,
+           gdouble        x,
+           gdouble        y,
+           gint           nx,
+           gint           ny)
+{
+  gint lx, ly;
+
+  for (ly = 0; ly < ny; ly++)
+    {
+      for (lx = 0; lx < nx; lx++)
+        {
+          gint sx = lx * 3;
+          gint sy = ly * 3;
+
+          cairo_set_source_rgba (cr, color2->red, color2->green, color2->blue, color2->alpha);
+          cairo_rectangle (cr, x + sx, y + sy, 2, 2);
+          cairo_fill (cr);
+
+          cairo_set_source_rgba (cr, color1->red, color1->green, color1->blue, color1->alpha);
+          cairo_rectangle (cr, x + sx, y + sy, 1, 1);
+          cairo_fill (cr);
+        }
+    }
+}
+
+/* Draw a rounded rectangle using cairo. */
 static void
 draw_round_rect (cairo_t *cr,
                  gdouble  x,
@@ -390,7 +421,7 @@ draw_round_rect (cairo_t *cr,
   cairo_arc (cr, x + radius, y + radius, radius, G_PI, G_PI * 1.5);
 }
 
-/* convert rgb to hls */
+/* Convert RGB to HLS. */
 static void
 rgb_to_hls (gdouble *r,
             gdouble *g,
@@ -466,7 +497,7 @@ rgb_to_hls (gdouble *r,
   *b = s;
 }
 
-/* convert hls to rgb */
+/* Convert HLS to RGB. */
 static void
 hls_to_rgb (gdouble *h,
             gdouble *l,
@@ -547,7 +578,7 @@ hls_to_rgb (gdouble *h,
     }
 }
 
-/* shade a GdkRGBA color */
+/* Shade a GdkRGBA color. */
 static void
 shade_gdk_rgba (const GdkRGBA *a,
                 gfloat         k,
@@ -592,7 +623,7 @@ shade_gdk_rgba (const GdkRGBA *a,
 }
 
 #ifndef USE_GTK3
-/* convert a GdkColor to GdkRGBA */
+/* Convert a GdkColor to GdkRGBA. */
 static void
 convert_gdk_color_to_gdk_rgba (GdkColor *color,
                                GdkRGBA  *rgba)
@@ -632,7 +663,7 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  radius = priv->can_rgba ? THUMB_RADIUS : 0;
+  radius = priv->rgba ? THUMB_RADIUS : 0;
 
 #ifdef USE_GTK3
   width = gtk_widget_get_allocated_width (widget);
@@ -673,13 +704,13 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_set_line_width (cr, 1.0);
   cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
-  /* background */
+  /* Background. */
   draw_round_rect (cr, 0, 0, width, height, radius);
 
   set_source_gdk_rgba (cr, &bg, 1.0);
   cairo_fill_preserve (cr);
 
-  /* background pattern from top to bottom */
+  /* Background pattern from top to bottom. */
   shade_gdk_rgba (&bg, 1.3, &bg_arrow_up);
   shade_gdk_rgba (&bg, 0.7, &bg_arrow_down);
 
@@ -691,8 +722,8 @@ os_thumb_expose (GtkWidget      *widget,
   if ((priv->event & OS_EVENT_BUTTON_PRESS) &&
       !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
-      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer_y < height / 2)) ||
-          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer_x < width / 2)))
+      if ((priv->orientation == GTK_ORIENTATION_VERTICAL && (priv->pointer.y < height / 2)) ||
+          (priv->orientation == GTK_ORIENTATION_HORIZONTAL && (priv->pointer.x < width / 2)))
         {
           pattern_add_gdk_rgba_stop (pat, 0.0, &bg_arrow_down, 0.6);
           pattern_add_gdk_rgba_stop (pat, 0.49, &bg_arrow_down, 0.1);
@@ -726,7 +757,7 @@ os_thumb_expose (GtkWidget      *widget,
   else
     cairo_fill (cr);
 
-  /* 2px fat border around the thumb */
+  /* 2px fat border around the thumb. */
   cairo_save (cr);
 
   cairo_set_line_width (cr, 2.0);
@@ -739,14 +770,14 @@ os_thumb_expose (GtkWidget      *widget,
 
   cairo_restore (cr);
 
-  /* 1px subtle shadow around the background */
+  /* 1px subtle shadow around the background. */
   shade_gdk_rgba (&bg, 0.2, &bg_shadow);
 
   draw_round_rect (cr, 1, 1, width - 2, height - 2, radius);
   set_source_gdk_rgba (cr, &bg_shadow, 0.26);
   cairo_stroke (cr);
 
-  /* 1px frame around the background */
+  /* 1px frame around the background. */
   shade_gdk_rgba (&bg, 0.6, &bg_dark_line);
 
   draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 1);
@@ -755,43 +786,77 @@ os_thumb_expose (GtkWidget      *widget,
 
   shade_gdk_rgba (&bg, 1.2, &bg_bright_line);
 
-  /* separators between the two steppers */
+  /* Only draw the grip when the thumb is at full height. */
+  if ((priv->orientation == GTK_ORIENTATION_VERTICAL && height == THUMB_HEIGHT - 1) ||
+      (priv->orientation == GTK_ORIENTATION_HORIZONTAL && width == THUMB_HEIGHT - 1) )
+    {
+      GdkRGBA grip_dot_up, grip_dot_down, grip_inset_up, grip_inset_down;
+
+      grip_dot_up = bg_dark_line;
+      grip_dot_up.alpha = 0.74;
+      grip_dot_down = bg_dark_line;
+      grip_dot_down.alpha = 0.86;
+      grip_inset_up = bg_bright_line;
+      grip_inset_up.alpha = priv->event & OS_EVENT_BUTTON_PRESS ? 0.62 : 1.0;
+      grip_inset_down = bg_bright_line;
+      grip_inset_down.alpha = 0.36;
+
+      /* Grip. */
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        {
+          /* Page UP. */
+          draw_grip (cr, &grip_dot_up, &grip_inset_up, 4.5, 15.5, 3, 5);
+
+          /* Page DOWN. */
+          draw_grip (cr, &grip_dot_down, &grip_inset_down, 4.5, height / 2 + 4.5, 3, 5);
+        }
+      else
+        {
+          /* Page UP. */
+          draw_grip (cr, &grip_dot_up, &grip_inset_up, 15.5, 4.5, 5, 3);
+
+          /* Page DOWN. */
+          draw_grip (cr, &grip_dot_down, &grip_inset_down, width / 2 + 4.5, 4.5, 5, 3);
+        }
+    }
+
+  /* Separators between the two steppers. */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      cairo_move_to (cr, 2.5, - 1 + height / 2);
-      cairo_line_to (cr, width - 2.5, - 1 + height / 2);
+      cairo_move_to (cr, 2.5, height / 2);
+      cairo_line_to (cr, width - 2.5, height / 2);
       set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, 2.5, height / 2);
-      cairo_line_to (cr, width - 2.5, height / 2);
+      cairo_move_to (cr, 2.5, 1 + height / 2);
+      cairo_line_to (cr, width - 2.5, 1 + height / 2);
       set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
   else
     {
-      cairo_move_to (cr, - 1 + width / 2, 2.5);
-      cairo_line_to (cr, - 1 + width / 2, height - 2.5);
+      cairo_move_to (cr, width / 2, 2.5);
+      cairo_line_to (cr, width / 2, height - 2.5);
       set_source_gdk_rgba (cr, &bg_dark_line, 0.36);
       cairo_stroke (cr);
 
-      cairo_move_to (cr, width / 2, 2.5);
-      cairo_line_to (cr, width / 2, height - 2.5);
+      cairo_move_to (cr, 1 + width / 2, 2.5);
+      cairo_line_to (cr, 1 + width / 2, height - 2.5);
       set_source_gdk_rgba (cr, &bg_bright_line, 0.5);
       cairo_stroke (cr);
     }
 
-  /* arrows */
+  /* Arrows. */
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
-      /* direction UP. */
+      /* Direction UP. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI);  
       draw_arrow (cr, &arrow_color, 0.5, 0, 5, 3);
       cairo_restore (cr);
 
-      /* direction DOWN. */
+      /* Direction DOWN. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, height - 8.5);
       cairo_rotate (cr, 0);
@@ -800,14 +865,14 @@ os_thumb_expose (GtkWidget      *widget,
     }
   else
     {
-      /* direction LEFT. */
+      /* Direction LEFT. */
       cairo_save (cr);
       cairo_translate (cr, 8.5, 8.5);
       cairo_rotate (cr, G_PI * 0.5);  
       draw_arrow (cr, &arrow_color, -0.5, 0, 5, 3);
       cairo_restore (cr);
 
-      /* direction RIGHT. */
+      /* Direction RIGHT. */
       cairo_save (cr);
       cairo_translate (cr, width - 8.5, 8.5);
       cairo_rotate (cr, G_PI * 1.5);
@@ -851,7 +916,7 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
       os_animation_stop (priv->animation, NULL);
     }
 
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   return FALSE;
 }
@@ -907,11 +972,11 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
    * see code few lines below. */
   if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
   {
-    if (!priv->use_tolerance ||
-        (abs (priv->pointer_x - event->x) > TOLERANCE_FADE ||
-         abs (priv->pointer_y - event->y) > TOLERANCE_FADE))
+    if (!priv->tolerance ||
+        (abs (priv->pointer.x - event->x) > TOLERANCE_FADE ||
+         abs (priv->pointer.y - event->y) > TOLERANCE_FADE))
       {
-        priv->use_tolerance = FALSE;
+        priv->tolerance = FALSE;
         priv->source_id = g_timeout_add (TIMEOUT_FADE_OUT,
                                          timeout_fade_out_cb,
                                          thumb);
@@ -921,8 +986,8 @@ os_thumb_motion_notify_event (GtkWidget      *widget,
   if (priv->event & OS_EVENT_BUTTON_PRESS &&
       !(priv->event & OS_EVENT_MOTION_NOTIFY))
     {
-      if (abs (priv->pointer_x_root - event->x_root) <= TOLERANCE_MOTION &&
-          abs (priv->pointer_y_root - event->y_root) <= TOLERANCE_MOTION)
+      if (abs (priv->pointer_root.x - event->x_root) <= TOLERANCE_MOTION &&
+          abs (priv->pointer_root.y - event->y_root) <= TOLERANCE_MOTION)
         return FALSE;
 
       priv->event |= OS_EVENT_MOTION_NOTIFY;
@@ -975,8 +1040,15 @@ os_thumb_scroll_event (GtkWidget      *widget,
       priv->source_id = 0;
     }
 
-  /* if started, stop the fade-out. */
+  /* If started, stop the fade-out. */
   os_animation_stop (priv->animation, fade_out_stop_cb);
+
+  if (priv->event & OS_EVENT_MOTION_NOTIFY)
+    {
+      priv->event &= ~(OS_EVENT_MOTION_NOTIFY);
+
+      gtk_widget_queue_draw (widget);
+    }
 
   return FALSE;
 }
@@ -992,7 +1064,7 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->event = OS_EVENT_NONE;
 
-  priv->use_tolerance = FALSE;
+  priv->tolerance = FALSE;
 
   if (priv->grabbed_widget != NULL && gtk_widget_get_mapped (priv->grabbed_widget))
     gtk_grab_add (priv->grabbed_widget);
@@ -1111,7 +1183,7 @@ os_thumb_set_property (GObject      *object,
  * Creates a new OsThumb instance.
  *
  * Returns: a new OsThumb instance.
- */
+ **/
 GtkWidget*
 os_thumb_new (GtkOrientation orientation)
 {

@@ -31,21 +31,16 @@
 
 G_BEGIN_DECLS
 
-#define OS_TYPE_SCROLLBAR (os_scrollbar_get_type ())
-#define OS_SCROLLBAR(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_SCROLLBAR, OsScrollbar))
-#define OS_SCROLLBAR_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_SCROLLBAR, OsScrollbarClass))
-#define OS_IS_SCROLLBAR(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_SCROLLBAR))
-#define OS_IS_SCROLLBAR_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_SCROLLBAR))
-#define OS_SCROLLBAR_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_SCROLLBAR, OsScrollbarClass))
+#define OS_TYPE_SCROLLBAR            (os_scrollbar_get_type ())
+#define OS_SCROLLBAR(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_SCROLLBAR, OsScrollbar))
+#define OS_SCROLLBAR_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_SCROLLBAR, OsScrollbarClass))
+#define OS_IS_SCROLLBAR(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_SCROLLBAR))
+#define OS_IS_SCROLLBAR_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_SCROLLBAR))
+#define OS_SCROLLBAR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_SCROLLBAR, OsScrollbarClass))
 
-typedef struct _OsScrollbar      OsScrollbar;
-typedef struct _OsScrollbarPrivate OsScrollbarPrivate;
+typedef struct _OsScrollbar OsScrollbar;
 typedef struct _OsScrollbarClass OsScrollbarClass;
+typedef struct _OsScrollbarPrivate OsScrollbarPrivate;
 
 struct _OsScrollbar {
   GtkScrollbar parent_object;
