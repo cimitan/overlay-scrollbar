@@ -22,17 +22,24 @@
 
 #ifndef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#endif /* hAVE_CONFIG_H */
 
 #include "os-utils.h"
 
 /* Public functions. */
 
+/**
+ * os_utils_is_blacklisted :
+ * @program: a gchar of the program to check
+ *
+ * Returns: TRUE if the program is blacklisted. 
+ **/
 gboolean
 os_utils_is_blacklisted (const gchar *program)
 {
-  /* Black-list of program names retrieved with g_get_prgname(). */
+  /* Black-list of program names retrieved with g_get_prgname (). */
   static const gchar *blacklist[] = {
+    "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
     "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
     "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */

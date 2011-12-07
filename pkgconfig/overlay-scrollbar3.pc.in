@@ -1,7 +1,7 @@
 prefix=@prefix@
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
-includedir=${prefix}/include/overlay-scrollbar-@OS_MAJORMINOR@
+includedir=${prefix}/include/overlay-scrollbar3-@OS_MAJORMINOR@
 
 Name: overlay-scrollbar-@OS_MAJORMINOR@
 Description: Overlay scrollbar widget for GTK+

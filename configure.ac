@@ -2,7 +2,7 @@ AC_PREREQ(2.63)
 
 # Package
 
-AC_INIT([overlay-scrollbar],[0.2.11],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
+AC_INIT([overlay-scrollbar],[0.2.13],[https://bugs.launchpad.net/ayatana-scrollbar],[overlay-scrollbar])
 AC_CONFIG_SRCDIR([os/os-scrollbar.h])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
@@ -18,7 +18,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 # - interfaces added -> increment AGE
 # - interfaces removed -> AGE = 0
 OS_LT_CURRENT=0
-OS_LT_REV=11
+OS_LT_REV=13
 OS_LT_AGE=0
 OS_LT_VERSION="$OS_LT_CURRENT:$OS_LT_REV:$OS_LT_AGE"
 OS_LT_LDFLAGS="-version-info $OS_LT_VERSION"
@@ -87,6 +87,11 @@ AS_IF([test "x$with_gtk" = x3],
       [AC_MSG_FAILURE([Value for --with-gtk was neither 2 nor 3])]
 )
 AM_CONDITIONAL(USE_GTK3, [test "x$with_gtk" = x3])
+
+# Check if build tests
+AC_ARG_ENABLE([tests],
+  AC_HELP_STRING([--disable-tests], [Disable tests]),, [enable_tests=yes])
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$enable_tests" != "xno"])
 
 # Debug flags
 
@@ -171,6 +176,7 @@ echo "  overlay-scrollbar $PACKAGE_VERSION"
 echo "  ========================="
 echo ""
 echo "  Gtk+:   ${with_gtk}"
+echo "  Tests:  ${enable_tests}"
 echo "  Debug:  ${enable_debug}"
 echo "  Prefix: ${prefix}"
 echo ""
