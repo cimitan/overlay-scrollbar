@@ -1,3 +1,29 @@
+overlay-scrollbar 0.2.13 (December 7, 2011)
+-------------------------------------------
+
+* Proximity area enlarged to the whole page.
+
+* New thumb positioning according to mouse pointer and bar position.
+
+* The thumb is more freely movable while touching an edge.
+
+* Press Control while dragging to enter fine-scroll mode.
+
+* Press Control while doing page up/down to do step up/down instead.
+
+* Jumping is now triggered via Middle Click or via Shift + Button1.
+
+* It is now possible to disable test from the configure.
+
+* Other tweaks to animations and fixes, small performance improvements.
+
+* Bugs fixed:
+- 752338 Can no longer jump to a specific position in a document/window
+- 758576 Overlay Scrollbar should be revealed at any place on the edge of the...
+- 763247 Overlay ScrollBar not easily findable in a large document
+- 868739 Overlay scrollbars rendered in the wrong place when inside another...
+
+
 overlay-scrollbar 0.2.12 (October 19, 2011)
 -------------------------------------------
 
