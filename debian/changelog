@@ -1,6 +1,17 @@
-overlay-scrollbar (0.2.13-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.13-0ubuntu1) precise; urgency=low
 
   * New upstream release.
+    - Proximity area enlarged to the whole page. (LP: #758576)
+    - New thumb positioning according to mouse pointer and bar position.
+    - The thumb is more freely movable while touching an edge.
+    - Press Control while dragging to enter fine-scroll mode.
+    - Press Control while doing page up/down to do step up/down instead.
+    - Jumping is now triggered via Middle Click or via Shift + Button1.
+    - Can no longer jump to a specific position in a 
+      document/window (LP: #752338)
+    - Overlay ScrollBar not easily findable in a large document (LP: #763247)
+    - Overlay scrollbars rendered in the wrong place when inside another, 
+      external, scrolled window (LP: #868739)
 
  -- Ken VanDine <ken.vandine@canonical.com>  Wed, 07 Dec 2011 12:32:50 -0500
 
