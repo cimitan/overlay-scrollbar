@@ -88,6 +88,11 @@ AS_IF([test "x$with_gtk" = x3],
 )
 AM_CONDITIONAL(USE_GTK3, [test "x$with_gtk" = x3])
 
+# Check if build tests
+AC_ARG_ENABLE([tests],
+  AC_HELP_STRING([--disable-tests], [Disable tests]),, [enable_tests=yes])
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$enable_tests" != "xno"])
+
 # Debug flags
 
 if test x$OS_TRUNK = xyes; then
@@ -171,6 +176,7 @@ echo "  overlay-scrollbar $PACKAGE_VERSION"
 echo "  ========================="
 echo ""
 echo "  Gtk+:   ${with_gtk}"
+echo "  Tests:  ${enable_tests}"
 echo "  Debug:  ${enable_debug}"
 echo "  Prefix: ${prefix}"
 echo ""
