@@ -13,7 +13,7 @@ overlay-scrollbar 0.2.13 (December 7, 2011)
 
 * Jumping is now triggered via Middle Click or via Shift + Button1.
 
-* It is now possible to disable test from the configure.
+* It is now possible to disable tests from the configure.
 
 * Other tweaks to animations and fixes, small performance improvements.
 
