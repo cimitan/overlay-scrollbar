@@ -402,6 +402,8 @@ os_bar_dispose (GObject *object)
       priv->bar_window = NULL;
     }
 
+  g_signal_handlers_disconnect_by_func (gtk_settings_get_default (), notify_gtk_theme_name_cb, object);
+
   os_bar_set_parent (bar, NULL);
 
   G_OBJECT_CLASS (os_bar_parent_class)->dispose (object);
