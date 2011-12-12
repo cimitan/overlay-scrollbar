@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.13-0ubuntu2) precise; urgency=low
+
+  * os/os-bar.c
+    - cherry picked fix for crasher when gtk theme changes (LP: #902928)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 12 Dec 2011 11:39:45 -0500
+
 overlay-scrollbar (0.2.13-0ubuntu1) precise; urgency=low
 
   * New upstream release.
