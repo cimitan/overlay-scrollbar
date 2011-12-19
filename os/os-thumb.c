@@ -741,7 +741,7 @@ os_thumb_expose (GtkWidget      *widget,
   if (action == ACTION_DRAG)
     {
       cairo_fill_preserve (cr);
-      set_source_gdk_rgba (cr, &bg_arrow_up, 0.3);
+      set_source_gdk_rgba (cr, &bg, 0.8);
       cairo_fill (cr);
     }
   else
@@ -766,7 +766,7 @@ os_thumb_expose (GtkWidget      *widget,
             cairo_rectangle (cr, width / 2, 0, width / 2, height);
         }
 
-      set_source_gdk_rgba (cr, &bg_arrow_up, 0.3);
+      set_source_gdk_rgba (cr, &bg, 0.8);
       cairo_fill (cr);
     }
 
@@ -796,20 +796,20 @@ os_thumb_expose (GtkWidget      *widget,
   {
     default:
     case ACTION_NORMAL:
-      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.3);
-      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.3);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.22);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.22);
       break;
     case ACTION_DRAG:
-      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.24);
-      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.24);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.2);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.2);
       break;
     case ACTION_PAGE_UP:
-      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.14);
-      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.3);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.1);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.22);
       break;
     case ACTION_PAGE_DOWN:
-      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.3);
-      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.14);
+      pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.22);
+      pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.1);
       break;
   }
 
