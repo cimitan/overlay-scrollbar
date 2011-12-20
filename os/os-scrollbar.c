@@ -38,7 +38,7 @@
 #define BAR_SIZE 3
 
 /* Size of the proximity effect in pixels. */
-#define PROXIMITY_SIZE 30
+#define PROXIMITY_SIZE 34
 
 /* Max duration of the scrolling. */
 #define MAX_DURATION_SCROLLING 1000
