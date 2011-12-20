@@ -52,6 +52,7 @@ os_utils_is_blacklisted (const gchar *program)
     "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
     "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
     "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
     "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
     "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
     "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
