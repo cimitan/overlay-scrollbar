@@ -821,7 +821,7 @@ os_thumb_expose (GtkWidget      *widget,
 
   /* 1px frame around the background. */
   shade_gdk_rgba (&bg, 0.6, &bg_dark_line);
-  shade_gdk_rgba (&bg, 1.4, &bg_bright_line);
+  shade_gdk_rgba (&bg, 1.2, &bg_bright_line);
 
   draw_round_rect (cr, 2, 2, width - 4, height - 4, radius - 1);
   set_source_gdk_rgba (cr, &bg_bright_line, 0.6);
