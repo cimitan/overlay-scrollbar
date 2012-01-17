@@ -66,7 +66,7 @@ PKG_PROG_PKG_CONFIG
 
 AC_SUBST(glib_req, 2.26.0)
 AC_SUBST(gtk_req, 2.22.0)
-AC_SUBST(gtk3_req, 3.0.9)
+AC_SUBST(gtk3_req, 3.3.6)
 AC_SUBST(cairo_req, 1.10)
 
 AC_ARG_WITH([gtk],

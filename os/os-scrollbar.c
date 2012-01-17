@@ -1145,6 +1145,45 @@ unlock_thumb_cb (gpointer user_data)
   return FALSE;
 }
 
+/* Get the window at pointer. */
+static GdkWindow*
+window_at_pointer (GdkWindow *window,
+                   gint      *x,
+                   gint      *y)
+{
+#ifdef USE_GTK3
+  GdkDeviceManager *device_manager;
+  GdkDevice *device;
+
+  device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+  device = gdk_device_manager_get_client_pointer (device_manager);
+
+  return gdk_device_get_window_at_position (device, x, y);
+#else
+  return gdk_window_at_pointer (x, y);
+#endif
+}
+
+/* Get the position of the pointer. */
+static GdkWindow*
+window_get_pointer (GdkWindow       *window,
+                    gint            *x,
+                    gint            *y,
+                    GdkModifierType *mask)
+{
+#ifdef USE_GTK3
+  GdkDeviceManager *device_manager;
+  GdkDevice *device;
+
+  device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+  device = gdk_device_manager_get_client_pointer (device_manager);
+
+  return gdk_window_get_device_position (window, device, x, y, mask);
+#else
+  return gdk_window_get_pointer (window, x, y, mask);
+#endif
+}
+
 /* Adjustment functions. */
 
 /* Calculate fine_scroll_multiplier. */
@@ -1411,7 +1450,7 @@ root_gfunc (gpointer data,
            * either an unknown GdkWindow (NULL),
            * or the toplevel window. */
           window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
-          parent = gdk_window_at_pointer (NULL, NULL);
+          parent = window_at_pointer (window, NULL, NULL);
           while (parent != NULL)
             {
               if (window == parent)
@@ -1424,7 +1463,7 @@ root_gfunc (gpointer data,
             {
               gint x, y;
 
-              gdk_window_get_pointer (window, &x, &y, NULL);
+              window_get_pointer (window, &x, &y, NULL);
 
               /* When the window is unfocused,
                * check the position of the pointer
@@ -2299,7 +2338,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
           /* Loop through parent windows until it reaches
            * either an unknown GdkWindow (NULL),
            * or the toplevel window. */
-          parent = gdk_window_at_pointer (NULL, NULL);
+          parent = window_at_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), NULL, NULL);
           while (parent != NULL)
             {
               if (event->window == parent)
@@ -2312,7 +2351,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
             {
               gint x, y;
 
-              gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
+              window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
 
               /* When the window is resized (maximize/restore),
                * check the position of the pointer
@@ -3172,7 +3211,7 @@ os_scrollbar_map (GtkWidget *widget)
         {
           gint x, y;
 
-          gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
+          window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
 
           /* When the scrollbar appears on screen (mapped),
            * for example when switching notebook page,
@@ -3389,11 +3428,11 @@ set_sensitive (OsScrollbar *scrollbar)
 
   if (priv->active_window)
     os_bar_set_active (priv->bar, TRUE, FALSE);
-  else
+  else if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
     {
       gint x, y;
 
-      gdk_window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
+      window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
 
       /* When the window is unfocused,
        * check the position of the pointer
