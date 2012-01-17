@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.14-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+  * debian/control
+    - bumped build depends for libgtk-3-dev to >= 3.3.6-0ubuntu1
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 17 Jan 2012 11:11:24 -0500
+
 overlay-scrollbar (0.2.13-0ubuntu2) precise; urgency=low
 
   * os/os-bar.c
