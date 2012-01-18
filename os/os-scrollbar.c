@@ -2023,7 +2023,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                     case OS_SIDE_TOP:
                       window_edge = GDK_WINDOW_EDGE_NORTH;
                       break;
-                      break;
                   }
 
                   gdk_window_begin_resize_drag (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))),
@@ -3366,7 +3365,7 @@ retrieve_side (OsScrollbar *scrollbar)
     }
 }
 
-/* Retrieve if the thumb can resize its window. */
+/* Retrieve if the thumb can resize its toplevel window. */
 static void
 retrieve_resizability (OsScrollbar *scrollbar)
 {
