@@ -1996,16 +1996,41 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           f_y <= TOLERANCE_MOTION)
         return FALSE;
 
-      /* Resize the window. */
+      /* The scrollbar allows resize, and a scrolling is not started yet.
+       * Decide if the user will start a window resize or a normal scroll. */
       if (priv->allow_resize &&
           !(priv->event & OS_EVENT_MOTION_NOTIFY))
         {
+          /* Trying to draw the area of interest,
+           * in the case of a vertical scrollbar.
+           * Everything is reflected for horizontal scrollbars.
+           *
+           * +                           +
+           *   +       SCROLLING       +
+           *     +                   +
+           *     + +               + +
+           *  R  +   +  +  +  +  +   +  R
+           *  E  +                   +  E
+           *  S  +     no action     +  S
+           *  I  +       taken       +  I
+           *  Z  +                   +  Z
+           *  E  +   +  +  +  +  +   +  E
+           *     + +               + +
+           *     +                   +
+           *   +       SCROLLING       +
+           * +                           +
+           *
+           * The diagonal lines are inclined differently, using 0.5 * f_y.
+           **/
           if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > 0.5 * f_y) ||
               ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > 0.5 * f_x))
             {
+              /* We're either in the 'RESIZE' or in the 'no action taken' area. */
               if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > TOLERANCE_DRAG) ||
                   ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > TOLERANCE_DRAG))
                 {
+                  /* We're in the 'RESIZE' area.
+                   * Set the right resize type and hide the thumb. */
                   GdkWindowEdge window_edge;
 
                   switch (priv->side)
@@ -2033,9 +2058,13 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                                                 event->time);
                   gtk_widget_hide (widget);
                 }
-
+              /* We're in the 'no action taken' area.
+               * Skip this event. */
               return FALSE;
             }
+
+          /* We're in the 'SCROLLING' area.
+           * Continue processing the event. */
         }
 
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
@@ -2043,6 +2072,7 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
           /* Check if we can consider the thumb movement connected with the overlay. */
           check_connection (scrollbar);
 
+          /* It is a scrolling event, set the flag. */
           priv->event |= OS_EVENT_MOTION_NOTIFY;
         }
 
@@ -3372,7 +3402,8 @@ retrieve_resizability (OsScrollbar *scrollbar)
   GdkWindow *scrollbar_window;
   GdkWindow *toplevel_window;
   OsScrollbarPrivate *priv;
-  gint x, y, width, height, x_pos, y_pos;
+  gint x, y;
+  gint x_pos, y_pos;
 
   priv = scrollbar->priv;
 
@@ -3388,21 +3419,20 @@ retrieve_resizability (OsScrollbar *scrollbar)
 
   gdk_window_get_origin (toplevel_window, &x, &y);
 
-  width = gdk_window_get_width (toplevel_window);
-  height = gdk_window_get_height (toplevel_window);
-
   gdk_window_get_root_coords (scrollbar_window,
                               priv->thumb_all.x, priv->thumb_all.y,
                               &x_pos, &y_pos);
 
+  /* Check if the thumb is next to a window edge,
+   * if that's the case, set the allow_resize gboolean. */
   switch (priv->side)
   {
     case OS_SIDE_RIGHT:
-      if (x + width - x_pos <= THUMB_WIDTH)
+      if (x + gdk_window_get_width (toplevel_window) - x_pos <= THUMB_WIDTH)
         priv->allow_resize = TRUE;
       break;
     case OS_SIDE_BOTTOM:
-      if (y + height - y_pos <= THUMB_WIDTH)
+      if (y + gdk_window_get_height (toplevel_window) - y_pos <= THUMB_WIDTH)
         priv->allow_resize = TRUE;
       break;
     case OS_SIDE_LEFT:
