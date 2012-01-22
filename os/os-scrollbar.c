@@ -124,6 +124,7 @@ struct _OsScrollbarPrivate
   OsSide side;
   OsWindowFilter filter;
   gboolean active_window;
+  gboolean allow_resize;
   gboolean deactivable_bar;
   gboolean hidable_thumb;
   gboolean window_button_press; /* FIXME(Cimi) to replace with X11 input events. */
@@ -1984,18 +1985,94 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
   if (priv->event & OS_EVENT_BUTTON_PRESS)
     {
       gint x, y;
+      gint f_x, f_y;
+
+      f_x = abs (priv->pointer.x - event->x);
+      f_y = abs (priv->pointer.y - event->y);
 
       /* Use tolerance at the first calls to this motion notify event. */
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY) &&
-          abs (priv->pointer.x - event->x) <= TOLERANCE_MOTION &&
-          abs (priv->pointer.y - event->y) <= TOLERANCE_MOTION)
+          f_x <= TOLERANCE_MOTION &&
+          f_y <= TOLERANCE_MOTION)
         return FALSE;
+
+      /* The scrollbar allows resize, and a scrolling is not started yet.
+       * Decide if the user will start a window resize or a normal scroll. */
+      if (priv->allow_resize &&
+          !(priv->event & OS_EVENT_MOTION_NOTIFY))
+        {
+          /* Trying to draw the area of interest,
+           * in the case of a vertical scrollbar.
+           * Everything is reflected for horizontal scrollbars.
+           *
+           * +                           +
+           *   +       SCROLLING       +
+           *     +                   +
+           *     + +               + +
+           *  R  +   +  +  +  +  +   +  R
+           *  E  +                   +  E
+           *  S  +     no action     +  S
+           *  I  +       taken       +  I
+           *  Z  +                   +  Z
+           *  E  +   +  +  +  +  +   +  E
+           *     + +               + +
+           *     +                   +
+           *   +       SCROLLING       +
+           * +                           +
+           *
+           * The diagonal lines are inclined differently, using 0.5 * f_y.
+           **/
+          if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > 0.5 * f_y) ||
+              ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > 0.5 * f_x))
+            {
+              /* We're either in the 'RESIZE' or in the 'no action taken' area. */
+              if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > TOLERANCE_DRAG) ||
+                  ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > TOLERANCE_DRAG))
+                {
+                  /* We're in the 'RESIZE' area.
+                   * Set the right resize type and hide the thumb. */
+                  GdkWindowEdge window_edge;
+
+                  switch (priv->side)
+                  {
+                    default:
+                    case OS_SIDE_RIGHT:
+                      window_edge = GDK_WINDOW_EDGE_EAST;
+                      break;
+                    case OS_SIDE_BOTTOM:
+                      window_edge = GDK_WINDOW_EDGE_SOUTH;
+                      break;
+                    case OS_SIDE_LEFT:
+                      window_edge = GDK_WINDOW_EDGE_WEST;
+                      break;
+                    case OS_SIDE_TOP:
+                      window_edge = GDK_WINDOW_EDGE_NORTH;
+                      break;
+                  }
+
+                  gdk_window_begin_resize_drag (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))),
+                                                window_edge,
+                                                1,
+                                                event->x_root,
+                                                event->y_root,
+                                                event->time);
+                  gtk_widget_hide (widget);
+                }
+              /* We're in the 'no action taken' area.
+               * Skip this event. */
+              return FALSE;
+            }
+
+          /* We're in the 'SCROLLING' area.
+           * Continue processing the event. */
+        }
 
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
         {
           /* Check if we can consider the thumb movement connected with the overlay. */
           check_connection (scrollbar);
 
+          /* It is a scrolling event, set the flag. */
           priv->event |= OS_EVENT_MOTION_NOTIFY;
         }
 
@@ -3318,6 +3395,59 @@ retrieve_side (OsScrollbar *scrollbar)
     }
 }
 
+/* Retrieve if the thumb can resize its toplevel window. */
+static void
+retrieve_resizability (OsScrollbar *scrollbar)
+{
+  GdkWindow *scrollbar_window;
+  GdkWindow *toplevel_window;
+  OsScrollbarPrivate *priv;
+  gint x, y;
+  gint x_pos, y_pos;
+
+  priv = scrollbar->priv;
+
+  /* By default, they don't allow resize. */
+  priv->allow_resize = FALSE;
+
+  scrollbar_window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
+
+  if (!scrollbar_window)
+    return;
+
+  toplevel_window = gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar)));
+
+  gdk_window_get_origin (toplevel_window, &x, &y);
+
+  gdk_window_get_root_coords (scrollbar_window,
+                              priv->thumb_all.x, priv->thumb_all.y,
+                              &x_pos, &y_pos);
+
+  /* Check if the thumb is next to a window edge,
+   * if that's the case, set the allow_resize gboolean. */
+  switch (priv->side)
+  {
+    case OS_SIDE_RIGHT:
+      if (x + gdk_window_get_width (toplevel_window) - x_pos <= THUMB_WIDTH)
+        priv->allow_resize = TRUE;
+      break;
+    case OS_SIDE_BOTTOM:
+      if (y + gdk_window_get_height (toplevel_window) - y_pos <= THUMB_WIDTH)
+        priv->allow_resize = TRUE;
+      break;
+    case OS_SIDE_LEFT:
+      if (x_pos - x <= THUMB_WIDTH)
+        priv->allow_resize = TRUE;
+      break;
+    case OS_SIDE_TOP:
+      if (y_pos - y <= THUMB_WIDTH)
+        priv->allow_resize = TRUE;
+      break;
+    default:
+      break;
+  }
+}
+
 static void
 os_scrollbar_size_allocate (GtkWidget    *widget,
                             GdkRectangle *allocation)
@@ -3395,6 +3525,9 @@ os_scrollbar_size_allocate (GtkWidget    *widget,
   os_bar_size_allocate (priv->bar, priv->bar_all);
 
   move_bar (scrollbar);
+
+  /* Set resizability. */
+  retrieve_resizability (scrollbar);
 
   gtk_widget_set_allocation (widget, allocation);
 }
