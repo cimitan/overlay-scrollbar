@@ -1,0 +1,59 @@
+This file is aimed at developers running the development release of
+Ubuntu, trying to modify and test changes to liboverlay-scrollbar. The
+names of packages and files are as they were during the 12.04 cycle; if
+this info grows out of date, replace version numbers you see (eg '0.2-0'
+to '0.3-0')
+
+
+Getting the code and dependencies
+---------------------------------
+
+This step is straightforward. Simply branch the launchpad project and use
+apt to fetch dependencies.
+
+    bzr branch lp:ayatana-scrollbar
+    sudo apt-get build-dep overlay-scrollbar
+
+
+Compiling and installing to /usr/local/lib/
+-------------------------------------------
+
+This step is also straightforward.
+
+    ./autogen.sh
+    make
+    sudo make install
+
+
+Linking your system scrollbar library to your local version
+-----------------------------------------------------------
+
+Overlay scrollbars require a patched version of GTK+ (see the 'misc/'
+directory) that loads them from an absolute library path like
+'/usr/lib/liboverlay-scrollbar3-0.2.so.0'.  Applications will NOT obey
+your $LD_LIBRARY_PATH. If you are using the current development release
+of Ubuntu, the GTK+ patches should already be applied.
+
+The library '*.so.0" itself is a symlink to your system overlay
+scrollbar shared library. To use the version of overlay scrollbars you
+installed locally, simply redirect the link. Please ensure the original
+link (and the local library you installed) exists. 
+
+    sudo ln -s `readlink /usr/lib/liboverlay-scrollbar3-0.2.so.0` /usr/lib/liboverlay-scrollbar3.so.backup
+    sudo ln -sf /usr/local/lib/liboverlay-scrollbar3-0.2.so /usr/lib/liboverlay-scrollbar3-0.2.so.0
+
+To restore your original system scrollbars, simply relink the absolute
+path of your scrollbar library to the target of the 'so.backup' file.
+
+
+Launching an application
+------------------------
+
+GTK+ applications should begin using your local installed scrollbars.
+You can force the issue by launching with
+
+    env LIBOVERLAY_SCROLLBAR=1 <aplication command>
+
+To make sure you are using the local installed scrollbars, you can perform
+an obvious modification to the thumbnail appearance: for example, comment
+out the `draw_arrow` function block in 'os/os-thumb.c'.
