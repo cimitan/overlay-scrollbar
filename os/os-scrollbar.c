@@ -671,10 +671,10 @@ sanitize_x (OsScrollbar *scrollbar,
       cairo_region_t *monitor_workarea;
       cairo_region_t *struts_region;
       cairo_rectangle_int_t tmp_rect;
-      gint i, x, width;
+      gint i, reg_x, reg_width;
 
-      x = rect.x;
-      width = rect.x + rect.width;
+      reg_x = rect.x;
+      reg_width = rect.x + rect.width;
 
       /* Full monitor region. */
       monitor_workarea = cairo_region_create_rectangle (&rect);
@@ -733,19 +733,19 @@ sanitize_x (OsScrollbar *scrollbar,
           /* Get the monitor boundaries using the strut. */
           if (strut_side & OS_STRUT_SIDE_LEFT)
             {
-              if (tmp_rect.x + tmp_rect.width > x)
-                x = tmp_rect.x + tmp_rect.width;
+              if (tmp_rect.x + tmp_rect.width > reg_x)
+                reg_x = tmp_rect.x + tmp_rect.width;
             }
 
           if (strut_side & OS_STRUT_SIDE_RIGHT)
             {
-              if (tmp_rect.x < width)
-                width = tmp_rect.x;
+              if (tmp_rect.x < reg_width)
+                reg_width = tmp_rect.x;
             }
         }
 
-      screen_x = x;
-      screen_width = width;
+      screen_x = reg_x;
+      screen_width = reg_width;
 
       cairo_region_destroy (monitor_workarea);
       cairo_region_destroy (struts_region);
@@ -814,10 +814,10 @@ sanitize_y (OsScrollbar *scrollbar,
       cairo_region_t *monitor_workarea;
       cairo_region_t *struts_region;
       cairo_rectangle_int_t tmp_rect;
-      gint i, y, height;
+      gint i, reg_y, reg_height;
 
-      y = rect.y;
-      height = rect.y + rect.height;
+      reg_y = rect.y;
+      reg_height = rect.y + rect.height;
 
       /* Full monitor region. */
       monitor_workarea = cairo_region_create_rectangle (&rect);
@@ -876,19 +876,19 @@ sanitize_y (OsScrollbar *scrollbar,
           /* Get the monitor boundaries using the strut. */
           if (strut_side & OS_STRUT_SIDE_TOP)
             {
-              if (tmp_rect.y + tmp_rect.height > y)
-                y = tmp_rect.y + tmp_rect.height;
+              if (tmp_rect.y + tmp_rect.height > reg_y)
+                reg_y = tmp_rect.y + tmp_rect.height;
             }
 
           if (strut_side & OS_STRUT_SIDE_BOTTOM)
             {
-              if (tmp_rect.y < height)
-                height = tmp_rect.y;
+              if (tmp_rect.y < reg_height)
+                reg_height = tmp_rect.y;
             }
         }
 
-      screen_y = y;
-      screen_height = height;
+      screen_y = reg_y;
+      screen_height = reg_height;
 
       cairo_region_destroy (monitor_workarea);
       cairo_region_destroy (struts_region);
