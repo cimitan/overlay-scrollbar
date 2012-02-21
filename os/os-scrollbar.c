@@ -3556,8 +3556,14 @@ set_sensitive (OsScrollbar *scrollbar)
 
   priv = scrollbar->priv;
 
-  priv->filter.proximity = TRUE;
-  add_window_filter (scrollbar);
+  /* Only add the filter if the scrollbar is mapped.
+   * It makes sense to me, if we are missing proximity areas,
+   * it might worth having a look here. */
+  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+    {
+      priv->filter.proximity = TRUE;
+      add_window_filter (scrollbar);
+    }
 
   if (priv->active_window)
     os_bar_set_active (priv->bar, TRUE, FALSE);
@@ -3583,10 +3589,15 @@ os_scrollbar_state_flags_changed (GtkWidget    *widget,
 
   scrollbar = OS_SCROLLBAR (widget);
 
-  if ((gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE) != 0)
-    set_insensitive (scrollbar);
-  else
-    set_sensitive (scrollbar);
+  /* Only set the new state if the right bit changed. */
+  if ((flags & GTK_STATE_FLAG_INSENSITIVE) !=
+      (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE))
+    {
+      if ((gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_INSENSITIVE) != 0)
+        set_insensitive (scrollbar);
+      else
+        set_sensitive (scrollbar);
+    }
 }
 #else
 static void
