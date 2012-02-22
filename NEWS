@@ -1,3 +1,11 @@
+overlay-scrollbar 0.2.15 (February 22, 2012)
+--------------------------------------------
+
+* Resize using thumbs.
+
+* Fixes for Coverity bugs and support new Gtk+ versions.
+
+
 overlay-scrollbar 0.2.14 (January 16, 2012)
 -------------------------------------------
 
@@ -7,6 +15,7 @@ overlay-scrollbar 0.2.14 (January 16, 2012)
 
 * Bugs fixed:
  890986 Lotus Notes is incompatible with ayatana scrollbars
+
 
 overlay-scrollbar 0.2.13 (December 7, 2011)
 -------------------------------------------
