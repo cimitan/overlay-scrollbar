@@ -1,8 +1,11 @@
-overlay-scrollbar (0.2.15-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.15-0ubuntu1) precise; urgency=low
 
-  * New upstream release.
+  * New upstream release:
+    - Resize using thumbs.   
+    - Fixes for Coverity bugs and support new Gtk+ versions.
+      (lp: #937396, #937395)
 
- -- Sebastien Bacher <seb128@ubuntu.com>  Wed, 22 Feb 2012 21:36:56 +0100
+ -- Sebastien Bacher <seb128@ubuntu.com>  Wed, 22 Feb 2012 21:37:28 +0100
 
 overlay-scrollbar (0.2.14-0ubuntu1) precise; urgency=low
 
