@@ -1110,6 +1110,8 @@ os_thumb_unmap (GtkWidget *widget)
 
   priv->tolerance = FALSE;
 
+  gtk_grab_remove (widget);
+
   if (priv->grabbed_widget != NULL && gtk_widget_get_mapped (priv->grabbed_widget))
     gtk_grab_add (priv->grabbed_widget);
 
