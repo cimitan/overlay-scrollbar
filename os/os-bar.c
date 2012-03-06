@@ -73,7 +73,7 @@ draw_bar (OsBar *bar)
   GdkRGBA c1, c2, color;
   GtkStyleContext *style_context;
 #else
-  GdkColor c1, c2, color;
+  GdkColor color;
   GtkStyle *style;
 #endif
   OsBarPrivate *priv;
@@ -106,20 +106,7 @@ draw_bar (OsBar *bar)
 #else
   style = gtk_widget_get_style (priv->parent);
 
-  if (priv->active == FALSE)
-    {
-      c1 = style->bg[GTK_STATE_INSENSITIVE];
-      c2 = style->bg[GTK_STATE_SELECTED];
-    }
-  else
-    {
-      c1 = style->bg[GTK_STATE_SELECTED];
-      c2 = style->bg[GTK_STATE_INSENSITIVE];
-    }
-
-  color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
-  color.green = weight * c1.green + (1.0 - weight) * c2.green;
-  color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
+  color = style->bg[GTK_STATE_SELECTED];
 
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->bar_window), &color, FALSE, TRUE);
 
@@ -557,6 +544,7 @@ os_bar_set_active (OsBar   *bar,
                    gboolean active,
                    gboolean animate)
 {
+#ifdef USE_GTK3
   OsBarPrivate *priv;
 
   g_return_if_fail (OS_IS_BAR (bar));
@@ -594,6 +582,7 @@ os_bar_set_active (OsBar   *bar,
           draw_bar (bar);
         }
     }
+#endif
 }
 
 /**
