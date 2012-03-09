@@ -70,7 +70,7 @@ os_utils_is_blacklisted (const gchar *program)
 
   /* Read the gsettings key. */
   interface_settings = g_settings_new ("org.gnome.desktop.interface");
-  settings_key = g_settings_get_boolean (interface_settings, "ubuntu-enable-overlay-scrollbars");
+  settings_key = g_settings_get_boolean (interface_settings, "ubuntu-overlay-scrollbars");
   g_object_unref (interface_settings);
 
   if (!settings_key)
