@@ -62,9 +62,19 @@ os_utils_is_blacklisted (const gchar *program)
   };
 
   GModule *module;
+  GSettings *interface_settings;
   gpointer func;
+  gboolean settings_key;
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+
+  /* Read the gsettings key. */
+  interface_settings = g_settings_new ("org.gnome.desktop.interface");
+  settings_key = g_settings_get_boolean (interface_settings, "ubuntu-enable-overlay-scrollbars");
+  g_object_unref (interface_settings);
+
+  if (!settings_key)
+    return TRUE;
 
   /* Black-list of symbols. */
   module = g_module_open (NULL, 0);
