@@ -1794,6 +1794,22 @@ thumb_button_release_event_cb (GtkWidget      *widget,
   return FALSE;
 }
 
+static void
+enter_event (OsScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = scrollbar->priv;
+
+  priv->event |= OS_EVENT_ENTER_NOTIFY;
+
+  priv->deactivable_bar = FALSE;
+  priv->hidable_thumb = FALSE;
+
+  if (priv->state & OS_STATE_INTERNAL)
+    priv->state |= OS_STATE_LOCKED;
+}
+
 static gboolean
 thumb_enter_notify_event_cb (GtkWidget        *widget,
                              GdkEventCrossing *event,
@@ -1805,13 +1821,16 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
-  priv->event |= OS_EVENT_ENTER_NOTIFY;
+#ifdef USE_GTK3
+  /* Gtk+ 3.3.18 emits more GdkEventCrossing
+   * with touch devices, skip few events. */
+  if (event->mode == GDK_CROSSING_TOUCH_BEGIN ||
+      event->mode == GDK_CROSSING_TOUCH_END ||
+      event->mode == GDK_CROSSING_DEVICE_SWITCH)
+    return FALSE;
+#endif
 
-  priv->deactivable_bar = FALSE;
-  priv->hidable_thumb = FALSE;
-
-  if (priv->state & OS_STATE_INTERNAL)
-    priv->state |= OS_STATE_LOCKED;
+  enter_event (scrollbar);
 
   return FALSE;
 }
@@ -1826,6 +1845,22 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
+
+#ifdef USE_GTK3
+  /* Gtk+ 3.3.18 emits more GdkEventCrossing
+   * with touch devices, skip few events.
+   * Last line skips the event if the pointer is still in the window:
+   * This happens with touch devices because Gtk+ emits 
+   * GDK_CROSSING_UNGRAB to the touch device, thus calling leave-notify,
+   * and we want to skip those events.
+   * 
+   * FIXME the logic of this event should be rewritten. */
+  if (event->mode == GDK_CROSSING_TOUCH_BEGIN ||
+      event->mode == GDK_CROSSING_TOUCH_END ||
+      event->mode == GDK_CROSSING_DEVICE_SWITCH ||
+      window_at_pointer (event->window, NULL, NULL) == event->window)
+    return FALSE;
+#endif
 
   /* When exiting the thumb horizontally (or vertically),
    * in LOCKED state, remove the lock. */
@@ -1852,6 +1887,8 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                                                           deactivate_bar_cb,
                                                           scrollbar);
         }
+
+      priv->event &= ~(OS_EVENT_ENTER_NOTIFY);
 
       priv->hidable_thumb = TRUE;
 
@@ -1981,6 +2018,14 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
+
+#ifdef USE_GTK3
+  /* On touch devices with XI2 and Gtk+ >= 3.3.18,
+   * the event enter-notify is not emitted.
+   * Deal with it in motion-notify. */ 
+  if (!(priv->event & OS_EVENT_ENTER_NOTIFY))
+    enter_event (scrollbar);
+#endif
 
   if (priv->event & OS_EVENT_BUTTON_PRESS)
     {

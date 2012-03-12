@@ -945,6 +945,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
+  /* This event is called more times with Gtk+ 3 and XI2 devices,
+   * let's accept that because the overhead is still minimal. */
+
   /* If we exit the thumb when a button is pressed,
    * there's no need to stop the animation, it should
    * already be stopped.
