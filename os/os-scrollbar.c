@@ -1850,7 +1850,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
   /* Gtk+ 3.3.18 emits more GdkEventCrossing
    * with touch devices, skip few events.
    * Last line skips the event if the pointer is still in the window:
-   * This happens with touch devices because Gtk+ emits 
+   * this happens with touch devices because Gtk+ emits 
    * GDK_CROSSING_UNGRAB to the touch device, thus calling leave-notify,
    * and we want to skip those events.
    * 
