@@ -1,3 +1,14 @@
+overlay-scrollbar 0.2.16 (March 21, 2012)
+-----------------------------------------
+
+* Always use bg[SELECTED] for the bar in Gtk+ 2.
+
+* Bugs fixed:
+ 907111 nautilus crashed with SIGSEGV in show_thumb_cb()
+ 934123 Low visibility impaired users can't easily disable overlay scrollbars
+ 951121 scroll *on* thumb not functional
+
+
 overlay-scrollbar 0.2.15 (February 22, 2012)
 --------------------------------------------
 
