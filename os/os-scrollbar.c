@@ -2371,6 +2371,14 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   OsScrollbarPrivate *priv;
   gdouble delta;
 
+#ifdef USE_GTK3
+  /* Gtk+ 3.3.18 adds a smooth scroll support,
+   * but at the moment is not ready to be used without various issues.
+   * Don't use it for thumb scrolling in overlay scrollbar. */
+  if (event->direction == GDK_SCROLL_SMOOTH)
+    return FALSE;
+#endif
+
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
 
