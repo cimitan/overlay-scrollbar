@@ -209,7 +209,8 @@ os_thumb_init (OsThumb *thumb)
   gtk_widget_add_events (GTK_WIDGET (thumb), GDK_BUTTON_PRESS_MASK |
                                              GDK_BUTTON_RELEASE_MASK |
                                              GDK_POINTER_MOTION_MASK |
-                                             GDK_POINTER_MOTION_HINT_MASK);
+                                             GDK_POINTER_MOTION_HINT_MASK |
+                                             GDK_SCROLL_MASK);
 
   os_thumb_screen_changed (GTK_WIDGET (thumb), NULL);
   os_thumb_composited_changed (GTK_WIDGET (thumb));
@@ -944,6 +945,9 @@ os_thumb_leave_notify_event (GtkWidget        *widget,
 
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
+
+  /* This event is called more times with Gtk+ 3 and XI2 devices,
+   * let's accept that because the overhead is still minimal. */
 
   /* If we exit the thumb when a button is pressed,
    * there's no need to stop the animation, it should
