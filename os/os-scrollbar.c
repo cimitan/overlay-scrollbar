@@ -2022,9 +2022,12 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 #ifdef USE_GTK3
   /* On touch devices with XI2 and Gtk+ >= 3.3.18,
    * the event enter-notify is not emitted.
-   * Deal with it in motion-notify. */ 
-  if (!(priv->event & OS_EVENT_ENTER_NOTIFY))
-    enter_event (scrollbar);
+   * Deal with it in motion-notify. */
+  
+  /* Should be fixed with:
+   * https://bugs.launchpad.net/ubuntu/+source/gtk+3.0/+bug/949414 */
+  // if (!(priv->event & OS_EVENT_ENTER_NOTIFY))
+  //   enter_event (scrollbar);
 #endif
 
   if (priv->event & OS_EVENT_BUTTON_PRESS)
