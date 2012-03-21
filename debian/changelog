@@ -1,8 +1,13 @@
-overlay-scrollbar (0.2.16-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16-0ubuntu1) precise; urgency=low
 
   * New upstream release.
+    - Always use bg[SELECTED] for the bar in Gtk+ 2.
+    - nautilus crashed with SIGSEGV in show_thumb_cb (LP: #907111)
+    - Low visibility impaired users can't easily disable overlay 
+      scrollbar (LP: #934123)
+    - scroll *on* thumb not functional (LP: #951121)
 
- -- Ken VanDine <ken.vandine@canonical.com>  Wed, 21 Mar 2012 11:10:53 -0400
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 21 Mar 2012 11:41:13 -0400
 
 overlay-scrollbar (0.2.15-0ubuntu1) precise; urgency=low
 
