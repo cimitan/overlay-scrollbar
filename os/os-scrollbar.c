@@ -2022,9 +2022,12 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 #ifdef USE_GTK3
   /* On touch devices with XI2 and Gtk+ >= 3.3.18,
    * the event enter-notify is not emitted.
-   * Deal with it in motion-notify. */ 
-  if (!(priv->event & OS_EVENT_ENTER_NOTIFY))
-    enter_event (scrollbar);
+   * Deal with it in motion-notify. */
+  
+  /* Should be fixed with:
+   * https://bugs.launchpad.net/ubuntu/+source/gtk+3.0/+bug/949414 */
+  // if (!(priv->event & OS_EVENT_ENTER_NOTIFY))
+  //   enter_event (scrollbar);
 #endif
 
   if (priv->event & OS_EVENT_BUTTON_PRESS)
@@ -2367,6 +2370,14 @@ thumb_scroll_event_cb (GtkWidget      *widget,
   OsScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   gdouble delta;
+
+#ifdef USE_GTK3
+  /* Gtk+ 3.3.18 adds a smooth scroll support,
+   * but at the moment is not ready to be used without various issues.
+   * Don't use it for thumb scrolling in overlay scrollbar. */
+  if (event->direction == GDK_SCROLL_SMOOTH)
+    return FALSE;
+#endif
 
   scrollbar = OS_SCROLLBAR (user_data);
   priv = scrollbar->priv;
