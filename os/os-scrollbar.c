@@ -3180,6 +3180,12 @@ os_scrollbar_dispose (GObject *object)
       priv->source_hide_thumb_id = 0;
     }
 
+  if (priv->source_show_thumb_id != 0)
+    {
+      g_source_remove (priv->source_show_thumb_id);
+      priv->source_show_thumb_id = 0;
+    }
+
   if (priv->source_unlock_thumb_id != 0)
     {
       g_source_remove (priv->source_unlock_thumb_id);
