@@ -27,11 +27,15 @@ osinclude_HEADERS = $(source_h)
 
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_SOURCES = $(source_c)
 
-liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS = $(OS_CFLAGS)
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_CFLAGS = \
+	$(OS_CFLAGS) \
+	$(COVERAGE_CFLAGS)
 
 liboverlay_scrollbar_@OS_MAJORMINOR@_la_LIBADD = $(OS_LIBADD)
 
-liboverlay_scrollbar_@OS_MAJORMINOR@_la_LDFLAGS = $(OS_LDFLAGS)
+liboverlay_scrollbar_@OS_MAJORMINOR@_la_LDFLAGS = \
+	$(OS_LDFLAGS) \
+	$(COVERAGE_CFLAGS)
 
 liboverlay_scrollbar_@OS_MAJORMINOR@_includedir = \
 	$(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
@@ -48,9 +52,12 @@ os3includedir = $(osincludedir)
 os3include_HEADERS = $(osinclude_HEADERS)
 liboverlay_scrollbar3_@OS_MAJORMINOR@_la_SOURCES =  $(source_c)
 liboverlay_scrollbar3_@OS_MAJORMINOR@_la_CFLAGS = $(OS_CFLAGS) \
-  -DUSE_GTK3
+	$(COVERAGE_CFLAGS) \
+	-DUSE_GTK3
 liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LIBADD = $(OS_LIBADD)
-liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LDFLAGS = $(OS_LDFLAGS)
+liboverlay_scrollbar3_@OS_MAJORMINOR@_la_LDFLAGS = \
+	$(OS_LDFLAGS) \
+	$(COVERAGE_CFLAGS)
 liboverlay_scrollbar3_@OS_MAJORMINOR@_includedir = $(includedir)/overlay-scrollbar$(VER)-@OS_MAJORMINOR@/os
 liboverlay_scrollbar3_@OS_MAJORMINOR@_include_HEADERS = \
 	$(source_h) \

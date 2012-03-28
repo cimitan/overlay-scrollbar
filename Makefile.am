@@ -34,3 +34,5 @@ release: dist
 
 %.md5: %
 	md5sum $< > $@
+
+include $(top_srcdir)/Makefile.am.coverage

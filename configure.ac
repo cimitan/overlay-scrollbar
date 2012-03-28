@@ -154,6 +154,16 @@ AC_SUBST(OS_CFLAGS)
 OS_LDFLAGS="\$(OS_LT_LDFLAGS) -export-symbols-regex \^[_]*\(os_\|Os\|OS_\).* -no-undefined"
 AC_SUBST(OS_LDFLAGS)
 
+# Coverage
+
+m4_include([build/gcov.m4])
+AC_TDD_GCOV
+AM_CONDITIONAL([HAVE_GCOV], [test "x$ac_cv_check_gcov" = xyes])
+AM_CONDITIONAL([HAVE_LCOV], [test "x$ac_cv_check_lcov" = xyes])
+AM_CONDITIONAL([HAVE_GCOVR], [test "x$ac_cv_check_gcovr" = xyes])
+AC_SUBST(COVERAGE_CFLAGS)
+AC_SUBST(COVERAGE_LDFLAGS)
+
 # Files
 
 AC_CONFIG_FILES([
@@ -179,6 +189,7 @@ echo "  Gtk+:   ${with_gtk}"
 echo "  Tests:  ${enable_tests}"
 echo "  Debug:  ${enable_debug}"
 echo "  Prefix: ${prefix}"
+echo "  gcov:   ${use_gcov}"
 echo ""
 echo "  Compiler flags: ${CPPFLAGS} ${DEBUG_CFLAGS} ${MAINTAINER_CFLAGS}"
 echo ""
