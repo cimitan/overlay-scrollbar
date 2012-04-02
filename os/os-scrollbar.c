@@ -1561,9 +1561,12 @@ static void
 present_gdk_window_with_timestamp (GtkWidget *widget,
                                    guint32    timestamp)
 {
-  present_window_with_timestamp (GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
-                                 GDK_WINDOW_XID (gtk_widget_get_window (widget)),
-                                 timestamp);
+  /* Check if the widget is realized, to protect against:
+   * https://bugs.launchpad.net/ayatana-scrollbar/+bug/846562 */
+  if (gtk_widget_get_realized (widget))
+    present_window_with_timestamp (GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
+                                   GDK_WINDOW_XID (gtk_widget_get_window (widget)),
+                                   timestamp);
 }
 
 static gboolean
