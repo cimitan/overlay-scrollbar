@@ -20,43 +20,19 @@
  * Authored by Andrea Cimitan <andrea.cimitan@canonical.com>
  */
 
-#if !defined (__OS_H_INSIDE__) && !defined (OS_COMPILATION)
-#error "Only <os/os.h> can be included directly."
-#endif
+#ifndef OVERLAY_SCROLLBAR_H
+#define OVERLAY_SCROLLBAR_H
 
-#ifndef __OS_SCROLLBAR_H__
-#define __OS_SCROLLBAR_H__
-
-#include <gtk/gtk.h>
+#include <glib.h>
 
 G_BEGIN_DECLS
 
-#define OS_TYPE_SCROLLBAR            (os_scrollbar_get_type ())
-#define OS_SCROLLBAR(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), OS_TYPE_SCROLLBAR, OsScrollbar))
-#define OS_SCROLLBAR_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass), OS_TYPE_SCROLLBAR, OsScrollbarClass))
-#define OS_IS_SCROLLBAR(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), OS_TYPE_SCROLLBAR))
-#define OS_IS_SCROLLBAR_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), OS_TYPE_SCROLLBAR))
-#define OS_SCROLLBAR_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), OS_TYPE_SCROLLBAR, OsScrollbarClass))
-
-typedef struct _OsScrollbar OsScrollbar;
-typedef struct _OsScrollbarClass OsScrollbarClass;
-typedef struct _OsScrollbarPrivate OsScrollbarPrivate;
-
-struct _OsScrollbar {
-  GtkScrollbar parent_object;
-
-  OsScrollbarPrivate *priv;
-};
-
-struct _OsScrollbarClass {
-  GtkScrollbarClass parent_class;
-};
-
-GType      os_scrollbar_get_type (void) G_GNUC_CONST;
-
-GtkWidget *os_scrollbar_new      (GtkOrientation orientation,
-                                  GtkAdjustment *adjustment);
+typedef enum
+{
+  SCROLLBAR_MODE_NORMAL,
+  SCROLLBAR_MODE_OVERLAY
+} ScrollbarMode;
 
 G_END_DECLS
 
-#endif /* __OS_SCROLLBAR_H__ */
+#endif /* OVERLAY_SCROLLBAR_H */
