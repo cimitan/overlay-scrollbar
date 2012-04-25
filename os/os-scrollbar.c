@@ -3804,6 +3804,66 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
   (* pre_hijacked_scrollbar_unrealize) (widget);
 }
 
+/* Check if the application is blacklisted. */
+static gboolean
+app_is_blacklisted (void)
+{
+  /* Black-list of program names retrieved with g_get_prgname (). */
+  static const gchar *blacklist[] = {
+    "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
+    "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
+    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-trunk", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.6", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.7", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
+    "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
+    "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
+    "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
+    "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
+    "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
+    "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+  };
+
+  GModule *module;
+  gpointer func;
+  gint32 i;
+  const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+  const gchar *prgname;
+  const gchar *flag;
+
+  prgname = g_get_prgname ();
+  flag = g_getenv ("LIBOVERLAY_SCROLLBAR");
+
+  /* Check if LIBOVERLAY_SCROLLBAR is set to 0 or an empty value. */
+  if (flag != NULL && (*flag == '\0' || *flag == '0'))
+    return TRUE;
+
+  /* Black-list of symbols. */
+  module = g_module_open (NULL, 0);
+  /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847966 */
+  if (g_module_symbol (module, "qt_startup_hook", &func))
+    {
+      g_module_close (module);
+      return TRUE;
+    }
+  g_module_close (module);
+
+  /* Black-list of program names. */
+  for (i = 0; i < nr_programs; i++)
+    if (g_strcmp0 (blacklist[i], prgname) == 0)
+      return TRUE;
+
+  return FALSE;
+}
+
 /* Patch GtkScrollbar vtable. */
 static void
 patch_scrollbar_class_vtable (GType type)
@@ -3866,6 +3926,10 @@ gtk_module_init (void)
 {
   GObjectClass *object_class;
   GtkWidgetClass *widget_class;
+
+  /* Check if the application is blacklisted. */
+  if (app_is_blacklisted ())
+    return;
 
   /* Initialize static variables. */
   net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
