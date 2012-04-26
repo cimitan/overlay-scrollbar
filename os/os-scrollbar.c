@@ -3848,9 +3848,17 @@ app_is_blacklisted (void)
   prgname = g_get_prgname ();
   flag = g_getenv ("LIBOVERLAY_SCROLLBAR");
 
-  /* Check if LIBOVERLAY_SCROLLBAR is set to 0 or an empty value. */
-  if (flag != NULL && (*flag == '\0' || *flag == '0'))
-    return TRUE;
+  /* Check LIBOVERLAY_SCROLLBAR. */
+  if (flag != NULL)
+    {
+      /* Blacklist if is set to 0. */
+      if (*flag == '\0' || *flag == '0')
+        return TRUE;
+
+      /* Special mode to override the blacklist. */
+      if (g_strcmp0 (flag, "override-blacklist") == 0)
+        return FALSE;
+    }
 
   /* Black-list of symbols. */
   module = g_module_open (NULL, 0);
