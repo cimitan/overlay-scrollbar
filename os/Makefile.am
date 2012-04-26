@@ -15,7 +15,9 @@ source_c = \
 	$(srcdir)/os-scrollbar.c \
 	$(srcdir)/os-thumb.c
 
-gtkmodule_LTLIBRARIES = liboverlay-scrollbar.la
+liboverlay_scrollbar_LTLIBRARIES = liboverlay-scrollbar.la
+
+liboverlay_scrollbardir = $(GTK_MODULES_DIR)
 
 liboverlay_scrollbar_la_SOURCES = $(source_h) $(source_c)
 
