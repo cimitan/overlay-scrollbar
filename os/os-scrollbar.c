@@ -3933,13 +3933,15 @@ scrollbar_mode_changed_unload_gfunc (gpointer data,
                                      gpointer user_data)
 {
   GtkWidget *widget;
+  GSList **mapped_list;
 
   widget = GTK_WIDGET (data);
+  mapped_list = user_data;
 
   /* The following unrealize will unmap the widget:
    * create a list of mapped scrollbars to remap them afterwards. */
   if (gtk_widget_get_mapped (widget))
-    user_data = g_slist_prepend (user_data, widget);
+    *mapped_list = g_slist_prepend (*mapped_list, widget);
 
   gtk_widget_unrealize (widget);
 }
@@ -3979,8 +3981,11 @@ scrollbar_mode_changed_cb (GObject    *object,
   settings = G_SETTINGS (object);
   tmp_list = g_slist_copy (scrollbar_list);
 
+  /* Initialize the pointer by initializing its variable. */
+  mapped_list = NULL;
+
   /* Unload all scrollbars, using previous scrollbar_mode. */
-  g_slist_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, mapped_list);
+  g_slist_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, &mapped_list);
 
   /* Update the scrollbar_mode variable. */
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
