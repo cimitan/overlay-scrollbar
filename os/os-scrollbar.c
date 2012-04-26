@@ -141,8 +141,8 @@ typedef struct
 
 static Atom net_active_window_atom = None;
 static Atom unity_net_workarea_region_atom = None;
-static GList *os_root_list = NULL;
-static GList *scrollbar_list = NULL;
+static GSList *os_root_list = NULL;
+static GSList *scrollbar_list = NULL;
 static GQuark os_quark_placement = 0;
 static GQuark os_quark_qdata = 0;
 static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
@@ -624,7 +624,7 @@ get_private (GtkWidget *widget)
           GdkWindow *root;
 
           /* Create the static linked list prepending the object. */
-          os_root_list = g_list_prepend (os_root_list, widget);
+          os_root_list = g_slist_prepend (os_root_list, widget);
 
           /* Apply the root_filter_func. */
           screen = gtk_widget_get_screen (widget);
@@ -636,7 +636,7 @@ get_private (GtkWidget *widget)
       else
         {
           /* Prepend the object to the static linked list. */
-          os_root_list = g_list_prepend (os_root_list, widget);
+          os_root_list = g_slist_prepend (os_root_list, widget);
         }
 
       /* Initialize memory. */
@@ -1603,7 +1603,7 @@ root_filter_func (GdkXEvent *gdkxevent,
     {
       if (xev->xproperty.atom == net_active_window_atom)
         {
-          g_list_foreach (os_root_list, root_gfunc, NULL);
+          g_slist_foreach (os_root_list, root_gfunc, NULL);
         }
       else if (xev->xproperty.atom == unity_net_workarea_region_atom)
         {
@@ -3193,7 +3193,7 @@ hijacked_scrollbar_dispose (GObject *object)
           priv->source_unlock_thumb_id = 0;
         }
 
-      os_root_list = g_list_remove (os_root_list, scrollbar);
+      os_root_list = g_slist_remove (os_root_list, scrollbar);
 
       if (os_root_list == NULL)
         {
@@ -3399,7 +3399,7 @@ hijacked_scrollbar_map (GtkWidget *widget)
 static void
 hijacked_scrollbar_realize (GtkWidget *widget)
 {
-  scrollbar_list = g_list_prepend (scrollbar_list, widget);
+  scrollbar_list = g_slist_prepend (scrollbar_list, widget);
 
   if (use_overlay_scrollbar (widget))
     {
@@ -3780,7 +3780,7 @@ hijacked_scrollbar_unmap (GtkWidget *widget)
 static void
 hijacked_scrollbar_unrealize (GtkWidget *widget)
 {
-  scrollbar_list = g_list_remove (scrollbar_list, widget);
+  scrollbar_list = g_slist_remove (scrollbar_list, widget);
 
   if (use_overlay_scrollbar (widget))
     {
@@ -3939,7 +3939,7 @@ scrollbar_mode_changed_unload_gfunc (gpointer data,
   /* The following unrealize will unmap the widget:
    * create a list of mapped scrollbars to remap them afterwards. */
   if (gtk_widget_get_mapped (widget))
-    user_data = g_list_prepend (user_data, widget);
+    user_data = g_slist_prepend (user_data, widget);
 
   gtk_widget_unrealize (widget);
 }
@@ -3974,25 +3974,25 @@ scrollbar_mode_changed_cb (GObject    *object,
                            gpointer    user_data)
 {
   GSettings *settings;
-  GList *tmp_list, *mapped_list;
+  GSList *tmp_list, *mapped_list;
 
   settings = G_SETTINGS (object);
-  tmp_list = g_list_copy (scrollbar_list);
+  tmp_list = g_slist_copy (scrollbar_list);
 
   /* Unload all scrollbars, using previous scrollbar_mode. */
-  g_list_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, mapped_list);
+  g_slist_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, mapped_list);
 
   /* Update the scrollbar_mode variable. */
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
 
   /* Load all scrollbars, using new scrollbar_mode. */
-  g_list_foreach (tmp_list, scrollbar_mode_changed_load_gfunc, NULL);
+  g_slist_foreach (tmp_list, scrollbar_mode_changed_load_gfunc, NULL);
 
   /* Map the scrollbars that were unmapped by unload. */
-  g_list_foreach (mapped_list, scrollbar_mode_changed_load_end_gfunc, NULL);
+  g_slist_foreach (mapped_list, scrollbar_mode_changed_load_end_gfunc, NULL);
 
-  g_list_free (mapped_list);
-  g_list_free (tmp_list);
+  g_slist_free (mapped_list);
+  g_slist_free (tmp_list);
 }
 
 void
