@@ -1,8 +1,6 @@
 SUBDIRS = \
-	misc \
-	data \
 	build \
-	pkgconfig \
+	data \
 	os
 
 if ENABLE_TESTS
