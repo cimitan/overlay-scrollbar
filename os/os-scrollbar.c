@@ -4108,7 +4108,7 @@ gtk_module_init (void)
   patch_scrollbar_class_vtable (GTK_TYPE_SCROLLBAR);
 
   /* Connect to gsettings. */
-  settings = g_settings_new ("com.canonical.Unity.GtkModule");
+  settings = g_settings_new ("com.canonical.desktop.interface");
   g_signal_connect (settings, "changed::scrollbar-mode",
                     G_CALLBACK (scrollbar_mode_changed_cb), NULL);
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
