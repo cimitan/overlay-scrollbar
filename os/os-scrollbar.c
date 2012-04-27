@@ -139,6 +139,9 @@ typedef struct
   guint32 source_unlock_thumb_id;
 } OsScrollbarPrivate;
 
+#ifdef USE_GTK3
+static GtkCssProvider *provider = NULL;
+#endif
 static Atom net_active_window_atom = None;
 static Atom unity_net_workarea_region_atom = None;
 static GSList *os_root_list = NULL;
@@ -3153,7 +3156,7 @@ remove_window_filter (GtkScrollbar *scrollbar)
 }
 
 static gboolean
-use_overlay_scrollbar (GtkWidget *widget)
+use_overlay_scrollbar (void)
 {
   return scrollbar_mode == SCROLLBAR_MODE_OVERLAY;
 }
@@ -3161,7 +3164,7 @@ use_overlay_scrollbar (GtkWidget *widget)
 static void
 hijacked_scrollbar_dispose (GObject *object)
 {
-  if (use_overlay_scrollbar (GTK_WIDGET (object)))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3237,7 +3240,7 @@ static gboolean
 hijacked_scrollbar_draw (GtkWidget *widget,
                          cairo_t   *cr)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     return TRUE;
 
   (* pre_hijacked_scrollbar_draw) (widget, cr);
@@ -3247,7 +3250,7 @@ static gboolean
 hijacked_scrollbar_expose_event (GtkWidget      *widget,
                                  GdkEventExpose *event)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     return TRUE;
 
   (* pre_hijacked_scrollbar_expose_event) (widget, event);
@@ -3260,7 +3263,7 @@ hijacked_scrollbar_get_preferred_width (GtkWidget *widget,
                                         gint      *minimal_width,
                                         gint      *natural_width)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       OsScrollbarPrivate *priv;
 
@@ -3285,7 +3288,7 @@ hijacked_scrollbar_get_preferred_height (GtkWidget *widget,
                                          gint      *minimal_height,
                                          gint      *natural_height)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       OsScrollbarPrivate *priv;
 
@@ -3310,7 +3313,7 @@ static void
 hijacked_scrollbar_grab_notify (GtkWidget *widget,
                                 gboolean   was_grabbed)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     return;
 
   (* pre_hijacked_scrollbar_grab_notify) (widget, was_grabbed);
@@ -3319,7 +3322,7 @@ hijacked_scrollbar_grab_notify (GtkWidget *widget,
 static void
 hijacked_scrollbar_hide (GtkWidget *widget)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       (* widget_class_hide) (widget);
 
@@ -3332,7 +3335,7 @@ hijacked_scrollbar_hide (GtkWidget *widget)
 static void
 hijacked_scrollbar_map (GtkWidget *widget)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3401,7 +3404,7 @@ hijacked_scrollbar_realize (GtkWidget *widget)
 {
   scrollbar_list = g_slist_prepend (scrollbar_list, widget);
 
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3438,7 +3441,7 @@ hijacked_scrollbar_realize (GtkWidget *widget)
 static void
 hijacked_scrollbar_show (GtkWidget *widget)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       (* widget_class_show) (widget);
 
@@ -3549,7 +3552,7 @@ static void
 hijacked_scrollbar_size_allocate (GtkWidget    *widget,
                                   GdkRectangle *allocation)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3708,7 +3711,7 @@ static void
 hijacked_scrollbar_size_request (GtkWidget      *widget,
                                  GtkRequisition *requisition)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3733,7 +3736,7 @@ static void
 hijacked_scrollbar_state_changed (GtkWidget    *widget,
                                   GtkStateType  state)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
 
@@ -3754,7 +3757,7 @@ hijacked_scrollbar_state_changed (GtkWidget    *widget,
 static void
 hijacked_scrollbar_unmap (GtkWidget *widget)
 {
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3782,7 +3785,7 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
 {
   scrollbar_list = g_slist_remove (scrollbar_list, widget);
 
-  if (use_overlay_scrollbar (widget))
+  if (use_overlay_scrollbar ())
     {
       GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
@@ -3935,6 +3938,34 @@ patch_scrollbar_class_vtable (GType type)
   g_free (children);
 }
 
+/* Load custom style for overlay scrollbar. */
+static void
+custom_style_load (void)
+{
+#ifdef USE_GTK3
+  gtk_style_context_add_provider_for_screen (gdk_display_get_default_screen (gdk_display_get_default ()),
+                                             GTK_STYLE_PROVIDER (provider),
+                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+#else
+  gtk_rc_parse_string ("style \"overlay-scrollbar\" {\n"
+                       "    GtkScrolledWindow::scrollbar-spacing = 0\n"
+                       "    GtkScrolledWindow::scrollbars-within-bevel = 1\n"
+                       " }\n"
+                       "\n"
+                       "class \"GtkScrolledWindow\" style \"overlay-scrollbar\"");
+#endif
+}
+
+#ifdef USE_GTK3
+/* Unload custom style for overlay scrollbar. */
+static void
+custom_style_unload (void)
+{
+  gtk_style_context_remove_provider_for_screen (gdk_display_get_default_screen (gdk_display_get_default ()),
+                                                GTK_STYLE_PROVIDER (provider));
+}
+#endif
+
 /* Unload all scrollbars. */
 static void
 scrollbar_mode_changed_unload_gfunc (gpointer data,
@@ -3997,6 +4028,18 @@ scrollbar_mode_changed_cb (GObject    *object,
 
   /* Update the scrollbar_mode variable. */
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+
+#ifdef USE_GTK3
+  /* Load or unload custom style for overlay scrollbar. */
+  if (use_overlay_scrollbar ())
+    custom_style_load ();
+  else
+    custom_style_unload ();
+#else
+  /* Gtk+ 2.0 doesn't support dynamic loading of styles.
+   * Please contact me in case I'm wrong,
+   * and I'll add the required bits here. */
+#endif
 
   /* Load all scrollbars, using new scrollbar_mode. */
   g_slist_foreach (tmp_list, scrollbar_mode_changed_load_gfunc, NULL);
@@ -4069,4 +4112,18 @@ gtk_module_init (void)
   g_signal_connect (settings, "changed::scrollbar-mode",
                     G_CALLBACK (scrollbar_mode_changed_cb), NULL);
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+
+#ifdef USE_GTK3
+  /* Initialize styling bits. */
+  provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_data (GTK_CSS_PROVIDER (provider),
+                                   "* {\n"
+                                   "    -GtkScrolledWindow-scrollbar-spacing: 0;\n"
+                                   "    -GtkScrolledWindow-scrollbars-within-bevel: 1;\n"
+                                   "}\n", -1, NULL);
+#endif
+
+  /* Load custom overlay scrollbar style. */
+  if (use_overlay_scrollbar ())
+    custom_style_load ();
 }
