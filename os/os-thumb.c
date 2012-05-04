@@ -185,18 +185,6 @@ os_thumb_init (OsThumb *thumb)
                                              OsThumbPrivate);
   priv = thumb->priv;
 
-  priv->event = OS_EVENT_NONE;
-
-  priv->pointer.x = 0;
-  priv->pointer.y = 0;
-  priv->pointer_root.x = 0;
-  priv->pointer_root.y = 0;
-
-  priv->rgba = FALSE;
-  priv->detached = FALSE;
-  priv->tolerance = FALSE;
-
-  priv->source_id = 0;
   priv->animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
                                       fade_out_cb, NULL, thumb);
 

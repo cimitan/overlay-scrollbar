@@ -325,10 +325,6 @@ os_bar_init (OsBar *bar)
   priv->bar_mask = mask;
   priv->tail_mask = mask;
 
-  priv->active = FALSE;
-  priv->detached = FALSE;
-  priv->visible = FALSE;
-
   priv->weight = 1.0f;
 
   priv->state_animation = os_animation_new (RATE_ANIMATION, DURATION_FADE_OUT,
