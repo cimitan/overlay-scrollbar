@@ -2849,7 +2849,8 @@ show_thumb_cb (gpointer user_data)
   scrollbar = GTK_SCROLLBAR (user_data);
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  if (!priv->hidable_thumb)
+  /* Don't show the thumb if the scrollbar mode is 'overlay-touch'. */
+  if (scrollbar_mode != SCROLLBAR_MODE_OVERLAY_TOUCH && !priv->hidable_thumb)
     {
       gtk_widget_show (priv->thumb);
 
@@ -2866,6 +2867,10 @@ static void
 show_thumb (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
+
+  /* Return if the scrollbar mode is 'overlay-touch'. */
+  if (scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH)
+    return;
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
@@ -3161,7 +3166,7 @@ remove_window_filter (GtkScrollbar *scrollbar)
 static gboolean
 use_overlay_scrollbar (void)
 {
-  return scrollbar_mode == SCROLLBAR_MODE_OVERLAY;
+  return scrollbar_mode != SCROLLBAR_MODE_NORMAL;
 }
 
 static void
