@@ -2839,6 +2839,46 @@ check_proximity (GtkScrollbar *scrollbar,
   return FALSE;
 }
 
+/* Returns TRUE if touch mode is enabled. */
+static gboolean
+is_touch_mode (GtkWidget *widget)
+{
+#ifdef USE_GTK3
+  GdkDeviceManager *device_manager;
+  GdkDevice *device;
+  GdkInputSource source;
+  GdkWindow *window;
+
+  switch (scrollbar_mode)
+  {
+    case SCROLLBAR_MODE_OVERLAY_AUTO:
+    default:
+      /* Continue detecting source type. */
+      break;
+    case SCROLLBAR_MODE_OVERLAY_POINTER:
+      return FALSE;
+      break;
+    case SCROLLBAR_MODE_OVERLAY_TOUCH:
+      return TRUE;
+      break;
+  }
+
+  /* Not checking if the widget is realized,
+   * because it should when this function gets called. */
+  window = gtk_widget_get_window (widget);
+
+  device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+  device = gdk_device_manager_get_client_pointer (device_manager);
+  source = gdk_device_get_source (device);
+
+  if (source == GDK_SOURCE_TOUCHSCREEN ||
+      source == GDK_SOURCE_TOUCHPAD)
+    return TRUE;
+#else
+  return scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH;
+#endif
+}
+
 /* Callback that shows the thumb if it's the case. */
 static gboolean
 show_thumb_cb (gpointer user_data)
@@ -2849,8 +2889,7 @@ show_thumb_cb (gpointer user_data)
   scrollbar = GTK_SCROLLBAR (user_data);
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  /* Don't show the thumb if the scrollbar mode is 'overlay-touch'. */
-  if (scrollbar_mode != SCROLLBAR_MODE_OVERLAY_TOUCH && !priv->hidable_thumb)
+  if (!priv->hidable_thumb)
     {
       gtk_widget_show (priv->thumb);
 
@@ -2869,7 +2908,7 @@ show_thumb (GtkScrollbar *scrollbar)
   OsScrollbarPrivate *priv;
 
   /* Return if the scrollbar mode is 'overlay-touch'. */
-  if (scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH)
+  if (is_touch_mode (GTK_WIDGET (scrollbar)))
     return;
 
   priv = get_private (GTK_WIDGET (scrollbar));
@@ -3802,6 +3841,15 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
       priv = get_private (widget);
 
       os_bar_hide (priv->bar);
+
+      /* There could be a race where the window is unrealized while
+       * the pointer just reached the proximity area and started the timeout,
+       * protect against it. */
+      if (priv->source_show_thumb_id != 0)
+        {
+          g_source_remove (priv->source_show_thumb_id);
+          priv->source_show_thumb_id = 0;
+        }
 
       gtk_widget_hide (priv->thumb);
 
