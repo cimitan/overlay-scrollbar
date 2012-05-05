@@ -140,6 +140,8 @@ typedef struct
 } OsScrollbarPrivate;
 
 #ifdef USE_GTK3
+static GdkInputSource os_input_source = GDK_SOURCE_MOUSE;
+static gint os_device_id = 0;
 static GtkCssProvider *provider = NULL;
 #endif
 static Atom net_active_window_atom = None;
@@ -2841,14 +2843,10 @@ check_proximity (GtkScrollbar *scrollbar,
 
 /* Returns TRUE if touch mode is enabled. */
 static gboolean
-is_touch_mode (GtkWidget *widget)
+is_touch_mode (GtkWidget *widget,
+               gint       device_id)
 {
 #ifdef USE_GTK3
-  GdkDeviceManager *device_manager;
-  GdkDevice *device;
-  GdkInputSource source;
-  GdkWindow *window;
-
   switch (scrollbar_mode)
   {
     case SCROLLBAR_MODE_OVERLAY_AUTO:
@@ -2863,17 +2861,31 @@ is_touch_mode (GtkWidget *widget)
       break;
   }
 
-  /* Not checking if the widget is realized,
-   * because it should when this function gets called. */
-  window = gtk_widget_get_window (widget);
+  if (os_device_id != device_id)
+    {
+      GdkDeviceManager *device_manager;
+      GdkDevice *device;
+      GdkWindow *window;
 
-  device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
-  device = gdk_device_manager_get_client_pointer (device_manager);
-  source = gdk_device_get_source (device);
+      /* Update the static os_device_id variable. */
+      os_device_id = device_id;
 
-  if (source == GDK_SOURCE_TOUCHSCREEN ||
-      source == GDK_SOURCE_TOUCHPAD)
+      window = gtk_widget_get_window (widget);
+      device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+      device = gdk_x11_device_manager_lookup (device_manager, os_device_id);
+
+      /* Return FALSE if we don't recognize the device. */
+      if (!device)
+        return FALSE;
+
+      /* Update the static os_input_source variable. */
+      os_input_source = gdk_device_get_source (device);
+    }
+
+  if (os_input_source == GDK_SOURCE_TOUCHSCREEN)
     return TRUE;
+  else
+    return FALSE;
 #else
   return scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH;
 #endif
@@ -2906,10 +2918,6 @@ static void
 show_thumb (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
-
-  /* Return if the scrollbar mode is 'overlay-touch'. */
-  if (is_touch_mode (GTK_WIDGET (scrollbar)))
-    return;
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
@@ -2974,11 +2982,14 @@ window_filter_func (GdkXEvent *gdkxevent,
     {
       OsXEvent os_xevent;
       gdouble event_x, event_y;
+      gint sourceid;
 
       os_xevent = OS_XEVENT_NONE;
 
       event_x = 0;
       event_y = 0;
+
+      sourceid = 0;
 
 #ifdef USE_GTK3
       if (xev->type == GenericEvent)
@@ -2987,6 +2998,8 @@ window_filter_func (GdkXEvent *gdkxevent,
           XIDeviceEvent *xiev;
 
           xiev = xev->xcookie.data;
+
+          sourceid = xiev->sourceid;
 
           if (xiev->evtype == XI_ButtonPress)
             os_xevent = OS_XEVENT_BUTTON_PRESS;
@@ -3063,7 +3076,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
           }
 
@@ -3135,7 +3149,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
             else
               {
