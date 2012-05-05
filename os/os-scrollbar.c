@@ -125,7 +125,9 @@ typedef struct
   OsWindowFilter filter;
   gboolean active_window;
   gboolean allow_resize;
+#ifdef USE_GTK3
   gboolean deactivable_bar;
+#endif
   gboolean hidable_thumb;
   gboolean window_button_press; /* FIXME(Cimi) to replace with X11 input events. */
   gdouble value;
@@ -573,6 +575,7 @@ coord_to_value (GtkScrollbar *scrollbar,
   return value;
 }
 
+#ifdef USE_GTK3
 /* Deactivate the bar if it's the case. */
 static void
 deactivate_bar (GtkScrollbar *scrollbar)
@@ -602,6 +605,7 @@ deactivate_bar_cb (gpointer user_data)
 
   return FALSE;
 }
+#endif
 
 /* Get the private struct. */
 static OsScrollbarPrivate*
@@ -647,7 +651,9 @@ get_private (GtkWidget *widget)
 
       /* Initialize struct variables. */
       qdata->side = OS_SIDE_RIGHT;
+#ifdef USE_GTK3
       qdata->deactivable_bar = TRUE;
+#endif
       qdata->hidable_thumb = TRUE;
       qdata->fine_scroll_multiplier = 1.0;
       qdata->bar = os_bar_new ();
@@ -1480,6 +1486,7 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   move_bar (scrollbar);
 }
 
+#ifdef USE_GTK3
 /* Bar functions. */
 
 /* Set the state of the bar checking mouse position. */
@@ -1509,88 +1516,9 @@ bar_set_state_from_pointer (GtkScrollbar *scrollbar,
       os_bar_set_active (priv->bar, FALSE, TRUE);
     }
 }
+#endif
 
 /* Root window functions. */
-
-/* React on active window changes. */
-static void
-root_gfunc (gpointer data,
-            gpointer user_data)
-{
-  GtkScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = GTK_SCROLLBAR (data);
-  priv = get_private (GTK_WIDGET (scrollbar));
-
-  OS_DCHECK (scrollbar != NULL);
-
-  /* Return if the scrollbar is insensitive. */
-  if (is_insensitive (scrollbar))
-    return;
-
-  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
-    {
-      if (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))) ==
-          gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
-        {
-          /* Stops potential running timeout. */
-          if (priv->source_deactivate_bar_id != 0)
-            {
-              g_source_remove (priv->source_deactivate_bar_id);
-              priv->source_deactivate_bar_id = 0;
-            }
-
-          priv->active_window = TRUE;
-
-          priv->deactivable_bar = FALSE;
-          os_bar_set_active (priv->bar, TRUE, TRUE);
-        }
-      else if (priv->active_window)
-        {
-          GdkWindow *parent;
-          GdkWindow *window;
-          const gint64 current_time = g_get_monotonic_time ();
-          const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
-
-          priv->active_window = FALSE;
-
-          /* Loop through parent windows until it reaches
-           * either an unknown GdkWindow (NULL),
-           * or the toplevel window. */
-          window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
-          parent = window_at_pointer (window, NULL, NULL);
-          while (parent != NULL)
-            {
-              if (window == parent)
-                break;
-
-              parent = gdk_window_get_parent (parent);
-            }
-
-          if (parent != NULL)
-            {
-              gint x, y;
-
-              window_get_pointer (window, &x, &y, NULL);
-
-              /* When the window is unfocused,
-               * check the position of the pointer
-               * and set the state accordingly. */
-              bar_set_state_from_pointer (scrollbar, x, y);
-            }
-          else
-            {
-              /* If the pointer is outside of the window, set it inactive. */
-              priv->deactivable_bar = TRUE;
-              os_bar_set_active (priv->bar, FALSE, TRUE);
-            }
-
-          if ((current_time > end_time) && priv->thumb != NULL)
-            gtk_widget_hide (priv->thumb);
-        }
-    }
-}
 
 /* Filter function applied to the root window. */
 static GdkFilterReturn
@@ -1604,11 +1532,7 @@ root_filter_func (GdkXEvent *gdkxevent,
 
   if (xev->type == PropertyNotify)
     {
-      if (xev->xproperty.atom == net_active_window_atom)
-        {
-          g_slist_foreach (os_root_list, root_gfunc, NULL);
-        }
-      else if (xev->xproperty.atom == unity_net_workarea_region_atom)
+      if (xev->xproperty.atom == unity_net_workarea_region_atom)
         {
           calc_workarea (xev->xany.display, xev->xany.window);
         }
@@ -1914,7 +1838,9 @@ enter_event (GtkScrollbar *scrollbar)
 
   priv->event |= OS_EVENT_ENTER_NOTIFY;
 
+#ifdef USE_GTK3
   priv->deactivable_bar = FALSE;
+#endif
   priv->hidable_thumb = FALSE;
 
   if (priv->state & OS_STATE_INTERNAL)
@@ -1986,6 +1912,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
    * not interacting with the thumb. */
   if (!(priv->event & OS_EVENT_BUTTON_PRESS))
     {
+#ifdef USE_GTK3
       /* Never deactivate the bar in an active window. */
       if (!priv->active_window)
         {
@@ -1998,6 +1925,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                                                           deactivate_bar_cb,
                                                           scrollbar);
         }
+#endif
 
       priv->event &= ~(OS_EVENT_ENTER_NOTIFY);
 
@@ -2029,9 +1957,11 @@ thumb_map_cb (GtkWidget *widget,
   scrollbar = GTK_SCROLLBAR (user_data);
   priv = get_private (GTK_WIDGET (scrollbar));
 
+#ifdef USE_GTK3
   /* Immediately set the bar to be active. */
   priv->deactivable_bar = FALSE;
   os_bar_set_active (priv->bar, TRUE, FALSE);
+#endif
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
@@ -2566,6 +2496,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
   const gint64 current_time = g_get_monotonic_time ();
   const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
 
+#ifdef USE_GTK3
   /* If the widget is mapped, is not insentitive
    * and the configure-event happens after
    * the PropertyNotify _NET_ACTIVE_WINDOW event,
@@ -2609,6 +2540,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
           os_bar_set_active (priv->bar, TRUE, TRUE);
         }
     }
+#endif
 
   if (current_time > end_time)
     gtk_widget_hide (priv->thumb);
@@ -3027,6 +2959,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           {
             priv->window_button_press = FALSE;
 
+#ifdef USE_GTK3
             /* Never deactivate the bar in an active window. */
             if (!priv->active_window)
               {
@@ -3039,6 +2972,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                                 deactivate_bar_cb,
                                                                 scrollbar);
               }
+#endif
 
             if (gtk_widget_get_mapped (priv->thumb) &&
                 !(priv->event & OS_EVENT_BUTTON_PRESS))
@@ -3070,10 +3004,12 @@ window_filter_func (GdkXEvent *gdkxevent,
         /* Get the motion_notify_event trough XEvent. */
         if (!priv->window_button_press && os_xevent == OS_XEVENT_MOTION)
           {
+#ifdef USE_GTK3
             /* React to motion_notify_event
              * and set the state accordingly. */
             if (!is_insensitive (scrollbar) && !priv->active_window)
               bar_set_state_from_pointer (scrollbar, event_x, event_y);
+#endif
 
             /* Proximity area. */
             if (check_proximity (scrollbar, event_x, event_y))
@@ -3335,6 +3271,15 @@ hijacked_scrollbar_hide (GtkWidget *widget)
   (* pre_hijacked_scrollbar_hide) (widget);
 }
 
+#ifdef USE_GTK3
+/* Return TRUE if the widget is in backdrop window. */
+static gboolean
+is_backdrop_window (GtkWidget *widget)
+{
+  return (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_BACKDROP) != 0;
+}
+#endif
+
 static void
 hijacked_scrollbar_map (GtkWidget *widget)
 {
@@ -3348,9 +3293,9 @@ hijacked_scrollbar_map (GtkWidget *widget)
 
       (* widget_class_map) (widget);
 
+#ifdef USE_GTK3
       /* On map, check for the active window. */
-      if (gtk_widget_get_window (gtk_widget_get_toplevel (widget)) ==
-          gdk_screen_get_active_window (gtk_widget_get_screen (widget)))
+      if (!is_backdrop_window (GTK_WIDGET (scrollbar)))
         {
           /* Stops potential running timeout. */
           if (priv->source_deactivate_bar_id != 0)
@@ -3386,6 +3331,7 @@ hijacked_scrollbar_map (GtkWidget *widget)
               os_bar_set_active (priv->bar, TRUE, FALSE);
             }
         }
+#endif
 
       if (!(priv->state & OS_STATE_FULLSIZE))
         os_bar_show (priv->bar);
@@ -3653,7 +3599,9 @@ set_insensitive (GtkScrollbar *scrollbar)
   priv->filter.proximity = FALSE;
   remove_window_filter (scrollbar);
 
+#ifdef USE_GTK3
   os_bar_set_active (priv->bar, FALSE, FALSE);
+#endif
 
   gtk_widget_hide (priv->thumb);
 }
@@ -3675,6 +3623,7 @@ set_sensitive (GtkScrollbar *scrollbar)
       add_window_filter (scrollbar);
     }
 
+#ifdef USE_GTK3
   if (priv->active_window)
     os_bar_set_active (priv->bar, TRUE, FALSE);
   else if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
@@ -3688,9 +3637,86 @@ set_sensitive (GtkScrollbar *scrollbar)
        * and set the state accordingly. */
       bar_set_state_from_pointer (scrollbar, x, y);
     }
+#endif
 }
 
 #ifdef USE_GTK3
+/* React on active window changes. */
+static void
+backdrop_state_flag_changed (GtkScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  OS_DCHECK (scrollbar != NULL);
+
+  /* Return if the scrollbar is insensitive. */
+  if (is_insensitive (scrollbar))
+    return;
+
+  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+    {
+      if (!is_backdrop_window (GTK_WIDGET (scrollbar)))
+        {
+          /* Stops potential running timeout. */
+          if (priv->source_deactivate_bar_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_bar_id);
+              priv->source_deactivate_bar_id = 0;
+            }
+
+          priv->active_window = TRUE;
+
+          priv->deactivable_bar = FALSE;
+          os_bar_set_active (priv->bar, TRUE, TRUE);
+        }
+      else if (priv->active_window)
+        {
+          GdkWindow *parent;
+          GdkWindow *window;
+          const gint64 current_time = g_get_monotonic_time ();
+          const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
+
+          priv->active_window = FALSE;
+
+          /* Loop through parent windows until it reaches
+           * either an unknown GdkWindow (NULL),
+           * or the toplevel window. */
+          window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
+          parent = window_at_pointer (window, NULL, NULL);
+          while (parent != NULL)
+            {
+              if (window == parent)
+                break;
+
+              parent = gdk_window_get_parent (parent);
+            }
+
+          if (parent != NULL)
+            {
+              gint x, y;
+
+              window_get_pointer (window, &x, &y, NULL);
+
+              /* When the window is unfocused,
+               * check the position of the pointer
+               * and set the state accordingly. */
+              bar_set_state_from_pointer (scrollbar, x, y);
+            }
+          else
+            {
+              /* If the pointer is outside of the window, set it inactive. */
+              priv->deactivable_bar = TRUE;
+              os_bar_set_active (priv->bar, FALSE, TRUE);
+            }
+
+          if ((current_time > end_time) && priv->thumb != NULL)
+            gtk_widget_hide (priv->thumb);
+        }
+    }
+}
+
 static void
 hijacked_scrollbar_state_flags_changed (GtkWidget    *widget,
                                         GtkStateFlags flags)
@@ -3698,6 +3724,10 @@ hijacked_scrollbar_state_flags_changed (GtkWidget    *widget,
   GtkScrollbar *scrollbar;
 
   scrollbar = GTK_SCROLLBAR (widget);
+
+  if ((flags & GTK_STATE_FLAG_BACKDROP) !=
+      (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_BACKDROP))
+    backdrop_state_flag_changed (scrollbar);
 
   /* Only set the new state if the right bit changed. */
   if ((flags & GTK_STATE_FLAG_INSENSITIVE) !=
