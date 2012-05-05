@@ -64,8 +64,6 @@ os_animation_init (OsAnimation *animation)
                                                  OS_TYPE_ANIMATION,
                                                  OsAnimationPrivate);
   priv = animation->priv;
-
-  priv->source_id = 0;
 }
 
 static void
