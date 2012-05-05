@@ -142,6 +142,8 @@ typedef struct
 } OsScrollbarPrivate;
 
 #ifdef USE_GTK3
+static GdkInputSource os_input_source = GDK_SOURCE_MOUSE;
+static gint os_device_id = 0;
 static GtkCssProvider *provider = NULL;
 #endif
 static Atom net_active_window_atom = None;
@@ -2771,6 +2773,62 @@ check_proximity (GtkScrollbar *scrollbar,
   return FALSE;
 }
 
+/* Returns TRUE if touch mode is enabled. */
+static gboolean
+is_touch_mode (GtkWidget *widget,
+               gint       device_id)
+{
+#ifdef USE_GTK3
+  switch (scrollbar_mode)
+  {
+    case SCROLLBAR_MODE_OVERLAY_AUTO:
+    default:
+      /* Continue detecting source type. */
+      break;
+    case SCROLLBAR_MODE_OVERLAY_POINTER:
+      /* Touch mode always disabled. */
+      return FALSE;
+      break;
+    case SCROLLBAR_MODE_OVERLAY_TOUCH:
+      /* Touch mode always enabled. */
+      return TRUE;
+      break;
+  }
+
+  /* Use some sort of cache for the device.
+   * Update the input source only if the device_id
+   * is different from the previous one. */
+  if (os_device_id != device_id)
+    {
+      GdkDeviceManager *device_manager;
+      GdkDevice *device;
+      GdkWindow *window;
+
+      /* Update the static os_device_id variable. */
+      os_device_id = device_id;
+
+      window = gtk_widget_get_window (widget);
+      device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+      device = gdk_x11_device_manager_lookup (device_manager, os_device_id);
+
+      /* Return FALSE if we don't recognize the device. */
+      if (!device)
+        return FALSE;
+
+      /* Update the static os_input_source variable. */
+      os_input_source = gdk_device_get_source (device);
+    }
+
+  /* Detect touch mode accordingly to the input source type. */
+  if (os_input_source == GDK_SOURCE_TOUCHSCREEN)
+    return TRUE;
+  else
+    return FALSE;
+#else
+  return scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH;
+#endif
+}
+
 /* Callback that shows the thumb if it's the case. */
 static gboolean
 show_thumb_cb (gpointer user_data)
@@ -2862,11 +2920,14 @@ window_filter_func (GdkXEvent *gdkxevent,
     {
       OsXEvent os_xevent;
       gdouble event_x, event_y;
+      gint sourceid;
 
       os_xevent = OS_XEVENT_NONE;
 
       event_x = 0;
       event_y = 0;
+
+      sourceid = 0;
 
 #ifdef USE_GTK3
       if (xev->type == GenericEvent)
@@ -2875,6 +2936,8 @@ window_filter_func (GdkXEvent *gdkxevent,
           XIDeviceEvent *xiev;
 
           xiev = xev->xcookie.data;
+
+          sourceid = xiev->sourceid;
 
           if (xiev->evtype == XI_ButtonPress)
             os_xevent = OS_XEVENT_BUTTON_PRESS;
@@ -2951,7 +3014,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
           }
 
@@ -3027,7 +3091,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
             else
               {
@@ -3097,7 +3162,7 @@ remove_window_filter (GtkScrollbar *scrollbar)
 static gboolean
 use_overlay_scrollbar (void)
 {
-  return scrollbar_mode == SCROLLBAR_MODE_OVERLAY;
+  return scrollbar_mode != SCROLLBAR_MODE_NORMAL;
 }
 
 static void
@@ -3827,6 +3892,15 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
       priv = get_private (widget);
 
       os_bar_hide (priv->bar);
+
+      /* There could be a race where the window is unrealized while
+       * the pointer just reached the proximity area and started the timeout,
+       * protect against it. */
+      if (priv->source_show_thumb_id != 0)
+        {
+          g_source_remove (priv->source_show_thumb_id);
+          priv->source_show_thumb_id = 0;
+        }
 
       gtk_widget_hide (priv->thumb);
 
