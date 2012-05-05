@@ -2854,13 +2854,18 @@ is_touch_mode (GtkWidget *widget,
       /* Continue detecting source type. */
       break;
     case SCROLLBAR_MODE_OVERLAY_POINTER:
+      /* Touch mode always disabled. */
       return FALSE;
       break;
     case SCROLLBAR_MODE_OVERLAY_TOUCH:
+      /* Touch mode always enabled. */
       return TRUE;
       break;
   }
 
+  /* Use some sort of cache for the device.
+   * Update the input source only if the device_id
+   * is different from the previous one. */
   if (os_device_id != device_id)
     {
       GdkDeviceManager *device_manager;
@@ -2882,6 +2887,7 @@ is_touch_mode (GtkWidget *widget,
       os_input_source = gdk_device_get_source (device);
     }
 
+  /* Detect touch mode accordingly to the input source type. */
   if (os_input_source == GDK_SOURCE_TOUCHSCREEN)
     return TRUE;
   else
