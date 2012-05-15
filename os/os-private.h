@@ -35,8 +35,11 @@
 
 /* Size of the thumb in pixels. */
 #define MIN_THUMB_HEIGHT 35
-#define THUMB_WIDTH  17
-#define THUMB_HEIGHT 69
+#define THUMB_WIDTH 21
+#define THUMB_HEIGHT 68
+
+/* Number of tolerance pixels on drag, while intercepting a motion-notify-event. */
+#define TOLERANCE_DRAG 9
 
 /* Number of tolerance pixels on pageup/down, while intercepting a motion-notify-event. */
 #define TOLERANCE_MOTION 2

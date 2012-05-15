@@ -1,3 +1,55 @@
+overlay-scrollbar (0.2.16-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+    - Always use bg[SELECTED] for the bar in Gtk+ 2.
+    - nautilus crashed with SIGSEGV in show_thumb_cb (LP: #907111)
+    - Low visibility impaired users can't easily disable overlay 
+      scrollbar (LP: #934123)
+    - scroll *on* thumb not functional (LP: #951121)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 21 Mar 2012 11:41:13 -0400
+
+overlay-scrollbar (0.2.15-0ubuntu1) precise; urgency=low
+
+  * New upstream release:
+    - Resize using thumbs.   
+    - Fixes for Coverity bugs and support new Gtk+ versions.
+      (lp: #937396, #937395)
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Wed, 22 Feb 2012 21:37:28 +0100
+
+overlay-scrollbar (0.2.14-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+  * debian/control
+    - bumped build depends for libgtk-3-dev to >= 3.3.6-0ubuntu1
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 17 Jan 2012 11:11:24 -0500
+
+overlay-scrollbar (0.2.13-0ubuntu2) precise; urgency=low
+
+  * os/os-bar.c
+    - cherry picked fix for crasher when gtk theme changes (LP: #902928)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 12 Dec 2011 11:39:45 -0500
+
+overlay-scrollbar (0.2.13-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+    - Proximity area enlarged to the whole page. (LP: #758576)
+    - New thumb positioning according to mouse pointer and bar position.
+    - The thumb is more freely movable while touching an edge.
+    - Press Control while dragging to enter fine-scroll mode.
+    - Press Control while doing page up/down to do step up/down instead.
+    - Jumping is now triggered via Middle Click or via Shift + Button1.
+    - Can no longer jump to a specific position in a 
+      document/window (LP: #752338)
+    - Overlay ScrollBar not easily findable in a large document (LP: #763247)
+    - Overlay scrollbars rendered in the wrong place when inside another, 
+      external, scrolled window (LP: #868739)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 07 Dec 2011 12:32:50 -0500
+
 overlay-scrollbar (0.2.11-0ubuntu1+newthumb5) precise; urgency=low
 
   * build for precise

@@ -39,6 +39,7 @@ os_utils_is_blacklisted (const gchar *program)
 {
   /* Black-list of program names retrieved with g_get_prgname (). */
   static const gchar *blacklist[] = {
+    "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
     "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
     "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
@@ -51,6 +52,7 @@ os_utils_is_blacklisted (const gchar *program)
     "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
     "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
     "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
     "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
     "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
     "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
@@ -60,9 +62,19 @@ os_utils_is_blacklisted (const gchar *program)
   };
 
   GModule *module;
+  GSettings *interface_settings;
   gpointer func;
+  gboolean settings_key;
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+
+  /* Read the gsettings key. */
+  interface_settings = g_settings_new ("org.gnome.desktop.interface");
+  settings_key = g_settings_get_boolean (interface_settings, "ubuntu-overlay-scrollbars");
+  g_object_unref (interface_settings);
+
+  if (!settings_key)
+    return TRUE;
 
   /* Black-list of symbols. */
   module = g_module_open (NULL, 0);
