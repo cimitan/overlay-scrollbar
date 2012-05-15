@@ -1,10 +1,5 @@
-EXTRA_DIST = 81overlay-scrollbar.in
+gsettings_ENUM_NAMESPACE = com.canonical.desktop.interface
+gsettings_ENUM_FILES = $(top_srcdir)/os/os-scrollbar.h
+gsettings_SCHEMAS = com.canonical.desktop.interface.gschema.xml
 
-CLEANFILES = 81overlay-scrollbar
-
-81overlay-scrollbar: 81overlay-scrollbar.in
-	sed -e "s|\@libdir\@|$(libdir)|" -e "s|\@OS_MAJORMINOR\@|@OS_MAJORMINOR@|" -e "s|\@OS_LT_CURRENT\@|$(OS_LT_CURRENT)|" $< > $@
-
-xsessiondir = $(sysconfdir)/X11/Xsession.d
-
-nodist_xsession_DATA = 81overlay-scrollbar
+@GSETTINGS_RULES@
