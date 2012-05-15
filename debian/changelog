@@ -1,6 +1,10 @@
 overlay-scrollbar (0.2.16+r348-0precise1) UNRELEASED; urgency=low
 
   * New snapshot r348 from trunk
+  * debian/control
+    - removed -dev packages
+  * debian/*.install
+    - no longer a shared library, installs as a gtk module
 
  -- Ken VanDine <ken@gordo>  Tue, 15 May 2012 10:35:46 -0400
 
