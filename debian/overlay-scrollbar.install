@@ -1,3 +1,2 @@
-debian/ayatana-scrollbar.py /usr/share/apport/general-hooks/
 debian/tmp/gtk3/usr/share/glib-2.0 /usr/share/
 debian/tmp/gtk3/etc/X11 /etc/

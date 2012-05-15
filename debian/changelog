@@ -7,8 +7,10 @@ overlay-scrollbar (0.2.16+r348-0precise1) UNRELEASED; urgency=low
     - no longer a shared library, installs as a gtk module
   * debian/*.symbols
     - removed, no longer built as a shared lib
+  * debian/ayatana-scrollbar.py
+    - removed apport hook, no longer useful now as a proper gtk module
 
- -- Ken VanDine <ken.vandine@canonical.com>  Tue, 15 May 2012 13:01:41 -0400
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 15 May 2012 13:22:44 -0400
 
 overlay-scrollbar (0.2.16-0ubuntu1) precise; urgency=low
 

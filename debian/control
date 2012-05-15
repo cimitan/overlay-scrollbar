@@ -14,38 +14,33 @@ Section: libs
 Homepage: http://launchpad.net/ayatana-scrollbar
 Vcs-Bzr: https://code.launchpad.net/~ubuntu-desktop/ayatana-scrollbar/ubuntu
 
-Package: liboverlay-scrollbar-0.2-0
+Package: overlay-scrollbar-gtk3
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libgtk2.0-0 (>= 2.24.3-0ubuntu5)
-Description: Scrollbar overlayed widget - shared lib
- Overlay scrollbar is a library implementing a new GTK Widget enabling
- a dynamic overlay behavior.
- .
- This package contains shared libraries to be used by applications.
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0
+Replaces: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348)
+Breaks: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348)
+Description: GTK 3 module for overlay scrollbars
+ Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
-Package: liboverlay-scrollbar3-0.2-0
+Package: overlay-scrollbar-gtk2
 Section: libs
 Architecture: any
-Depends: ${shlibs:Depends},
-         ${misc:Depends},
-         libgtk-3-0 (>= 3.1.6-0ubuntu3)
-Description: Scrollbar overlayed widget - shared lib
- Overlay scrollbar is a library implementing a new GTK Widget enabling
- a dynamic overlay behavior.
- .
- This package contains shared libraries to be used by applications.
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk2.0-0, libgtk2.0-0 
+Replaces: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348)
+Breaks: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348)
+Description: GTK 2 module for overlay scrollbars
+ Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
 Package: overlay-scrollbar
 Section: libs
 Architecture: all
-Depends: liboverlay-scrollbar-0.2-0,
-         liboverlay-scrollbar3-0.2-0,
+Depends: overlay-scrollbar-gtk2,
+         overlay-scrollbar-gtk3,
          ${misc:Depends}
 Replaces: liboverlay-scrollbar-0.1-0 (<< 0.1.5-0ubuntu2)
 Breaks: liboverlay-scrollbar-0.1-0 (<< 0.1.5-0ubuntu2)
-Description: Scrollbar overlayed widget 
- Overlay scrollbar is a library implementing a new GTK Widget enabling
- a dynamic overlay behavior.
+Description: Scrollbar overlay
+ Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
