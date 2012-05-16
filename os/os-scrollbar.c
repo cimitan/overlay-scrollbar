@@ -104,7 +104,7 @@ typedef struct
   gboolean running;
 } OsWindowFilter;
 
-struct _OsScrollbarPrivate
+typedef struct
 {
   GdkRectangle overlay;
   GdkRectangle slider;
@@ -125,7 +125,9 @@ struct _OsScrollbarPrivate
   OsWindowFilter filter;
   gboolean active_window;
   gboolean allow_resize;
+#ifdef USE_GTK3
   gboolean deactivable_bar;
+#endif
   gboolean hidable_thumb;
   gboolean window_button_press; /* FIXME(Cimi) to replace with X11 input events. */
   gdouble value;
@@ -137,18 +139,32 @@ struct _OsScrollbarPrivate
   guint32 source_hide_thumb_id;
   guint32 source_show_thumb_id;
   guint32 source_unlock_thumb_id;
-};
+} OsScrollbarPrivate;
 
+#ifdef USE_GTK3
+static GdkInputSource os_input_source = GDK_SOURCE_MOUSE;
+static gint os_device_id = 0;
+static GtkCssProvider *provider = NULL;
+#endif
 static Atom net_active_window_atom = None;
 static Atom unity_net_workarea_region_atom = None;
-static GList *os_root_list = NULL;
+static GSList *os_root_list = NULL;
+static GSList *scrollbar_list = NULL;
 static GQuark os_quark_placement = 0;
+static GQuark os_quark_qdata = 0;
+static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
 static cairo_region_t *os_workarea = NULL;
 
-static void swap_adjustment (OsScrollbar *scrollbar, GtkAdjustment *adjustment);
-static void swap_thumb (OsScrollbar *scrollbar, GtkWidget *thumb);
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
+static OsScrollbarPrivate* get_private (GtkWidget *widget);
+static void notify_adjustment_cb (GObject *object, gpointer user_data);
+static void notify_orientation_cb (GObject *object, gpointer user_data);
+static GdkFilterReturn root_filter_func (GdkXEvent *gdkxevent, GdkEvent *event, gpointer user_data);
+static void scrolling_cb (gfloat weight, gpointer user_data);
+static void scrolling_end_cb (gpointer user_data);
+static void swap_adjustment (GtkScrollbar *scrollbar, GtkAdjustment *adjustment);
+static void swap_thumb (GtkScrollbar *scrollbar, GtkWidget *thumb);
 static gboolean thumb_button_press_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_button_release_event_cb (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 static gboolean thumb_enter_notify_event_cb (GtkWidget *widget, GdkEventCrossing *event, gpointer user_data);
@@ -158,40 +174,187 @@ static gboolean thumb_motion_notify_event_cb (GtkWidget *widget, GdkEventMotion 
 static gboolean thumb_scroll_event_cb (GtkWidget *widget, GdkEventScroll *event, gpointer user_data);
 static void thumb_unmap_cb (GtkWidget *widget, gpointer user_data);
 
+/* GtkScrollbar vfunc pointers. */
 #ifdef USE_GTK3
-static gboolean os_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
-static void os_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
-static void os_scrollbar_get_preferred_height (GtkWidget *widget, gint *minimal_height, gint *natural_height);
+static gboolean (* pre_hijacked_scrollbar_draw) (GtkWidget *widget, cairo_t *cr);
+static void (* pre_hijacked_scrollbar_get_preferred_width) (GtkWidget *widget, gint *minimal_width, gint *natural_width);
+static void (* pre_hijacked_scrollbar_get_preferred_height) (GtkWidget *widget, gint *minimal_height, gint *natural_height);
+static void (* pre_hijacked_scrollbar_state_flags_changed) (GtkWidget *widget, GtkStateFlags flags);
 #else
-static gboolean os_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
+static gboolean (* pre_hijacked_scrollbar_expose_event) (GtkWidget *widget, GdkEventExpose *event);
+static void (* pre_hijacked_scrollbar_size_request) (GtkWidget *widget, GtkRequisition *requisition);
+static void (* pre_hijacked_scrollbar_state_changed) (GtkWidget *widget, GtkStateType state);
 #endif
-static void os_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
-static void os_scrollbar_hide (GtkWidget *widget);
-static void os_scrollbar_map (GtkWidget *widget);
-static void os_scrollbar_realize (GtkWidget *widget);
-static void os_scrollbar_show (GtkWidget *widget);
-static void os_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
+static void (* pre_hijacked_scrollbar_grab_notify) (GtkWidget *widget, gboolean was_grabbed);
+static void (* pre_hijacked_scrollbar_hide) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_map) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_realize) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_show) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_size_allocate) (GtkWidget *widget, GdkRectangle *allocation);
+static void (* pre_hijacked_scrollbar_unmap) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_unrealize) (GtkWidget *widget);
+static void (* pre_hijacked_scrollbar_dispose) (GObject *object);
+static void (* pre_hijacked_scrollbar_finalize) (GObject *object);
+
+/* Hijacked GtkScrollbar vfunc pointers. */
+static void hijacked_scrollbar_finalize (GObject *object);
 #ifdef USE_GTK3
-static void os_scrollbar_state_flags_changed (GtkWidget *widget, GtkStateFlags flags);
+static gboolean hijacked_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
+static void hijacked_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
+static void hijacked_scrollbar_get_preferred_height (GtkWidget *widget, gint *minimal_height, gint *natural_height);
+static void hijacked_scrollbar_state_flags_changed (GtkWidget *widget, GtkStateFlags flags);
 #else
-static void os_scrollbar_size_request (GtkWidget *widget, GtkRequisition *requisition);
-static void os_scrollbar_state_changed (GtkWidget *widget, GtkStateType state);
+static gboolean hijacked_scrollbar_expose_event (GtkWidget *widget, GdkEventExpose *event);
+static void hijacked_scrollbar_size_request (GtkWidget *widget, GtkRequisition *requisition);
+static void hijacked_scrollbar_state_changed (GtkWidget *widget, GtkStateType state);
 #endif
-static void os_scrollbar_unmap (GtkWidget *widget);
-static void os_scrollbar_unrealize (GtkWidget *widget);
-static void os_scrollbar_dispose (GObject *object);
-static void os_scrollbar_finalize (GObject *object);
+static void hijacked_scrollbar_grab_notify (GtkWidget *widget, gboolean was_grabbed);
+static void hijacked_scrollbar_hide (GtkWidget *widget);
+static void hijacked_scrollbar_map (GtkWidget *widget);
+static void hijacked_scrollbar_realize (GtkWidget *widget);
+static void hijacked_scrollbar_show (GtkWidget *widget);
+static void hijacked_scrollbar_size_allocate (GtkWidget *widget, GdkRectangle *allocation);
+static void hijacked_scrollbar_unmap (GtkWidget *widget);
+static void hijacked_scrollbar_unrealize (GtkWidget *widget);
+
+/* GtkWidget vfunc pointers. */
+static void (* widget_class_hide) (GtkWidget *widget);
+static void (* widget_class_map) (GtkWidget *widget);
+static void (* widget_class_realize) (GtkWidget *widget);
+static void (* widget_class_show) (GtkWidget *widget);
+static void (* widget_class_unmap) (GtkWidget *widget);
+static void (* widget_class_unrealize) (GtkWidget *widget);
+
+/* Calculate bar layout info. */
+static void
+calc_layout_bar (GtkScrollbar *scrollbar,
+                 gdouble       adjustment_value)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      gint y, trough_length, height;
+
+      y = 0;
+      trough_length = priv->trough.height;
+
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
+        height = (trough_length * (gtk_adjustment_get_page_size (priv->adjustment) /
+                                   (gtk_adjustment_get_upper (priv->adjustment) - 
+                                    gtk_adjustment_get_lower (priv->adjustment))));
+      else
+        height = gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
+
+      height = MAX (height, gtk_range_get_min_slider_size (GTK_RANGE (scrollbar)));
+
+      if (gtk_adjustment_get_upper (priv->adjustment) -
+          gtk_adjustment_get_lower (priv->adjustment) -
+          gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        y = (trough_length - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                        (gtk_adjustment_get_upper (priv->adjustment) -
+                                         gtk_adjustment_get_lower (priv->adjustment) -
+                                         gtk_adjustment_get_page_size (priv->adjustment)));
+
+      y = CLAMP (y, 0, trough_length);
+
+      priv->overlay.y = y;
+      priv->overlay.height = height;
+    }
+  else
+    {
+      gint x, trough_length, width;
+
+      x = 0;
+      trough_length = priv->trough.width;
+
+      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
+        width = (trough_length * (gtk_adjustment_get_page_size (priv->adjustment) /
+                                  (gtk_adjustment_get_upper (priv->adjustment) -
+                                   gtk_adjustment_get_lower (priv->adjustment))));
+      else
+        width =  gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
+
+      width = MAX (width, gtk_range_get_min_slider_size (GTK_RANGE (scrollbar)));
+
+      if (gtk_adjustment_get_upper (priv->adjustment) -
+          gtk_adjustment_get_lower (priv->adjustment) -
+          gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        x = (trough_length - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                       (gtk_adjustment_get_upper (priv->adjustment) -
+                                        gtk_adjustment_get_lower (priv->adjustment) -
+                                        gtk_adjustment_get_page_size (priv->adjustment)));
+
+      x = CLAMP (x, 0, trough_length);
+
+      priv->overlay.x = x;
+      priv->overlay.width = width;
+    }
+}
+
+/* Calculate slider (thumb) layout info. */
+static void
+calc_layout_slider (GtkScrollbar *scrollbar,
+                    gdouble       adjustment_value)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+    {
+      gint y, trough_length, height;
+
+      y = 0;
+      trough_length = priv->trough.height;
+      height = priv->slider.height;
+
+      if (gtk_adjustment_get_upper (priv->adjustment) -
+          gtk_adjustment_get_lower (priv->adjustment) -
+          gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        y = (trough_length - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                        (gtk_adjustment_get_upper (priv->adjustment) -
+                                         gtk_adjustment_get_lower (priv->adjustment) -
+                                         gtk_adjustment_get_page_size (priv->adjustment)));
+
+      y = CLAMP (y, 0, trough_length);
+
+      priv->slider.y = y;
+    }
+  else
+    {
+      gint x, trough_length, width;
+
+      x = 0;
+      trough_length = priv->trough.width;
+      width = priv->slider.width;
+
+      if (gtk_adjustment_get_upper (priv->adjustment) -
+          gtk_adjustment_get_lower (priv->adjustment) -
+          gtk_adjustment_get_page_size (priv->adjustment) != 0)
+        x = (trough_length - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
+                                       (gtk_adjustment_get_upper (priv->adjustment) -
+                                        gtk_adjustment_get_lower (priv->adjustment) -
+                                        gtk_adjustment_get_page_size (priv->adjustment)));
+
+      x = CLAMP (x, 0, trough_length);
+
+      priv->slider.x = x;
+    }
+}
 
 /* Calculate slide_initial_slider_position with more precision. */
 static void
-calc_precise_slide_values (OsScrollbar *scrollbar,
-                           gfloat       x_coordinate,
-                           gfloat       y_coordinate)
+calc_precise_slide_values (GtkScrollbar *scrollbar,
+                           gfloat        x_coordinate,
+                           gfloat        y_coordinate)
 {
   OsScrollbarPrivate *priv;
   gdouble adjustment_value;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   adjustment_value = gtk_adjustment_get_value (priv->adjustment);
 
@@ -273,126 +436,6 @@ calc_precise_slide_values (OsScrollbar *scrollbar,
     }
 }
 
-/* Calculate bar layout info. */
-static void
-calc_layout_bar (OsScrollbar *scrollbar,
-                 gdouble      adjustment_value)
-{
-  OsScrollbarPrivate *priv;
-
-  priv = scrollbar->priv;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      gint y, trough_length, height;
-
-      y = 0;
-      trough_length = priv->trough.height;
-
-      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
-        height = (trough_length * (gtk_adjustment_get_page_size (priv->adjustment) /
-                                   (gtk_adjustment_get_upper (priv->adjustment) - 
-                                    gtk_adjustment_get_lower (priv->adjustment))));
-      else
-        height = gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
-
-      height = MAX (height, gtk_range_get_min_slider_size (GTK_RANGE (scrollbar)));
-
-      if (gtk_adjustment_get_upper (priv->adjustment) -
-          gtk_adjustment_get_lower (priv->adjustment) -
-          gtk_adjustment_get_page_size (priv->adjustment) != 0)
-        y = (trough_length - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
-                                        (gtk_adjustment_get_upper (priv->adjustment) -
-                                         gtk_adjustment_get_lower (priv->adjustment) -
-                                         gtk_adjustment_get_page_size (priv->adjustment)));
-
-      y = CLAMP (y, 0, trough_length);
-
-      priv->overlay.y = y;
-      priv->overlay.height = height;
-    }
-  else
-    {
-      gint x, trough_length, width;
-
-      x = 0;
-      trough_length = priv->trough.width;
-
-      if (gtk_adjustment_get_upper (priv->adjustment) - gtk_adjustment_get_lower (priv->adjustment) != 0)
-        width = (trough_length * (gtk_adjustment_get_page_size (priv->adjustment) /
-                                  (gtk_adjustment_get_upper (priv->adjustment) -
-                                   gtk_adjustment_get_lower (priv->adjustment))));
-      else
-        width =  gtk_range_get_min_slider_size (GTK_RANGE (scrollbar));
-
-      width = MAX (width, gtk_range_get_min_slider_size (GTK_RANGE (scrollbar)));
-
-      if (gtk_adjustment_get_upper (priv->adjustment) -
-          gtk_adjustment_get_lower (priv->adjustment) -
-          gtk_adjustment_get_page_size (priv->adjustment) != 0)
-        x = (trough_length - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
-                                       (gtk_adjustment_get_upper (priv->adjustment) -
-                                        gtk_adjustment_get_lower (priv->adjustment) -
-                                        gtk_adjustment_get_page_size (priv->adjustment)));
-
-      x = CLAMP (x, 0, trough_length);
-
-      priv->overlay.x = x;
-      priv->overlay.width = width;
-    }
-}
-
-/* Calculate slider (thumb) layout info. */
-static void
-calc_layout_slider (OsScrollbar *scrollbar,
-                    gdouble      adjustment_value)
-{
-  OsScrollbarPrivate *priv;
-
-  priv = scrollbar->priv;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    {
-      gint y, trough_length, height;
-
-      y = 0;
-      trough_length = priv->trough.height;
-      height = priv->slider.height;
-
-      if (gtk_adjustment_get_upper (priv->adjustment) -
-          gtk_adjustment_get_lower (priv->adjustment) -
-          gtk_adjustment_get_page_size (priv->adjustment) != 0)
-        y = (trough_length - height) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
-                                        (gtk_adjustment_get_upper (priv->adjustment) -
-                                         gtk_adjustment_get_lower (priv->adjustment) -
-                                         gtk_adjustment_get_page_size (priv->adjustment)));
-
-      y = CLAMP (y, 0, trough_length);
-
-      priv->slider.y = y;
-    }
-  else
-    {
-      gint x, trough_length, width;
-
-      x = 0;
-      trough_length = priv->trough.width;
-      width = priv->slider.width;
-
-      if (gtk_adjustment_get_upper (priv->adjustment) -
-          gtk_adjustment_get_lower (priv->adjustment) -
-          gtk_adjustment_get_page_size (priv->adjustment) != 0)
-        x = (trough_length - width) * ((adjustment_value - gtk_adjustment_get_lower (priv->adjustment)) /
-                                       (gtk_adjustment_get_upper (priv->adjustment) -
-                                        gtk_adjustment_get_lower (priv->adjustment) -
-                                        gtk_adjustment_get_page_size (priv->adjustment)));
-
-      x = CLAMP (x, 0, trough_length);
-
-      priv->slider.x = x;
-    }
-}
-
 /* Calculate the workarea using _UNITY_NET_WORKAREA_REGION. */
 static void
 calc_workarea (Display *display,
@@ -443,12 +486,12 @@ calc_workarea (Display *display,
 
 /* Check whether the thumb movement can be considered connected or not. */
 static void
-check_connection (OsScrollbar *scrollbar)
+check_connection (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
   gint x_pos, y_pos;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* This seems to be required to get proper values. */
   calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
@@ -494,10 +537,10 @@ check_connection (OsScrollbar *scrollbar)
     }
 }
 
-/* Traduce coordinates into GtkRange values. */
+/* Convert coordinates into GtkRange values. */
 static inline gdouble
-coord_to_value (OsScrollbar *scrollbar,
-                gfloat       coord)
+coord_to_value (GtkScrollbar *scrollbar,
+                gfloat        coord)
 {
   OsScrollbarPrivate *priv;
   gdouble frac;
@@ -505,7 +548,7 @@ coord_to_value (OsScrollbar *scrollbar,
   gint    trough_length;
   gint    slider_length;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -534,13 +577,14 @@ coord_to_value (OsScrollbar *scrollbar,
   return value;
 }
 
+#ifdef USE_GTK3
 /* Deactivate the bar if it's the case. */
 static void
-deactivate_bar (OsScrollbar *scrollbar)
+deactivate_bar (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->bar != NULL && priv->deactivable_bar)
     os_bar_set_active (priv->bar, FALSE, TRUE);
@@ -550,11 +594,11 @@ deactivate_bar (OsScrollbar *scrollbar)
 static gboolean
 deactivate_bar_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   OS_DCHECK (!priv->active_window);
 
@@ -563,14 +607,89 @@ deactivate_bar_cb (gpointer user_data)
 
   return FALSE;
 }
+#endif
 
-/* Hide the thumb if it's the case. */
-static void
-hide_thumb (OsScrollbar *scrollbar)
+/* Get the private struct. */
+static OsScrollbarPrivate*
+get_private (GtkWidget *widget)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  /* Fetch the private qdata struct. */
+  priv = g_object_get_qdata (G_OBJECT (widget), os_quark_qdata);
+
+  if (!priv)
+    {
+      /* The widget doesn't have an associated qdata,
+       * initialize and store it. */
+      OsScrollbarPrivate *qdata;
+
+      /* Describe the widget for theming. */
+      gtk_widget_set_name (widget, "OsScrollbar");
+
+      if (os_root_list == NULL)
+        {
+          GdkScreen *screen;
+          GdkWindow *root;
+
+          /* Create the static linked list prepending the object. */
+          os_root_list = g_slist_prepend (os_root_list, widget);
+
+          /* Apply the root_filter_func. */
+          screen = gtk_widget_get_screen (widget);
+          root = gdk_screen_get_root_window (screen);
+          gdk_window_set_events (root, gdk_window_get_events (root) |
+                                       GDK_PROPERTY_CHANGE_MASK);
+          gdk_window_add_filter (root, root_filter_func, NULL);
+        }
+      else
+        {
+          /* Prepend the object to the static linked list. */
+          os_root_list = g_slist_prepend (os_root_list, widget);
+        }
+
+      /* Initialize memory. */
+      qdata = g_slice_new0 (OsScrollbarPrivate);
+
+      /* Initialize struct variables. */
+      qdata->side = OS_SIDE_RIGHT;
+#ifdef USE_GTK3
+      qdata->deactivable_bar = TRUE;
+#endif
+      qdata->hidable_thumb = TRUE;
+      qdata->fine_scroll_multiplier = 1.0;
+      qdata->bar = os_bar_new ();
+      qdata->window_group = gtk_window_group_new ();
+      qdata->animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_SCROLLING,
+                                           scrolling_cb, scrolling_end_cb, widget);
+
+      /* Store qdata. */
+      g_object_set_qdata (G_OBJECT (widget), os_quark_qdata, qdata);
+      priv = qdata;
+
+      /* Create adjustment and thumb. */
+      if (gtk_range_get_adjustment (GTK_RANGE (widget)))
+        swap_adjustment (GTK_SCROLLBAR (widget), gtk_range_get_adjustment (GTK_RANGE (widget)));
+      priv->orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (widget));
+      swap_thumb (GTK_SCROLLBAR (widget), os_thumb_new (priv->orientation));
+
+      /* Connect to adjustment and orientation signals. */
+      g_signal_connect (G_OBJECT (widget), "notify::adjustment",
+                        G_CALLBACK (notify_adjustment_cb), NULL);
+      g_signal_connect (G_OBJECT (widget), "notify::orientation",
+                        G_CALLBACK (notify_orientation_cb), NULL);
+    }
+
+  return priv;
+}
+
+/* Hide the thumb if it's the case. */
+static void
+hide_thumb (GtkScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->hidable_thumb)
     gtk_widget_hide (priv->thumb);
@@ -580,11 +699,11 @@ hide_thumb (OsScrollbar *scrollbar)
 static gboolean
 hide_thumb_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   hide_thumb (scrollbar);
   priv->source_hide_thumb_id = 0;
@@ -594,7 +713,7 @@ hide_thumb_cb (gpointer user_data)
 
 /* Return TRUE if the widget is insensitive. */
 static gboolean
-is_insensitive (OsScrollbar *scrollbar)
+is_insensitive (GtkScrollbar *scrollbar)
 {
 #ifdef USE_GTK3
   return (gtk_widget_get_state_flags (GTK_WIDGET (scrollbar)) & GTK_STATE_FLAG_INSENSITIVE) != 0;
@@ -605,12 +724,12 @@ is_insensitive (OsScrollbar *scrollbar)
 
 /* Move the bar. */
 static void
-move_bar (OsScrollbar *scrollbar)
+move_bar (GtkScrollbar *scrollbar)
 {
   GdkRectangle mask;
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     {
@@ -630,11 +749,67 @@ move_bar (OsScrollbar *scrollbar)
   os_bar_move_resize (priv->bar, mask);
 }
 
+/* Callback called by the scrolling animation. */
+static void
+scrolling_cb (gfloat   weight,
+              gpointer user_data)
+{
+  GtkScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+  gdouble new_value;
+
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  if (weight < 1.0f)
+    {
+      gdouble current_value;
+      gdouble diff;
+
+      current_value = gtk_adjustment_get_value (priv->adjustment);
+      diff = priv->value - current_value;
+      new_value = current_value + diff * weight;
+    }
+  else
+    new_value = priv->value;
+
+  gtk_adjustment_set_value (priv->adjustment, new_value);
+}
+
+/* End function called by the scrolling animation. */
+static void
+scrolling_end_cb (gpointer user_data)
+{
+  GtkScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
+
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  /* Only update the slide values at the end of a reconnection,
+   * with the button pressed, otherwise it's not needed. */
+  if ((priv->state & OS_STATE_RECONNECTING) &&
+      (priv->event & OS_EVENT_BUTTON_PRESS))
+    {
+      gint x_pos, y_pos;
+
+      gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos, &y_pos);
+
+      calc_precise_slide_values (scrollbar, x_pos + priv->pointer.x, y_pos + priv->pointer.y);
+    }
+
+  /* Check if the thumb can be considered connected after the animation. */
+  check_connection (scrollbar);
+
+  /* Unset OS_STATE_RECONNECTING since the animation ended. */
+  priv->state &= ~(OS_STATE_RECONNECTING);
+}
+
 /* Sanitize x coordinate of thumb window. */
 static gint
-sanitize_x (OsScrollbar *scrollbar,
-            gint         x,
-            gint         y)
+sanitize_x (GtkScrollbar *scrollbar,
+            gint          x,
+            gint          y)
 {
 #ifndef USE_GTK3
   GdkRectangle gdk_rect;
@@ -644,7 +819,7 @@ sanitize_x (OsScrollbar *scrollbar,
   cairo_rectangle_int_t rect;
   gint screen_x, screen_width, n_monitor, monitor_x;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* The x - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
@@ -775,9 +950,9 @@ sanitize_x (OsScrollbar *scrollbar,
 
 /* Sanitize y coordinate of thumb window. */
 static gint
-sanitize_y (OsScrollbar *scrollbar,
-            gint         x,
-            gint         y)
+sanitize_y (GtkScrollbar *scrollbar,
+            gint          x,
+            gint          y)
 {
 #ifndef USE_GTK3
   GdkRectangle gdk_rect;
@@ -787,7 +962,7 @@ sanitize_y (OsScrollbar *scrollbar,
   cairo_rectangle_int_t rect;
   gint screen_y, screen_height, n_monitor, monitor_y;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* The y - 1 coordinate shift is done 
    * to calculate monitor boundaries. */
@@ -918,13 +1093,13 @@ sanitize_y (OsScrollbar *scrollbar,
 
 /* Move the thumb window. */
 static void
-move_thumb (OsScrollbar *scrollbar,
-            gint         x,
-            gint         y)
+move_thumb (GtkScrollbar *scrollbar,
+            gint          x,
+            gint          y)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   gtk_window_move (GTK_WINDOW (priv->thumb),
                    sanitize_x (scrollbar, x, y),
@@ -936,9 +1111,9 @@ static void
 notify_adjustment_cb (GObject *object,
                       gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
 
-  scrollbar = OS_SCROLLBAR (object);
+  scrollbar = GTK_SCROLLBAR (object);
 
   swap_adjustment (scrollbar, gtk_range_get_adjustment (GTK_RANGE (object)));
 }
@@ -948,84 +1123,26 @@ static void
 notify_orientation_cb (GObject *object,
                        gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (object);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (object);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   priv->orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (object));
 
   swap_thumb (scrollbar, os_thumb_new (priv->orientation));
 }
 
-/* Callback called by the scrolling animation. */
-static void
-scrolling_cb (gfloat   weight,
-              gpointer user_data)
-{
-  gdouble new_value;
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
-
-  if (weight < 1.0f)
-    {
-      gdouble current_value;
-      gdouble diff;
-
-      current_value = gtk_adjustment_get_value (priv->adjustment);
-      diff = priv->value - current_value;
-      new_value = current_value + diff * weight;
-    }
-  else
-    new_value = priv->value;
-
-  gtk_adjustment_set_value (priv->adjustment, new_value);
-}
-
-/* End function called by the scrolling animation. */
-static void
-scrolling_end_cb (gpointer user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (user_data);
-
-  priv = scrollbar->priv;
-
-  /* Only update the slide values at the end of a reconnection,
-   * with the button pressed, otherwise it's not needed. */
-  if ((priv->state & OS_STATE_RECONNECTING) &&
-      (priv->event & OS_EVENT_BUTTON_PRESS))
-    {
-      gint x_pos, y_pos;
-
-      gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos, &y_pos);
-
-      calc_precise_slide_values (scrollbar, x_pos + priv->pointer.x, y_pos + priv->pointer.y);
-    }
-
-  /* Check if the thumb can be considered connected after the animation. */
-  check_connection (scrollbar);
-
-  /* Unset OS_STATE_RECONNECTING since the animation ended. */
-  priv->state &= ~(OS_STATE_RECONNECTING);
-}
-
 /* Stop function called by the scrolling animation. */
 static void
 scrolling_stop_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* No slide values update here,
    * handle them separately! */
@@ -1037,15 +1154,14 @@ scrolling_stop_cb (gpointer user_data)
   priv->state &= ~(OS_STATE_RECONNECTING);
 }
 
-
 /* Swap adjustment pointer. */
 static void
-swap_adjustment (OsScrollbar   *scrollbar,
+swap_adjustment (GtkScrollbar  *scrollbar,
                  GtkAdjustment *adjustment)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->adjustment != NULL)
     {
@@ -1072,12 +1188,12 @@ swap_adjustment (OsScrollbar   *scrollbar,
 
 /* Swap thumb pointer. */
 static void
-swap_thumb (OsScrollbar *scrollbar,
-            GtkWidget   *thumb)
+swap_thumb (GtkScrollbar *scrollbar,
+            GtkWidget    *thumb)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->thumb != NULL)
     {
@@ -1132,11 +1248,11 @@ swap_thumb (OsScrollbar *scrollbar,
 static gboolean
 unlock_thumb_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->hidable_thumb)
     priv->state &= ~(OS_STATE_LOCKED);
@@ -1189,11 +1305,11 @@ window_get_pointer (GdkWindow       *window,
 
 /* Calculate fine_scroll_multiplier. */
 static void
-calc_fine_scroll_multiplier (OsScrollbar *scrollbar)
+calc_fine_scroll_multiplier (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* FIXME(Cimi) Not sure about this calculation...
    * However seems to work "enough" well. */
@@ -1209,11 +1325,11 @@ static void
 adjustment_changed_cb (GtkAdjustment *adjustment,
                        gpointer       user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* FIXME(Cimi) we should control each time os_bar_show ()/hide ()
    * is called here and in map ()/unmap ().
@@ -1252,12 +1368,12 @@ adjustment_changed_cb (GtkAdjustment *adjustment,
 
 /* Update the tail (visual connection) between bar and thumb. */
 static void
-update_tail (OsScrollbar *scrollbar)
+update_tail (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
   gint x_pos, y_pos;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   gdk_window_get_origin (gtk_widget_get_window (priv->thumb), &x_pos, &y_pos);
 
@@ -1351,11 +1467,11 @@ static void
 adjustment_value_changed_cb (GtkAdjustment *adjustment,
                              gpointer       user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   calc_layout_bar (scrollbar, gtk_adjustment_get_value (adjustment));
   calc_layout_slider (scrollbar, gtk_adjustment_get_value (adjustment));
@@ -1372,18 +1488,19 @@ adjustment_value_changed_cb (GtkAdjustment *adjustment,
   move_bar (scrollbar);
 }
 
+#ifdef USE_GTK3
 /* Bar functions. */
 
 /* Set the state of the bar checking mouse position. */
 static void
-bar_set_state_from_pointer (OsScrollbar *scrollbar,
-                            gint         x,
-                            gint         y)
+bar_set_state_from_pointer (GtkScrollbar *scrollbar,
+                            gint          x,
+                            gint          y)
 {
   GtkAllocation allocation;
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   OS_DCHECK (!priv->active_window);
 
@@ -1401,88 +1518,9 @@ bar_set_state_from_pointer (OsScrollbar *scrollbar,
       os_bar_set_active (priv->bar, FALSE, TRUE);
     }
 }
+#endif
 
 /* Root window functions. */
-
-/* React on active window changes. */
-static void
-root_gfunc (gpointer data,
-            gpointer user_data)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (data);
-  priv = scrollbar->priv;
-
-  OS_DCHECK (scrollbar != NULL);
-
-  /* Return if the scrollbar is insensitive. */
-  if (is_insensitive (scrollbar))
-    return;
-
-  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
-    {
-      if (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))) ==
-          gdk_screen_get_active_window (gtk_widget_get_screen (GTK_WIDGET (scrollbar))))
-        {
-          /* Stops potential running timeout. */
-          if (priv->source_deactivate_bar_id != 0)
-            {
-              g_source_remove (priv->source_deactivate_bar_id);
-              priv->source_deactivate_bar_id = 0;
-            }
-
-          priv->active_window = TRUE;
-
-          priv->deactivable_bar = FALSE;
-          os_bar_set_active (priv->bar, TRUE, TRUE);
-        }
-      else if (priv->active_window)
-        {
-          GdkWindow *parent;
-          GdkWindow *window;
-          const gint64 current_time = g_get_monotonic_time ();
-          const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
-
-          priv->active_window = FALSE;
-
-          /* Loop through parent windows until it reaches
-           * either an unknown GdkWindow (NULL),
-           * or the toplevel window. */
-          window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
-          parent = window_at_pointer (window, NULL, NULL);
-          while (parent != NULL)
-            {
-              if (window == parent)
-                break;
-
-              parent = gdk_window_get_parent (parent);
-            }
-
-          if (parent != NULL)
-            {
-              gint x, y;
-
-              window_get_pointer (window, &x, &y, NULL);
-
-              /* When the window is unfocused,
-               * check the position of the pointer
-               * and set the state accordingly. */
-              bar_set_state_from_pointer (scrollbar, x, y);
-            }
-          else
-            {
-              /* If the pointer is outside of the window, set it inactive. */
-              priv->deactivable_bar = TRUE;
-              os_bar_set_active (priv->bar, FALSE, TRUE);
-            }
-
-          if ((current_time > end_time) && priv->thumb != NULL)
-            gtk_widget_hide (priv->thumb);
-        }
-    }
-}
 
 /* Filter function applied to the root window. */
 static GdkFilterReturn
@@ -1496,11 +1534,7 @@ root_filter_func (GdkXEvent *gdkxevent,
 
   if (xev->type == PropertyNotify)
     {
-      if (xev->xproperty.atom == net_active_window_atom)
-        {
-          g_list_foreach (os_root_list, root_gfunc, NULL);
-        }
-      else if (xev->xproperty.atom == unity_net_workarea_region_atom)
+      if (xev->xproperty.atom == unity_net_workarea_region_atom)
         {
           calc_workarea (xev->xany.display, xev->xany.window);
         }
@@ -1561,9 +1595,12 @@ static void
 present_gdk_window_with_timestamp (GtkWidget *widget,
                                    guint32    timestamp)
 {
-  present_window_with_timestamp (GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
-                                 GDK_WINDOW_XID (gtk_widget_get_window (widget)),
-                                 timestamp);
+  /* Check if the widget is realized, to protect against:
+   * https://bugs.launchpad.net/ayatana-scrollbar/+bug/846562 */
+  if (gtk_widget_get_realized (widget))
+    present_window_with_timestamp (GDK_SCREEN_XSCREEN (gtk_widget_get_screen (widget)),
+                                   GDK_WINDOW_XID (gtk_widget_get_window (widget)),
+                                   timestamp);
 }
 
 static gboolean
@@ -1576,11 +1613,11 @@ thumb_button_press_event_cb (GtkWidget      *widget,
       if (event->button == 1 ||
           event->button == 2)
         {
-          OsScrollbar *scrollbar;
+          GtkScrollbar *scrollbar;
           OsScrollbarPrivate *priv;
 
-          scrollbar = OS_SCROLLBAR (user_data);
-          priv = scrollbar->priv;
+          scrollbar = GTK_SCROLLBAR (user_data);
+          priv = get_private (GTK_WIDGET (scrollbar));
 
           gtk_window_set_transient_for (GTK_WINDOW (widget),
                                         GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
@@ -1648,14 +1685,14 @@ thumb_button_press_event_cb (GtkWidget      *widget,
 
 /* Scroll down, with animation. */
 static void
-scroll_down (OsScrollbar *scrollbar,
-             OsScrollType scroll_type)
+scroll_down (GtkScrollbar *scrollbar,
+             OsScrollType  scroll_type)
 {
   OsScrollbarPrivate *priv;
   gdouble new_value, increment;
   gint32 duration;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Either step down or page down. */
   if (scroll_type == OS_SCROLL_STEP)
@@ -1695,14 +1732,14 @@ scroll_down (OsScrollbar *scrollbar,
 
 /* Scroll up, with animation. */
 static void
-scroll_up (OsScrollbar *scrollbar,
-           OsScrollType scroll_type)
+scroll_up (GtkScrollbar *scrollbar,
+           OsScrollType  scroll_type)
 {
   OsScrollbarPrivate *priv;
   gdouble new_value, increment;
   gint32 duration;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Either step up or page up. */
   if (scroll_type == OS_SCROLL_STEP)
@@ -1750,11 +1787,11 @@ thumb_button_release_event_cb (GtkWidget      *widget,
       if (event->button == 1 ||
           event->button == 2)
         {
-          OsScrollbar *scrollbar;
+          GtkScrollbar *scrollbar;
           OsScrollbarPrivate *priv;
 
-          scrollbar = OS_SCROLLBAR (user_data);
-          priv = scrollbar->priv;
+          scrollbar = GTK_SCROLLBAR (user_data);
+          priv = get_private (GTK_WIDGET (scrollbar));
 
           gtk_window_set_transient_for (GTK_WINDOW (widget), NULL);
 
@@ -1795,15 +1832,17 @@ thumb_button_release_event_cb (GtkWidget      *widget,
 }
 
 static void
-enter_event (OsScrollbar *scrollbar)
+enter_event (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   priv->event |= OS_EVENT_ENTER_NOTIFY;
 
+#ifdef USE_GTK3
   priv->deactivable_bar = FALSE;
+#endif
   priv->hidable_thumb = FALSE;
 
   if (priv->state & OS_STATE_INTERNAL)
@@ -1815,11 +1854,11 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
                              GdkEventCrossing *event,
                              gpointer          user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
   /* Gtk+ 3.3.18 emits more GdkEventCrossing
@@ -1840,11 +1879,11 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                              GdkEventCrossing *event,
                              gpointer          user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
   /* Gtk+ 3.3.18 emits more GdkEventCrossing
@@ -1875,6 +1914,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
    * not interacting with the thumb. */
   if (!(priv->event & OS_EVENT_BUTTON_PRESS))
     {
+#ifdef USE_GTK3
       /* Never deactivate the bar in an active window. */
       if (!priv->active_window)
         {
@@ -1887,6 +1927,7 @@ thumb_leave_notify_event_cb (GtkWidget        *widget,
                                                           deactivate_bar_cb,
                                                           scrollbar);
         }
+#endif
 
       priv->event &= ~(OS_EVENT_ENTER_NOTIFY);
 
@@ -1908,19 +1949,21 @@ thumb_map_cb (GtkWidget *widget,
               gpointer   user_data)
 {
   Display *display;
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   XWindowChanges changes;
   guint32 xid, xid_parent;
   unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
+#ifdef USE_GTK3
   /* Immediately set the bar to be active. */
   priv->deactivable_bar = FALSE;
   os_bar_set_active (priv->bar, TRUE, FALSE);
+#endif
 
   xid = GDK_WINDOW_XID (gtk_widget_get_window (widget));
   xid_parent = GDK_WINDOW_XID (gtk_widget_get_window (gtk_widget_get_toplevel (GTK_WIDGET (scrollbar))));
@@ -1981,16 +2024,16 @@ thumb_map_cb (GtkWidget *widget,
 
 /* From pointer movement, set adjustment value. */
 static void
-capture_movement (OsScrollbar *scrollbar,
-                  gint         mouse_x,
-                  gint         mouse_y)
+capture_movement (GtkScrollbar *scrollbar,
+                  gint          mouse_x,
+                  gint          mouse_y)
 {
   OsScrollbarPrivate *priv;
   gfloat c;
   gint delta;
   gdouble new_value;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (priv->orientation == GTK_ORIENTATION_VERTICAL)
     delta = mouse_y - priv->slide_initial_coordinate;
@@ -2013,11 +2056,11 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                               GdkEventMotion *event,
                               gpointer        user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
   /* On touch devices with XI2 and Gtk+ >= 3.3.18,
@@ -2345,13 +2388,13 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
 /* Mouse wheel delta. */
 static gdouble
-get_wheel_delta (OsScrollbar       *scrollbar,
-                 GdkScrollDirection direction)
+get_wheel_delta (GtkScrollbar       *scrollbar,
+                 GdkScrollDirection  direction)
 {
   OsScrollbarPrivate *priv;
   gdouble delta;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   delta = pow (gtk_adjustment_get_page_size (priv->adjustment), 2.0 / 3.0);
 
@@ -2367,7 +2410,7 @@ thumb_scroll_event_cb (GtkWidget      *widget,
                        GdkEventScroll *event,
                        gpointer        user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   gdouble delta;
 
@@ -2379,8 +2422,8 @@ thumb_scroll_event_cb (GtkWidget      *widget,
     return FALSE;
 #endif
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Stop the scrolling animation if it's running. */
   os_animation_stop (priv->animation, NULL);
@@ -2415,11 +2458,11 @@ static void
 thumb_unmap_cb (GtkWidget *widget,
                 gpointer   user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   priv->event = OS_EVENT_NONE;
   priv->hidable_thumb = TRUE;
@@ -2450,11 +2493,12 @@ toplevel_configure_event_cb (GtkWidget         *widget,
                              GdkEventConfigure *event,
                              gpointer           user_data)
 {
-  OsScrollbar *scrollbar = OS_SCROLLBAR (user_data);
-  OsScrollbarPrivate *priv = scrollbar->priv;
+  GtkScrollbar *scrollbar = GTK_SCROLLBAR (user_data);
+  OsScrollbarPrivate *priv = get_private (GTK_WIDGET (scrollbar));
   const gint64 current_time = g_get_monotonic_time ();
   const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
 
+#ifdef USE_GTK3
   /* If the widget is mapped, is not insentitive
    * and the configure-event happens after
    * the PropertyNotify _NET_ACTIVE_WINDOW event,
@@ -2498,6 +2542,7 @@ toplevel_configure_event_cb (GtkWidget         *widget,
           os_bar_set_active (priv->bar, TRUE, TRUE);
         }
     }
+#endif
 
   if (current_time > end_time)
     gtk_widget_hide (priv->thumb);
@@ -2514,14 +2559,14 @@ toplevel_configure_event_cb (GtkWidget         *widget,
 
 /* Move the thumb in the proximity area. */
 static void
-adjust_thumb_position (OsScrollbar *scrollbar,
-                       gdouble      event_x,
-                       gdouble      event_y)
+adjust_thumb_position (GtkScrollbar *scrollbar,
+                       gdouble       event_x,
+                       gdouble       event_y)
 {
   OsScrollbarPrivate *priv;
   gint x, y, x_pos, y_pos;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   gdk_window_get_origin (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x_pos, &y_pos);
 
@@ -2667,14 +2712,14 @@ adjust_thumb_position (OsScrollbar *scrollbar,
 
 /* Checks if the pointer is in the proximity area. */
 static gboolean
-check_proximity (OsScrollbar *scrollbar,
-                 gint         x,
-                 gint         y)
+check_proximity (GtkScrollbar *scrollbar,
+                 gint          x,
+                 gint          y)
 {
   OsScrollbarPrivate *priv;
   gint proximity_size;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   proximity_size = PROXIMITY_SIZE;
 
@@ -2728,15 +2773,71 @@ check_proximity (OsScrollbar *scrollbar,
   return FALSE;
 }
 
+/* Returns TRUE if touch mode is enabled. */
+static gboolean
+is_touch_mode (GtkWidget *widget,
+               gint       device_id)
+{
+#ifdef USE_GTK3
+  switch (scrollbar_mode)
+  {
+    case SCROLLBAR_MODE_OVERLAY_AUTO:
+    default:
+      /* Continue detecting source type. */
+      break;
+    case SCROLLBAR_MODE_OVERLAY_POINTER:
+      /* Touch mode always disabled. */
+      return FALSE;
+      break;
+    case SCROLLBAR_MODE_OVERLAY_TOUCH:
+      /* Touch mode always enabled. */
+      return TRUE;
+      break;
+  }
+
+  /* Use some sort of cache for the device.
+   * Update the input source only if the device_id
+   * is different from the previous one. */
+  if (os_device_id != device_id)
+    {
+      GdkDeviceManager *device_manager;
+      GdkDevice *device;
+      GdkWindow *window;
+
+      /* Update the static os_device_id variable. */
+      os_device_id = device_id;
+
+      window = gtk_widget_get_window (widget);
+      device_manager = gdk_display_get_device_manager (gdk_window_get_display (window));
+      device = gdk_x11_device_manager_lookup (device_manager, os_device_id);
+
+      /* Return FALSE if we don't recognize the device. */
+      if (!device)
+        return FALSE;
+
+      /* Update the static os_input_source variable. */
+      os_input_source = gdk_device_get_source (device);
+    }
+
+  /* Detect touch mode accordingly to the input source type. */
+  if (os_input_source == GDK_SOURCE_TOUCHSCREEN)
+    return TRUE;
+  else
+    return FALSE;
+#else
+  return scrollbar_mode == SCROLLBAR_MODE_OVERLAY_TOUCH;
+#endif
+}
+
 /* Callback that shows the thumb if it's the case. */
 static gboolean
 show_thumb_cb (gpointer user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   if (!priv->hidable_thumb)
     {
@@ -2752,11 +2853,11 @@ show_thumb_cb (gpointer user_data)
 
 /* Adds a timeout to reveal the thumb. */
 static void
-show_thumb (OsScrollbar *scrollbar)
+show_thumb (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Just update the tail if the thumb is already mapped. */
   if (gtk_widget_get_mapped (priv->thumb))
@@ -2801,14 +2902,14 @@ window_filter_func (GdkXEvent *gdkxevent,
                     GdkEvent  *event,
                     gpointer   user_data)
 {
-  OsScrollbar *scrollbar;
+  GtkScrollbar *scrollbar;
   OsScrollbarPrivate *priv;
   XEvent *xev;
 
-  g_return_val_if_fail (OS_IS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
+  g_return_val_if_fail (GTK_IS_SCROLLBAR (user_data), GDK_FILTER_CONTINUE);
 
-  scrollbar = OS_SCROLLBAR (user_data);
-  priv = scrollbar->priv;
+  scrollbar = GTK_SCROLLBAR (user_data);
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   xev = gdkxevent;
 
@@ -2819,11 +2920,14 @@ window_filter_func (GdkXEvent *gdkxevent,
     {
       OsXEvent os_xevent;
       gdouble event_x, event_y;
+      gint sourceid;
 
       os_xevent = OS_XEVENT_NONE;
 
       event_x = 0;
       event_y = 0;
+
+      sourceid = 0;
 
 #ifdef USE_GTK3
       if (xev->type == GenericEvent)
@@ -2832,6 +2936,8 @@ window_filter_func (GdkXEvent *gdkxevent,
           XIDeviceEvent *xiev;
 
           xiev = xev->xcookie.data;
+
+          sourceid = xiev->sourceid;
 
           if (xiev->evtype == XI_ButtonPress)
             os_xevent = OS_XEVENT_BUTTON_PRESS;
@@ -2908,7 +3014,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
           }
 
@@ -2916,6 +3023,7 @@ window_filter_func (GdkXEvent *gdkxevent,
           {
             priv->window_button_press = FALSE;
 
+#ifdef USE_GTK3
             /* Never deactivate the bar in an active window. */
             if (!priv->active_window)
               {
@@ -2928,6 +3036,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                                                                 deactivate_bar_cb,
                                                                 scrollbar);
               }
+#endif
 
             if (gtk_widget_get_mapped (priv->thumb) &&
                 !(priv->event & OS_EVENT_BUTTON_PRESS))
@@ -2959,10 +3068,12 @@ window_filter_func (GdkXEvent *gdkxevent,
         /* Get the motion_notify_event trough XEvent. */
         if (!priv->window_button_press && os_xevent == OS_XEVENT_MOTION)
           {
+#ifdef USE_GTK3
             /* React to motion_notify_event
              * and set the state accordingly. */
             if (!is_insensitive (scrollbar) && !priv->active_window)
               bar_set_state_from_pointer (scrollbar, event_x, event_y);
+#endif
 
             /* Proximity area. */
             if (check_proximity (scrollbar, event_x, event_y))
@@ -2980,7 +3091,8 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                show_thumb (scrollbar);
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                  show_thumb (scrollbar);
               }
             else
               {
@@ -3011,11 +3123,11 @@ window_filter_func (GdkXEvent *gdkxevent,
 
 /* Add the window filter function. */
 static void
-add_window_filter (OsScrollbar *scrollbar)
+add_window_filter (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Don't add duplicated filters. */
   if (!priv->filter.running &&
@@ -3030,11 +3142,11 @@ add_window_filter (OsScrollbar *scrollbar)
 
 /* Remove the window filter function. */
 static void
-remove_window_filter (OsScrollbar *scrollbar)
+remove_window_filter (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Remove only if the filter is running. */
   if (priv->filter.running &&
@@ -3047,380 +3159,320 @@ remove_window_filter (OsScrollbar *scrollbar)
     }
 }
 
-G_DEFINE_TYPE (OsScrollbar, os_scrollbar, GTK_TYPE_SCROLLBAR);
-
-static void
-os_scrollbar_class_init (OsScrollbarClass *class)
-{
-  GObjectClass *gobject_class;
-  GtkWidgetClass *widget_class;
-
-  gobject_class = G_OBJECT_CLASS (class);
-  widget_class = GTK_WIDGET_CLASS (class);
-
-#ifdef USE_GTK3
-  widget_class->draw                 = os_scrollbar_draw;
-  widget_class->get_preferred_width  = os_scrollbar_get_preferred_width;
-  widget_class->get_preferred_height = os_scrollbar_get_preferred_height;
-#else
-  widget_class->expose_event         = os_scrollbar_expose_event;
-#endif
-  widget_class->grab_notify          = os_scrollbar_grab_notify;
-  widget_class->hide                 = os_scrollbar_hide;
-  widget_class->map                  = os_scrollbar_map;
-  widget_class->realize              = os_scrollbar_realize;
-  widget_class->show                 = os_scrollbar_show;
-  widget_class->size_allocate        = os_scrollbar_size_allocate;
-#ifdef USE_GTK3
-  widget_class->state_flags_changed  = os_scrollbar_state_flags_changed;
-#else
-  widget_class->size_request         = os_scrollbar_size_request;
-  widget_class->state_changed        = os_scrollbar_state_changed;
-#endif
-  widget_class->unmap                = os_scrollbar_unmap;
-  widget_class->unrealize            = os_scrollbar_unrealize;
-
-  gobject_class->dispose  = os_scrollbar_dispose;
-  gobject_class->finalize = os_scrollbar_finalize;
-
-  g_type_class_add_private (gobject_class, sizeof (OsScrollbarPrivate));
-}
-
-static void
-os_scrollbar_init (OsScrollbar *scrollbar)
-{
-  OsScrollbarPrivate *priv;
-
-  scrollbar->priv = G_TYPE_INSTANCE_GET_PRIVATE (scrollbar,
-                                                 OS_TYPE_SCROLLBAR,
-                                                 OsScrollbarPrivate);
-  priv = scrollbar->priv;
-
-  priv->present_time = 0;
-
-  if (os_root_list == NULL)
-    {
-      GdkScreen *screen;
-      GdkWindow *root;
-
-      /* Used in the root_filter_func to match the right property. */
-      net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
-      unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
-
-      /* Append the object to the static linked list. */
-      os_root_list = g_list_append (os_root_list, scrollbar);
-
-      /* Create the region. */
-      os_workarea = cairo_region_create ();
-
-      /* Apply the root_filter_func. */
-      screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
-      root = gdk_screen_get_root_window (screen);
-      gdk_window_set_events (root, gdk_window_get_events (root) |
-                                   GDK_PROPERTY_CHANGE_MASK);
-      gdk_window_add_filter (root, root_filter_func, NULL);
-
-      /* Initialize the quark. */
-      os_quark_placement = g_quark_from_string ("os_quark_placement");
-    }
-  else
-    {
-      /* Append the object to the static linked list. */
-      os_root_list = g_list_append (os_root_list, scrollbar);
-    }
-
-  priv->event = OS_EVENT_NONE;
-
-  priv->state = OS_STATE_NONE;
-
-  priv->side = OS_SIDE_RIGHT;
-
-  priv->filter.proximity = FALSE;
-  priv->filter.running = FALSE;
-
-  priv->active_window = FALSE;
-  priv->deactivable_bar = TRUE;
-  priv->hidable_thumb = TRUE;
-  priv->window_button_press = FALSE;
-
-  priv->pointer.x = 0;
-  priv->pointer.y = 0;
-  priv->thumb_win.x = 0;
-  priv->thumb_win.y = 0;
-
-  priv->fine_scroll_multiplier = 1.0;
-
-  priv->source_deactivate_bar_id = 0;
-  priv->source_hide_thumb_id = 0;
-  priv->source_show_thumb_id = 0;
-  priv->source_unlock_thumb_id = 0;
-
-  priv->bar = os_bar_new ();
-
-  priv->window_group = gtk_window_group_new ();
-
-  priv->animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_SCROLLING,
-                                      scrolling_cb, scrolling_end_cb, scrollbar);
-  priv->value = 0;
-
-  g_signal_connect (G_OBJECT (scrollbar), "notify::adjustment",
-                    G_CALLBACK (notify_adjustment_cb), NULL);
-
-  g_signal_connect (G_OBJECT (scrollbar), "notify::orientation",
-                    G_CALLBACK (notify_orientation_cb), NULL);
-}
-
-static void
-os_scrollbar_dispose (GObject *object)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (object);
-  priv = scrollbar->priv;
-
-  if (priv->source_deactivate_bar_id != 0)
-    {
-      g_source_remove (priv->source_deactivate_bar_id);
-      priv->source_deactivate_bar_id = 0;
-    }
-
-  if (priv->source_hide_thumb_id != 0)
-    {
-      g_source_remove (priv->source_hide_thumb_id);
-      priv->source_hide_thumb_id = 0;
-    }
-
-  if (priv->source_show_thumb_id != 0)
-    {
-      g_source_remove (priv->source_show_thumb_id);
-      priv->source_show_thumb_id = 0;
-    }
-
-  if (priv->source_unlock_thumb_id != 0)
-    {
-      g_source_remove (priv->source_unlock_thumb_id);
-      priv->source_unlock_thumb_id = 0;
-    }
-
-  os_root_list = g_list_remove (os_root_list, scrollbar);
-
-  if (os_root_list == NULL)
-    {
-      if (os_workarea != NULL)
-        {
-          cairo_region_destroy (os_workarea);
-          os_workarea = NULL;
-        }
-
-      gdk_window_remove_filter (gdk_get_default_root_window (),
-                                root_filter_func, NULL);
-    }
-
-  if (priv->animation != NULL)
-    {
-      g_object_unref (priv->animation);
-      priv->animation = NULL;
-    }
-
-  if (priv->bar != NULL)
-    {
-      g_object_unref (priv->bar);
-      priv->bar = NULL;
-    }
-
-  if (priv->window_group != NULL)
-    {
-      g_object_unref (priv->window_group);
-      priv->window_group = NULL;
-    }
-
-  swap_adjustment (scrollbar, NULL);
-  swap_thumb (scrollbar, NULL);
-
-  G_OBJECT_CLASS (os_scrollbar_parent_class)->dispose (object);
-}
-
-static void
-os_scrollbar_finalize (GObject *object)
-{
-  G_OBJECT_CLASS (os_scrollbar_parent_class)->finalize (object);
-}
-
-#ifdef USE_GTK3
 static gboolean
-os_scrollbar_draw (GtkWidget *widget,
-                   cairo_t   *cr)
+use_overlay_scrollbar (void)
 {
-  return TRUE;
+  return scrollbar_mode != SCROLLBAR_MODE_NORMAL;
 }
-#else
-static gboolean
-os_scrollbar_expose_event (GtkWidget      *widget,
-                           GdkEventExpose *event)
-{
-  return TRUE;
-}
-#endif
 
-#ifdef USE_GTK3
 static void
-os_scrollbar_get_preferred_width (GtkWidget *widget,
-                                  gint      *minimal_width,
-                                  gint      *natural_width)
+hijacked_scrollbar_dispose (GObject *object)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    *minimal_width = *natural_width = 0;
-  else
+  if (use_overlay_scrollbar ())
     {
-      *minimal_width = MIN_THUMB_HEIGHT;
-      *natural_width = THUMB_HEIGHT;
-    }
-}
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
 
-static void
-os_scrollbar_get_preferred_height (GtkWidget *widget,
-                                   gint      *minimal_height,
-                                   gint      *natural_height)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
+      scrollbar = GTK_SCROLLBAR (object);
+      priv = get_private (GTK_WIDGET (scrollbar));
 
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
-
-  if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
-    *minimal_height = *natural_height = 0;
-  else
-    {
-      *minimal_height = MIN_THUMB_HEIGHT;
-      *natural_height = THUMB_HEIGHT;
-    }
-}
-#endif
-
-static void
-os_scrollbar_grab_notify (GtkWidget *widget,
-                          gboolean   was_grabbed)
-{
-}
-
-static void
-os_scrollbar_hide (GtkWidget *widget)
-{
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->hide (widget);
-}
-
-static void
-os_scrollbar_map (GtkWidget *widget)
-{
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
-
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->map (widget);
-
-  /* On map, check for the active window. */
-  if (gtk_widget_get_window (gtk_widget_get_toplevel (widget)) ==
-      gdk_screen_get_active_window (gtk_widget_get_screen (widget)))
-    {
-      /* Stops potential running timeout. */
       if (priv->source_deactivate_bar_id != 0)
         {
           g_source_remove (priv->source_deactivate_bar_id);
           priv->source_deactivate_bar_id = 0;
         }
 
-      priv->active_window = TRUE;
-    }
-  else
-    priv->active_window = FALSE;
-
-  if (!is_insensitive (scrollbar))
-    {
-      if (!priv->active_window)
+      if (priv->source_hide_thumb_id != 0)
         {
-          gint x, y;
-
-          window_get_pointer (gtk_widget_get_window (GTK_WIDGET (scrollbar)), &x, &y, NULL);
-
-          /* When the scrollbar appears on screen (mapped),
-           * for example when switching notebook page,
-           * check the position of the pointer
-           * and set the state accordingly. */
-          bar_set_state_from_pointer (scrollbar, x, y);
+          g_source_remove (priv->source_hide_thumb_id);
+          priv->source_hide_thumb_id = 0;
         }
+
+      if (priv->source_show_thumb_id != 0)
+        {
+          g_source_remove (priv->source_show_thumb_id);
+          priv->source_show_thumb_id = 0;
+        }
+
+      if (priv->source_unlock_thumb_id != 0)
+        {
+          g_source_remove (priv->source_unlock_thumb_id);
+          priv->source_unlock_thumb_id = 0;
+        }
+
+      os_root_list = g_slist_remove (os_root_list, scrollbar);
+
+      if (os_root_list == NULL)
+        {
+          if (os_workarea != NULL)
+            {
+              cairo_region_destroy (os_workarea);
+              os_workarea = NULL;
+            }
+
+          gdk_window_remove_filter (gdk_get_default_root_window (),
+                                    root_filter_func, NULL);
+        }
+
+      if (priv->animation != NULL)
+        {
+          g_object_unref (priv->animation);
+          priv->animation = NULL;
+        }
+
+      if (priv->bar != NULL)
+        {
+          g_object_unref (priv->bar);
+          priv->bar = NULL;
+        }
+
+      if (priv->window_group != NULL)
+        {
+          g_object_unref (priv->window_group);
+          priv->window_group = NULL;
+        }
+
+      swap_adjustment (scrollbar, NULL);
+      swap_thumb (scrollbar, NULL);
+    }
+
+  (* pre_hijacked_scrollbar_dispose) (object);
+}
+
+#ifdef USE_GTK3
+static gboolean
+hijacked_scrollbar_draw (GtkWidget *widget,
+                         cairo_t   *cr)
+{
+  if (use_overlay_scrollbar ())
+    return TRUE;
+
+  (* pre_hijacked_scrollbar_draw) (widget, cr);
+}
+#else
+static gboolean
+hijacked_scrollbar_expose_event (GtkWidget      *widget,
+                                 GdkEventExpose *event)
+{
+  if (use_overlay_scrollbar ())
+    return TRUE;
+
+  (* pre_hijacked_scrollbar_expose_event) (widget, event);
+}
+#endif
+
+#ifdef USE_GTK3
+static void
+hijacked_scrollbar_get_preferred_width (GtkWidget *widget,
+                                        gint      *minimal_width,
+                                        gint      *natural_width)
+{
+  if (use_overlay_scrollbar ())
+    {
+      OsScrollbarPrivate *priv;
+
+      priv = get_private (widget);
+
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        *minimal_width = *natural_width = 0;
       else
         {
-          /* On map-event of an active window,
-           * the bar should be active. */
-          priv->deactivable_bar = FALSE;
-          os_bar_set_active (priv->bar, TRUE, FALSE);
+          *minimal_width = MIN_THUMB_HEIGHT;
+          *natural_width = THUMB_HEIGHT;
         }
+
+      return;
     }
 
-  if (!(priv->state & OS_STATE_FULLSIZE))
-    os_bar_show (priv->bar);
+  (* pre_hijacked_scrollbar_get_preferred_width) (widget, minimal_width, natural_width);
+}
 
-  if (!is_insensitive (scrollbar))
+static void
+hijacked_scrollbar_get_preferred_height (GtkWidget *widget,
+                                         gint      *minimal_height,
+                                         gint      *natural_height)
+{
+  if (use_overlay_scrollbar ())
     {
-      priv->filter.proximity = TRUE;
-      add_window_filter (scrollbar);
+      OsScrollbarPrivate *priv;
+
+      priv = get_private (widget);
+
+      if (priv->orientation == GTK_ORIENTATION_HORIZONTAL)
+        *minimal_height = *natural_height = 0;
+      else
+        {
+          *minimal_height = MIN_THUMB_HEIGHT;
+          *natural_height = THUMB_HEIGHT;
+        }
+
+      return;
     }
+
+  (* pre_hijacked_scrollbar_get_preferred_height) (widget, minimal_height, natural_height);
+}
+#endif
+
+static void
+hijacked_scrollbar_grab_notify (GtkWidget *widget,
+                                gboolean   was_grabbed)
+{
+  if (use_overlay_scrollbar ())
+    return;
+
+  (* pre_hijacked_scrollbar_grab_notify) (widget, was_grabbed);
 }
 
 static void
-os_scrollbar_realize (GtkWidget *widget)
+hijacked_scrollbar_hide (GtkWidget *widget)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
+  if (use_overlay_scrollbar ())
+    {
+      (* widget_class_hide) (widget);
 
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
+      return;
+    }
 
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->realize (widget);
+  (* pre_hijacked_scrollbar_hide) (widget);
+}
 
-  gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
+#ifdef USE_GTK3
+/* Return TRUE if the widget is in backdrop window. */
+static gboolean
+is_backdrop_window (GtkWidget *widget)
+{
+  return (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_BACKDROP) != 0;
+}
+#endif
 
-  gdk_window_set_events (gtk_widget_get_window (widget),
-                         gdk_window_get_events (gtk_widget_get_window (widget)) |
-                         GDK_BUTTON_PRESS_MASK |
-                         GDK_BUTTON_RELEASE_MASK |
-                         GDK_POINTER_MOTION_MASK);
+static void
+hijacked_scrollbar_map (GtkWidget *widget)
+{
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
 
-  if (priv->filter.proximity)
-    add_window_filter (scrollbar);
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
 
-  g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
-                    G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+      (* widget_class_map) (widget);
 
-  calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+#ifdef USE_GTK3
+      /* On map, check for the active window. */
+      if (!is_backdrop_window (GTK_WIDGET (scrollbar)))
+        {
+          /* Stops potential running timeout. */
+          if (priv->source_deactivate_bar_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_bar_id);
+              priv->source_deactivate_bar_id = 0;
+            }
 
-  os_bar_set_parent (priv->bar, widget);
+          priv->active_window = TRUE;
+        }
+      else
+        priv->active_window = FALSE;
+
+      if (!is_insensitive (scrollbar))
+        {
+          if (!priv->active_window)
+            {
+              gint x, y;
+
+              window_get_pointer (gtk_widget_get_window (widget), &x, &y, NULL);
+
+              /* When the scrollbar appears on screen (mapped),
+               * for example when switching notebook page,
+               * check the position of the pointer
+               * and set the state accordingly. */
+              bar_set_state_from_pointer (scrollbar, x, y);
+            }
+          else
+            {
+              /* On map-event of an active window,
+               * the bar should be active. */
+              priv->deactivable_bar = FALSE;
+              os_bar_set_active (priv->bar, TRUE, FALSE);
+            }
+        }
+#endif
+
+      if (!(priv->state & OS_STATE_FULLSIZE))
+        os_bar_show (priv->bar);
+
+      if (!is_insensitive (scrollbar))
+        {
+          priv->filter.proximity = TRUE;
+          add_window_filter (scrollbar);
+        }
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_map) (widget);
 }
 
 static void
-os_scrollbar_show (GtkWidget *widget)
+hijacked_scrollbar_realize (GtkWidget *widget)
 {
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->show (widget);
+  scrollbar_list = g_slist_prepend (scrollbar_list, widget);
+
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
+
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
+
+      (* widget_class_realize) (widget);
+
+      gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
+
+      gdk_window_set_events (gtk_widget_get_window (widget),
+                             gdk_window_get_events (gtk_widget_get_window (widget)) |
+                             GDK_BUTTON_PRESS_MASK |
+                             GDK_BUTTON_RELEASE_MASK |
+                             GDK_POINTER_MOTION_MASK);
+
+      if (priv->filter.proximity)
+        add_window_filter (scrollbar);
+
+      g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
+                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+
+      calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+
+      os_bar_set_parent (priv->bar, widget);
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_realize) (widget);
+}
+
+static void
+hijacked_scrollbar_show (GtkWidget *widget)
+{
+  if (use_overlay_scrollbar ())
+    {
+      (* widget_class_show) (widget);
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_show) (widget);
 }
 
 /* Retrieve the side of the scrollbar. */
 static void
-retrieve_side (OsScrollbar *scrollbar)
+retrieve_side (GtkScrollbar *scrollbar)
 {
   GtkCornerType corner;
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   corner = GPOINTER_TO_INT (g_object_get_qdata (G_OBJECT (scrollbar), os_quark_placement));
 
@@ -3459,7 +3511,7 @@ retrieve_side (OsScrollbar *scrollbar)
 
 /* Retrieve if the thumb can resize its toplevel window. */
 static void
-retrieve_resizability (OsScrollbar *scrollbar)
+retrieve_resizability (GtkScrollbar *scrollbar)
 {
   GdkWindow *scrollbar_window;
   GdkWindow *toplevel_window;
@@ -3467,7 +3519,7 @@ retrieve_resizability (OsScrollbar *scrollbar)
   gint x, y;
   gint x_pos, y_pos;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* By default, they don't allow resize. */
   priv->allow_resize = FALSE;
@@ -3511,112 +3563,121 @@ retrieve_resizability (OsScrollbar *scrollbar)
 }
 
 static void
-os_scrollbar_size_allocate (GtkWidget    *widget,
-                            GdkRectangle *allocation)
+hijacked_scrollbar_size_allocate (GtkWidget    *widget,
+                                  GdkRectangle *allocation)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
-
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
-
-  /* Get the side, then move thumb and bar accordingly. */
-  retrieve_side (scrollbar);
-
-  priv->trough.x = allocation->x;
-  priv->trough.y = allocation->y;
-  priv->trough.width = allocation->width;
-  priv->trough.height = allocation->height;
-
-  priv->bar_all = *allocation;
-  priv->thumb_all = *allocation;
-
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+  if (use_overlay_scrollbar ())
     {
-      priv->slider.width = THUMB_WIDTH;
-      if (priv->slider.height != MIN (THUMB_HEIGHT, allocation->height))
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
+
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
+
+      /* Get the side, then move thumb and bar accordingly. */
+      retrieve_side (scrollbar);
+
+      priv->trough.x = allocation->x;
+      priv->trough.y = allocation->y;
+      priv->trough.width = allocation->width;
+      priv->trough.height = allocation->height;
+
+      priv->bar_all = *allocation;
+      priv->thumb_all = *allocation;
+
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          priv->slider.height = MIN (THUMB_HEIGHT, allocation->height);
-          os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+          priv->slider.width = THUMB_WIDTH;
+          if (priv->slider.height != MIN (THUMB_HEIGHT, allocation->height))
+            {
+              priv->slider.height = MIN (THUMB_HEIGHT, allocation->height);
+              os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+            }
+
+          if (priv->side == OS_SIDE_RIGHT)
+            priv->bar_all.x = allocation->x - BAR_SIZE;
+
+          priv->bar_all.width = BAR_SIZE;
+
+          priv->thumb_all.width = THUMB_WIDTH;
+
+          if (priv->side == OS_SIDE_RIGHT)
+            priv->thumb_all.x = allocation->x - priv->bar_all.width;
+          else
+            priv->thumb_all.x = allocation->x + priv->bar_all.width - priv->thumb_all.width;
+
+          allocation->width = 0;
+        }
+      else
+        {
+          priv->slider.height = THUMB_WIDTH;
+          if (priv->slider.width != MIN (THUMB_HEIGHT, allocation->width))
+            {
+              priv->slider.width = MIN (THUMB_HEIGHT, allocation->width);
+              os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+            }
+
+          if (priv->side == OS_SIDE_BOTTOM)
+            priv->bar_all.y = allocation->y - BAR_SIZE;
+
+          priv->bar_all.height = BAR_SIZE;
+
+          priv->thumb_all.height = THUMB_WIDTH;
+
+          if (priv->side == OS_SIDE_BOTTOM)
+            priv->thumb_all.y = allocation->y - priv->bar_all.height;
+          else
+            priv->thumb_all.y = allocation->y + priv->bar_all.height - priv->thumb_all.height;
+
+          allocation->height = 0;
         }
 
-      if (priv->side == OS_SIDE_RIGHT)
-        priv->bar_all.x = allocation->x - BAR_SIZE;
-
-      priv->bar_all.width = BAR_SIZE;
-
-      priv->thumb_all.width = THUMB_WIDTH;
-
-      if (priv->side == OS_SIDE_RIGHT)
-        priv->thumb_all.x = allocation->x - priv->bar_all.width;
-      else
-        priv->thumb_all.x = allocation->x + priv->bar_all.width - priv->thumb_all.width;
-
-      allocation->width = 0;
-    }
-  else
-    {
-      priv->slider.height = THUMB_WIDTH;
-      if (priv->slider.width != MIN (THUMB_HEIGHT, allocation->width))
+      if (priv->adjustment != NULL)
         {
-          priv->slider.width = MIN (THUMB_HEIGHT, allocation->width);
-          os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
+          calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+          calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
         }
 
-      if (priv->side == OS_SIDE_BOTTOM)
-        priv->bar_all.y = allocation->y - BAR_SIZE;
+      os_bar_size_allocate (priv->bar, priv->bar_all);
 
-      priv->bar_all.height = BAR_SIZE;
+      move_bar (scrollbar);
 
-      priv->thumb_all.height = THUMB_WIDTH;
+      /* Set resizability. */
+      retrieve_resizability (scrollbar);
 
-      if (priv->side == OS_SIDE_BOTTOM)
-        priv->thumb_all.y = allocation->y - priv->bar_all.height;
-      else
-        priv->thumb_all.y = allocation->y + priv->bar_all.height - priv->thumb_all.height;
+      gtk_widget_set_allocation (widget, allocation);
 
-      allocation->height = 0;
+      return;
     }
 
-  if (priv->adjustment != NULL)
-    {
-      calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
-      calc_layout_slider (scrollbar, gtk_adjustment_get_value (priv->adjustment));
-    }
-
-  os_bar_size_allocate (priv->bar, priv->bar_all);
-
-  move_bar (scrollbar);
-
-  /* Set resizability. */
-  retrieve_resizability (scrollbar);
-
-  gtk_widget_set_allocation (widget, allocation);
+  (* pre_hijacked_scrollbar_size_allocate) (widget, allocation);
 }
 
 /* Set the scrollbar to be insensitive. */
 static void
-set_insensitive (OsScrollbar *scrollbar)
+set_insensitive (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   priv->filter.proximity = FALSE;
   remove_window_filter (scrollbar);
 
+#ifdef USE_GTK3
   os_bar_set_active (priv->bar, FALSE, FALSE);
+#endif
 
   gtk_widget_hide (priv->thumb);
 }
 
 /* Set the scrollbar to be sensitive. */
 static void
-set_sensitive (OsScrollbar *scrollbar)
+set_sensitive (GtkScrollbar *scrollbar)
 {
   OsScrollbarPrivate *priv;
 
-  priv = scrollbar->priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
 
   /* Only add the filter if the scrollbar is mapped.
    * It makes sense to me, if we are missing proximity areas,
@@ -3627,6 +3688,7 @@ set_sensitive (OsScrollbar *scrollbar)
       add_window_filter (scrollbar);
     }
 
+#ifdef USE_GTK3
   if (priv->active_window)
     os_bar_set_active (priv->bar, TRUE, FALSE);
   else if (gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
@@ -3640,16 +3702,97 @@ set_sensitive (OsScrollbar *scrollbar)
        * and set the state accordingly. */
       bar_set_state_from_pointer (scrollbar, x, y);
     }
+#endif
 }
 
 #ifdef USE_GTK3
+/* React on active window changes. */
 static void
-os_scrollbar_state_flags_changed (GtkWidget    *widget,
-                                  GtkStateFlags flags)
+backdrop_state_flag_changed (GtkScrollbar *scrollbar)
 {
-  OsScrollbar *scrollbar;
+  OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (widget);
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  OS_DCHECK (scrollbar != NULL);
+
+  /* Return if the scrollbar is insensitive. */
+  if (is_insensitive (scrollbar))
+    return;
+
+  if (gtk_widget_get_mapped (GTK_WIDGET (scrollbar)))
+    {
+      if (!is_backdrop_window (GTK_WIDGET (scrollbar)))
+        {
+          /* Stops potential running timeout. */
+          if (priv->source_deactivate_bar_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_bar_id);
+              priv->source_deactivate_bar_id = 0;
+            }
+
+          priv->active_window = TRUE;
+
+          priv->deactivable_bar = FALSE;
+          os_bar_set_active (priv->bar, TRUE, TRUE);
+        }
+      else if (priv->active_window)
+        {
+          GdkWindow *parent;
+          GdkWindow *window;
+          const gint64 current_time = g_get_monotonic_time ();
+          const gint64 end_time = priv->present_time + TIMEOUT_PRESENT_WINDOW * 1000;
+
+          priv->active_window = FALSE;
+
+          /* Loop through parent windows until it reaches
+           * either an unknown GdkWindow (NULL),
+           * or the toplevel window. */
+          window = gtk_widget_get_window (GTK_WIDGET (scrollbar));
+          parent = window_at_pointer (window, NULL, NULL);
+          while (parent != NULL)
+            {
+              if (window == parent)
+                break;
+
+              parent = gdk_window_get_parent (parent);
+            }
+
+          if (parent != NULL)
+            {
+              gint x, y;
+
+              window_get_pointer (window, &x, &y, NULL);
+
+              /* When the window is unfocused,
+               * check the position of the pointer
+               * and set the state accordingly. */
+              bar_set_state_from_pointer (scrollbar, x, y);
+            }
+          else
+            {
+              /* If the pointer is outside of the window, set it inactive. */
+              priv->deactivable_bar = TRUE;
+              os_bar_set_active (priv->bar, FALSE, TRUE);
+            }
+
+          if ((current_time > end_time) && priv->thumb != NULL)
+            gtk_widget_hide (priv->thumb);
+        }
+    }
+}
+
+static void
+hijacked_scrollbar_state_flags_changed (GtkWidget    *widget,
+                                        GtkStateFlags flags)
+{
+  GtkScrollbar *scrollbar;
+
+  scrollbar = GTK_SCROLLBAR (widget);
+
+  if ((flags & GTK_STATE_FLAG_BACKDROP) !=
+      (gtk_widget_get_state_flags (widget) & GTK_STATE_FLAG_BACKDROP))
+    backdrop_state_flag_changed (scrollbar);
 
   /* Only set the new state if the right bit changed. */
   if ((flags & GTK_STATE_FLAG_INSENSITIVE) !=
@@ -3663,96 +3806,431 @@ os_scrollbar_state_flags_changed (GtkWidget    *widget,
 }
 #else
 static void
-os_scrollbar_size_request (GtkWidget      *widget,
-                           GtkRequisition *requisition)
+hijacked_scrollbar_size_request (GtkWidget      *widget,
+                                 GtkRequisition *requisition)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
 
-  if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-    requisition->width = 0;
-  else
-    requisition->height = 0;
+      if (priv->orientation == GTK_ORIENTATION_VERTICAL)
+        requisition->width = 0;
+      else
+        requisition->height = 0;
 
-  widget->requisition = *requisition;
+      widget->requisition = *requisition;
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_size_request) (widget, requisition);
 }
 
 static void
-os_scrollbar_state_changed (GtkWidget    *widget,
-                            GtkStateType  state)
+hijacked_scrollbar_state_changed (GtkWidget    *widget,
+                                  GtkStateType  state)
 {
-  OsScrollbar *scrollbar;
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
 
-  scrollbar = OS_SCROLLBAR (widget);
+      scrollbar = GTK_SCROLLBAR (widget);
 
-  if (gtk_widget_get_state (widget) == GTK_STATE_INSENSITIVE)
-    set_insensitive (scrollbar);
-  else
-    set_sensitive (scrollbar);
+      if (gtk_widget_get_state (widget) == GTK_STATE_INSENSITIVE)
+        set_insensitive (scrollbar);
+      else
+        set_sensitive (scrollbar);
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_state_changed) (widget, state);
 }
 #endif
 
 static void
-os_scrollbar_unmap (GtkWidget *widget)
+hijacked_scrollbar_unmap (GtkWidget *widget)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
 
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
 
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unmap (widget);
+      (* widget_class_unmap) (widget);
 
-  os_bar_hide (priv->bar);
+      os_bar_hide (priv->bar);
 
-  gtk_widget_hide (priv->thumb);
+      gtk_widget_hide (priv->thumb);
 
-  priv->filter.proximity = FALSE;
-  remove_window_filter (scrollbar);
+      priv->filter.proximity = FALSE;
+      remove_window_filter (scrollbar);
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_unmap) (widget);
 }
 
 static void
-os_scrollbar_unrealize (GtkWidget *widget)
+hijacked_scrollbar_unrealize (GtkWidget *widget)
 {
-  OsScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
+  scrollbar_list = g_slist_remove (scrollbar_list, widget);
 
-  scrollbar = OS_SCROLLBAR (widget);
-  priv = scrollbar->priv;
+  if (use_overlay_scrollbar ())
+    {
+      GtkScrollbar *scrollbar;
+      OsScrollbarPrivate *priv;
 
-  os_bar_hide (priv->bar);
+      scrollbar = GTK_SCROLLBAR (widget);
+      priv = get_private (widget);
 
-  gtk_widget_hide (priv->thumb);
+      os_bar_hide (priv->bar);
 
-  priv->filter.running = FALSE;
-  gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
+      /* There could be a race where the window is unrealized while
+       * the pointer just reached the proximity area and started the timeout,
+       * protect against it. */
+      if (priv->source_show_thumb_id != 0)
+        {
+          g_source_remove (priv->source_show_thumb_id);
+          priv->source_show_thumb_id = 0;
+        }
 
-  g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
-                                        G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+      gtk_widget_hide (priv->thumb);
 
-  os_bar_set_parent (priv->bar, NULL);
+      priv->filter.running = FALSE;
+      gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
 
-  GTK_WIDGET_CLASS (g_type_class_peek (GTK_TYPE_WIDGET))->unrealize (widget);
+      g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
+                                            G_CALLBACK (toplevel_configure_event_cb), scrollbar);
+
+      os_bar_set_parent (priv->bar, NULL);
+
+      (* widget_class_unrealize) (widget);
+
+      return;
+    }
+
+  (* pre_hijacked_scrollbar_unrealize) (widget);
 }
 
-/* Public functions. */
-
-/**
- * os_scrollbar_new:
- * @orientation: the #GtkOrientation
- * @adjustment: the pointer to the #GtkAdjustment to connect
- *
- * Creates a new scrollbar instance.
- *
- * Returns: the new scrollbar instance.
- **/
-GtkWidget*
-os_scrollbar_new (GtkOrientation  orientation,
-                  GtkAdjustment  *adjustment)
+/* Check if the application is blacklisted. */
+static gboolean
+app_is_blacklisted (void)
 {
-  return g_object_new (OS_TYPE_SCROLLBAR, "orientation", orientation,
-                       "adjustment",  adjustment, NULL);
+  /* Black-list of program names retrieved with g_get_prgname (). */
+  static const gchar *blacklist[] = {
+    "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
+    "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
+    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "firefox-trunk", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.6", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.7", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
+    "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
+    "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
+    "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
+    "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
+    "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
+    "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
+    "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+  };
+
+  GModule *module;
+  gpointer func;
+  gint32 i;
+  const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+  const gchar *prgname;
+  const gchar *flag;
+
+  prgname = g_get_prgname ();
+  flag = g_getenv ("LIBOVERLAY_SCROLLBAR");
+
+  /* Check LIBOVERLAY_SCROLLBAR. */
+  if (flag != NULL)
+    {
+      /* Blacklist if is set to 0. */
+      if (*flag == '\0' || *flag == '0')
+        return TRUE;
+
+      /* Special mode to override the blacklist. */
+      if (g_strcmp0 (flag, "override-blacklist") == 0)
+        return FALSE;
+    }
+
+  /* Black-list of symbols. */
+  module = g_module_open (NULL, 0);
+  /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847966 */
+  if (g_module_symbol (module, "qt_startup_hook", &func))
+    {
+      g_module_close (module);
+      return TRUE;
+    }
+  g_module_close (module);
+
+  /* Black-list of program names. */
+  for (i = 0; i < nr_programs; i++)
+    if (g_strcmp0 (blacklist[i], prgname) == 0)
+      return TRUE;
+
+  return FALSE;
+}
+
+/* Patch GtkScrollbar vtable. */
+static void
+patch_scrollbar_class_vtable (GType type)
+{
+  GObjectClass *object_class;
+  GtkWidgetClass *widget_class;
+  GType *children;
+  guint n, i;
+
+  /* Patch vtable, assigning new pointers to vtable functions. */
+  object_class = g_type_class_ref (type);
+  widget_class = g_type_class_ref (type);
+
+  if (object_class->dispose == pre_hijacked_scrollbar_dispose)
+    object_class->dispose = hijacked_scrollbar_dispose;
+
+#ifdef USE_GTK3
+  if (widget_class->draw == pre_hijacked_scrollbar_draw)
+    widget_class->draw = hijacked_scrollbar_draw;
+  if (widget_class->get_preferred_width == pre_hijacked_scrollbar_get_preferred_width)
+    widget_class->get_preferred_width = hijacked_scrollbar_get_preferred_width;
+  if (widget_class->get_preferred_height == pre_hijacked_scrollbar_get_preferred_height)
+    widget_class->get_preferred_height = hijacked_scrollbar_get_preferred_height;
+  if (widget_class->state_flags_changed == pre_hijacked_scrollbar_state_flags_changed)
+    widget_class->state_flags_changed = hijacked_scrollbar_state_flags_changed;
+#else
+  if (widget_class->expose_event == pre_hijacked_scrollbar_expose_event)
+    widget_class->expose_event = hijacked_scrollbar_expose_event;
+  if (widget_class->size_request == pre_hijacked_scrollbar_size_request)
+    widget_class->size_request = hijacked_scrollbar_size_request;
+  if (widget_class->state_changed == pre_hijacked_scrollbar_state_changed)
+    widget_class->state_changed = hijacked_scrollbar_state_changed;
+#endif
+  if (widget_class->grab_notify == pre_hijacked_scrollbar_grab_notify)
+    widget_class->grab_notify = hijacked_scrollbar_grab_notify;
+  if (widget_class->hide == pre_hijacked_scrollbar_hide)
+    widget_class->hide = hijacked_scrollbar_hide;
+  if (widget_class->map == pre_hijacked_scrollbar_map)
+    widget_class->map = hijacked_scrollbar_map;
+  if (widget_class->realize == pre_hijacked_scrollbar_realize)
+    widget_class->realize = hijacked_scrollbar_realize;
+  if (widget_class->show == pre_hijacked_scrollbar_show)
+    widget_class->show = hijacked_scrollbar_show;
+  if (widget_class->size_allocate == pre_hijacked_scrollbar_size_allocate)
+    widget_class->size_allocate = hijacked_scrollbar_size_allocate;
+  if (widget_class->unmap == pre_hijacked_scrollbar_unmap)
+    widget_class->unmap = hijacked_scrollbar_unmap;
+  if (widget_class->unrealize == pre_hijacked_scrollbar_unrealize)
+    widget_class->unrealize = hijacked_scrollbar_unrealize;
+
+  /* Recurse GType children. */
+  children = g_type_children (type, &n);
+  for (i = 0; i < n; i++)
+    patch_scrollbar_class_vtable (children[i]);
+  g_free (children);
+}
+
+/* Load custom style for overlay scrollbar. */
+static void
+custom_style_load (void)
+{
+#ifdef USE_GTK3
+  gtk_style_context_add_provider_for_screen (gdk_display_get_default_screen (gdk_display_get_default ()),
+                                             GTK_STYLE_PROVIDER (provider),
+                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+#else
+  gtk_rc_parse_string ("style \"overlay-scrollbar\" {\n"
+                       "    GtkScrolledWindow::scrollbar-spacing = 0\n"
+                       "    GtkScrolledWindow::scrollbars-within-bevel = 1\n"
+                       " }\n"
+                       "\n"
+                       "class \"GtkScrolledWindow\" style \"overlay-scrollbar\"");
+#endif
+}
+
+#ifdef USE_GTK3
+/* Unload custom style for overlay scrollbar. */
+static void
+custom_style_unload (void)
+{
+  gtk_style_context_remove_provider_for_screen (gdk_display_get_default_screen (gdk_display_get_default ()),
+                                                GTK_STYLE_PROVIDER (provider));
+}
+#endif
+
+/* Unload all scrollbars. */
+static void
+scrollbar_mode_changed_unload_gfunc (gpointer data,
+                                     gpointer user_data)
+{
+  GtkWidget *widget;
+  GSList **mapped_list;
+
+  widget = GTK_WIDGET (data);
+  mapped_list = user_data;
+
+  /* The following unrealize will unmap the widget:
+   * create a list of mapped scrollbars to remap them afterwards. */
+  if (gtk_widget_get_mapped (widget))
+    *mapped_list = g_slist_prepend (*mapped_list, widget);
+
+  gtk_widget_unrealize (widget);
+}
+
+/* Load all scrollbars. */
+static void
+scrollbar_mode_changed_load_gfunc (gpointer data,
+                                   gpointer user_data)
+{
+  gtk_widget_realize (GTK_WIDGET (data));
+}
+
+/* Complete load of all scrollbars. */
+static void
+scrollbar_mode_changed_load_end_gfunc (gpointer data,
+                                       gpointer user_data)
+{
+  GtkWidget *widget;
+
+  widget = GTK_WIDGET (data);
+
+  /* Remap the list of scrollbars that were unmapped by the unload gfunc.
+   * Request a resize to update widget allocation. */
+  gtk_widget_map (widget);
+  gtk_widget_queue_resize (widget);
+}
+
+/* Callback called when scrollbar-mode changes. */
+static void
+scrollbar_mode_changed_cb (GObject    *object,
+                           GParamSpec *pspec,
+                           gpointer    user_data)
+{
+  GSettings *settings;
+  GSList *tmp_list, *mapped_list;
+
+  settings = G_SETTINGS (object);
+  tmp_list = g_slist_copy (scrollbar_list);
+
+  /* Initialize the pointer by initializing its variable. */
+  mapped_list = NULL;
+
+  /* Unload all scrollbars, using previous scrollbar_mode. */
+  g_slist_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, &mapped_list);
+
+  /* Update the scrollbar_mode variable. */
+  scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+
+#ifdef USE_GTK3
+  /* Load or unload custom style for overlay scrollbar. */
+  if (use_overlay_scrollbar ())
+    custom_style_load ();
+  else
+    custom_style_unload ();
+#else
+  /* Gtk+ 2.0 doesn't support dynamic loading of styles.
+   * Please contact me in case I'm wrong,
+   * and I'll add the required bits here. */
+#endif
+
+  /* Load all scrollbars, using new scrollbar_mode. */
+  g_slist_foreach (tmp_list, scrollbar_mode_changed_load_gfunc, NULL);
+
+  /* Map the scrollbars that were unmapped by unload. */
+  g_slist_foreach (mapped_list, scrollbar_mode_changed_load_end_gfunc, NULL);
+
+  g_slist_free (mapped_list);
+  g_slist_free (tmp_list);
+}
+
+void
+gtk_module_init (void)
+{
+  GObjectClass *object_class;
+  GtkWidgetClass *widget_class;
+  GSettings *settings;
+
+  /* Exit if the application is blacklisted. */
+  if (app_is_blacklisted ())
+    return;
+
+  /* Initialize static variables. */
+  net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
+  unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
+  os_quark_placement = g_quark_from_static_string ("os_quark_placement");
+  os_quark_qdata = g_quark_from_static_string ("os-scrollbar");
+  os_workarea = cairo_region_create ();
+
+  /* Store GtkScrollbar vfunc pointers. */
+  object_class = g_type_class_ref (GTK_TYPE_SCROLLBAR);
+  widget_class = g_type_class_ref (GTK_TYPE_SCROLLBAR);
+
+  pre_hijacked_scrollbar_dispose  = object_class->dispose;
+
+#ifdef USE_GTK3
+  pre_hijacked_scrollbar_draw                 = widget_class->draw;
+  pre_hijacked_scrollbar_get_preferred_width  = widget_class->get_preferred_width;
+  pre_hijacked_scrollbar_get_preferred_height = widget_class->get_preferred_height;
+  pre_hijacked_scrollbar_state_flags_changed  = widget_class->state_flags_changed;
+#else
+  pre_hijacked_scrollbar_expose_event         = widget_class->expose_event;
+  pre_hijacked_scrollbar_size_request         = widget_class->size_request;
+  pre_hijacked_scrollbar_state_changed        = widget_class->state_changed;
+#endif
+  pre_hijacked_scrollbar_grab_notify          = widget_class->grab_notify;
+  pre_hijacked_scrollbar_hide                 = widget_class->hide;
+  pre_hijacked_scrollbar_map                  = widget_class->map;
+  pre_hijacked_scrollbar_realize              = widget_class->realize;
+  pre_hijacked_scrollbar_show                 = widget_class->show;
+  pre_hijacked_scrollbar_size_allocate        = widget_class->size_allocate;
+  pre_hijacked_scrollbar_unmap                = widget_class->unmap;
+  pre_hijacked_scrollbar_unrealize            = widget_class->unrealize;
+
+  /* Store GtkWidget vfunc pointers. */
+  widget_class = g_type_class_ref (GTK_TYPE_WIDGET);
+
+  widget_class_hide      = widget_class->hide;
+  widget_class_map       = widget_class->map;
+  widget_class_realize   = widget_class->realize;
+  widget_class_show      = widget_class->show;
+  widget_class_unmap     = widget_class->unmap;
+  widget_class_unrealize = widget_class->unrealize;
+
+  /* Patch GtkScrollbar vtable. */
+  patch_scrollbar_class_vtable (GTK_TYPE_SCROLLBAR);
+
+  /* Connect to gsettings. */
+  settings = g_settings_new ("com.canonical.desktop.interface");
+  g_signal_connect (settings, "changed::scrollbar-mode",
+                    G_CALLBACK (scrollbar_mode_changed_cb), NULL);
+  scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+
+#ifdef USE_GTK3
+  /* Initialize styling bits. */
+  provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_data (GTK_CSS_PROVIDER (provider),
+                                   "* {\n"
+                                   "    -GtkScrolledWindow-scrollbar-spacing: 0;\n"
+                                   "    -GtkScrolledWindow-scrollbars-within-bevel: 1;\n"
+                                   "}\n", -1, NULL);
+#endif
+
+  /* Load custom overlay scrollbar style. */
+  if (use_overlay_scrollbar ())
+    custom_style_load ();
 }

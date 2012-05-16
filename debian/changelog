@@ -1,3 +1,19 @@
+overlay-scrollbar (0.2.16+r348-0ubuntu1) UNRELEASED; urgency=low
+
+  * New snapshot r348 from trunk
+  * debian/control
+    - removed -dev and lib packages
+    - make new gtk module packages replace and conflict shared lib 
+      and devel packages << 0.2.16+r348
+  * debian/*.install
+    - no longer a shared library, installs as a gtk module
+  * debian/*.symbols
+    - removed, no longer built as a shared lib
+  * debian/ayatana-scrollbar.py
+    - removed apport hook, no longer useful now as a proper gtk module
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 May 2012 16:11:43 -0400
+
 overlay-scrollbar (0.2.16-0ubuntu1) precise; urgency=low
 
   * New upstream release.
@@ -49,6 +65,38 @@ overlay-scrollbar (0.2.13-0ubuntu1) precise; urgency=low
       external, scrolled window (LP: #868739)
 
  -- Ken VanDine <ken.vandine@canonical.com>  Wed, 07 Dec 2011 12:32:50 -0500
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb5) precise; urgency=low
+
+  * build for precise
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Sun, 20 Nov 2011 13:04:08 -0500
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb4) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 17 Oct 2011 12:10:15 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb3) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 12 Oct 2011 12:25:07 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb2) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+  * debian/ayatana-scrollbar.py
+    - s/pager/bar/g
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 07 Oct 2011 12:12:35 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb1) oneiric; urgency=low
+
+  * experimental new thumb functionality
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 06 Oct 2011 14:44:46 -0400
 
 overlay-scrollbar (0.2.11-0ubuntu1) oneiric; urgency=low
 

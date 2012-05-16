@@ -1,3 +1,0 @@
-debian/tmp/gtk2/usr/include/* /usr/include/
-debian/tmp/gtk2/usr/lib/pkgconfig /usr/lib/
-debian/tmp/gtk2/usr/lib/liboverlay-scrollbar-0*.so /usr/lib/
