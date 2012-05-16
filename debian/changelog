@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.16+r348-0precise2) precise; urgency=low
+
+  * debian/control
+    - Breaks/Replaces the -dev packages too
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 May 2012 09:51:30 -0400
+
 overlay-scrollbar (0.2.16+r348-0precise1) precise; urgency=low
 
   * New snapshot r348 from trunk
