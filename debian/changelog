@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.16+r348-0precise3) precise; urgency=low
+
+  * debian/control
+    - use a Conflicts instead of Breaks to handle dist-upgrade
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 May 2012 16:09:51 -0400
+
 overlay-scrollbar (0.2.16+r348-0precise2) precise; urgency=low
 
   * debian/control

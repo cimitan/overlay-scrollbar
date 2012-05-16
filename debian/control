@@ -20,7 +20,7 @@ Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk-3-0
 Replaces: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348)
-Breaks: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348)
+Conflicts: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348)
 Description: GTK 3 module for overlay scrollbars
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
@@ -30,7 +30,7 @@ Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libgtk2.0-0, libgtk2.0-0 
 Replaces: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348)
-Breaks: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348)
+Conflicts: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348)
 Description: GTK 2 module for overlay scrollbars
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
