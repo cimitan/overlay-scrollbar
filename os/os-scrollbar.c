@@ -466,7 +466,7 @@ calc_workarea (Display *display,
         {
           guint count;
           guint i;
-          
+
           count = nitems / 4;
 
           for (i = 0; i < count; i++)
@@ -821,11 +821,11 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  /* The x - 1 coordinate shift is done 
+  /* The x - 1 coordinate shift is done
    * to calculate monitor boundaries. */
   monitor_x = priv->side == OS_SIDE_LEFT ? x : x - 1;
 
-  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -840,6 +840,8 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   screen_x = rect.x;
   screen_width = rect.x + rect.width;
+
+  OS_DCHECK (os_workarea);
 
   if (!cairo_region_is_empty (os_workarea))
     {
@@ -964,11 +966,11 @@ sanitize_y (GtkScrollbar *scrollbar,
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  /* The y - 1 coordinate shift is done 
+  /* The y - 1 coordinate shift is done
    * to calculate monitor boundaries. */
   monitor_y = priv->side == OS_SIDE_TOP ? y : y - 1;
 
-  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, monitor_y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -983,6 +985,8 @@ sanitize_y (GtkScrollbar *scrollbar,
 
   screen_y = rect.y;
   screen_height = rect.y + rect.height;
+
+  OS_DCHECK (os_workarea);
 
   if (!cairo_region_is_empty (os_workarea))
     {
