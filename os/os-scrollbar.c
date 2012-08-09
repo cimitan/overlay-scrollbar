@@ -155,6 +155,8 @@ static GQuark os_quark_qdata = 0;
 static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
 static cairo_region_t *os_workarea = NULL;
 
+void gtk_module_init (void);
+
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static OsScrollbarPrivate* get_private (GtkWidget *widget);
@@ -194,10 +196,8 @@ static void (* pre_hijacked_scrollbar_size_allocate) (GtkWidget *widget, GdkRect
 static void (* pre_hijacked_scrollbar_unmap) (GtkWidget *widget);
 static void (* pre_hijacked_scrollbar_unrealize) (GtkWidget *widget);
 static void (* pre_hijacked_scrollbar_dispose) (GObject *object);
-static void (* pre_hijacked_scrollbar_finalize) (GObject *object);
 
 /* Hijacked GtkScrollbar vfunc pointers. */
-static void hijacked_scrollbar_finalize (GObject *object);
 #ifdef USE_GTK3
 static gboolean hijacked_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
 static void hijacked_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
@@ -466,7 +466,7 @@ calc_workarea (Display *display,
         {
           guint count;
           guint i;
-          
+
           count = nitems / 4;
 
           for (i = 0; i < count; i++)
@@ -634,6 +634,9 @@ get_private (GtkWidget *widget)
 
           /* Create the static linked list prepending the object. */
           os_root_list = g_slist_prepend (os_root_list, widget);
+
+          if (os_workarea == NULL)
+            os_workarea = cairo_region_create ();
 
           /* Apply the root_filter_func. */
           screen = gtk_widget_get_screen (widget);
@@ -821,11 +824,11 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  /* The x - 1 coordinate shift is done 
+  /* The x - 1 coordinate shift is done
    * to calculate monitor boundaries. */
   monitor_x = priv->side == OS_SIDE_LEFT ? x : x - 1;
 
-  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -964,11 +967,11 @@ sanitize_y (GtkScrollbar *scrollbar,
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  /* The y - 1 coordinate shift is done 
+  /* The y - 1 coordinate shift is done
    * to calculate monitor boundaries. */
   monitor_y = priv->side == OS_SIDE_TOP ? y : y - 1;
 
-  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar)); 
+  screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, monitor_y);
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -1855,10 +1858,8 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
                              gpointer          user_data)
 {
   GtkScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
 
   scrollbar = GTK_SCROLLBAR (user_data);
-  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
   /* Gtk+ 3.3.18 emits more GdkEventCrossing
@@ -3247,7 +3248,7 @@ hijacked_scrollbar_draw (GtkWidget *widget,
   if (use_overlay_scrollbar ())
     return TRUE;
 
-  (* pre_hijacked_scrollbar_draw) (widget, cr);
+  return (* pre_hijacked_scrollbar_draw) (widget, cr);
 }
 #else
 static gboolean
@@ -3257,7 +3258,7 @@ hijacked_scrollbar_expose_event (GtkWidget      *widget,
   if (use_overlay_scrollbar ())
     return TRUE;
 
-  (* pre_hijacked_scrollbar_expose_event) (widget, event);
+  return (* pre_hijacked_scrollbar_expose_event) (widget, event);
 }
 #endif
 
@@ -4174,7 +4175,6 @@ gtk_module_init (void)
   unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
   os_quark_placement = g_quark_from_static_string ("os_quark_placement");
   os_quark_qdata = g_quark_from_static_string ("os-scrollbar");
-  os_workarea = cairo_region_create ();
 
   /* Store GtkScrollbar vfunc pointers. */
   object_class = g_type_class_ref (GTK_TYPE_SCROLLBAR);

@@ -58,12 +58,9 @@ os_animation_class_init (OsAnimationClass *class)
 static void
 os_animation_init (OsAnimation *animation)
 {
-  OsAnimationPrivate *priv;
-
   animation->priv = G_TYPE_INSTANCE_GET_PRIVATE (animation,
                                                  OS_TYPE_ANIMATION,
                                                  OsAnimationPrivate);
-  priv = animation->priv;
 }
 
 static void

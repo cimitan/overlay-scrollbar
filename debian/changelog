@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.16+r353-0ubuntu1) UNRELEASED; urgency=low
+
+  * Updated to r353, fixes a segfault issue (lp: #1012698)
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Thu, 09 Aug 2012 15:54:51 +0200
+
 overlay-scrollbar (0.2.16+r348-0ubuntu1) quantal; urgency=low
 
   * New snapshot r348 from trunk
