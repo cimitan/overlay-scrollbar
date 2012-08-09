@@ -635,6 +635,9 @@ get_private (GtkWidget *widget)
           /* Create the static linked list prepending the object. */
           os_root_list = g_slist_prepend (os_root_list, widget);
 
+          if (os_workarea == NULL)
+            os_workarea = cairo_region_create ();
+
           /* Apply the root_filter_func. */
           screen = gtk_widget_get_screen (widget);
           root = gdk_screen_get_root_window (screen);
@@ -841,8 +844,6 @@ sanitize_x (GtkScrollbar *scrollbar,
   screen_x = rect.x;
   screen_width = rect.x + rect.width;
 
-  OS_DCHECK (os_workarea != NULL);
-
   if (!cairo_region_is_empty (os_workarea))
     {
       cairo_region_t *monitor_workarea;
@@ -985,8 +986,6 @@ sanitize_y (GtkScrollbar *scrollbar,
 
   screen_y = rect.y;
   screen_height = rect.y + rect.height;
-
-  OS_DCHECK (os_workarea != NULL);
 
   if (!cairo_region_is_empty (os_workarea))
     {
@@ -3249,9 +3248,7 @@ hijacked_scrollbar_draw (GtkWidget *widget,
   if (use_overlay_scrollbar ())
     return TRUE;
 
-  (* pre_hijacked_scrollbar_draw) (widget, cr);
-
-  return FALSE;
+  return (* pre_hijacked_scrollbar_draw) (widget, cr);
 }
 #else
 static gboolean
@@ -3261,9 +3258,7 @@ hijacked_scrollbar_expose_event (GtkWidget      *widget,
   if (use_overlay_scrollbar ())
     return TRUE;
 
-  (* pre_hijacked_scrollbar_expose_event) (widget, event);
-
-  return FALSE;
+  return (* pre_hijacked_scrollbar_expose_event) (widget, event);
 }
 #endif
 
@@ -4180,7 +4175,6 @@ gtk_module_init (void)
   unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
   os_quark_placement = g_quark_from_static_string ("os_quark_placement");
   os_quark_qdata = g_quark_from_static_string ("os-scrollbar");
-  os_workarea = cairo_region_create ();
 
   /* Store GtkScrollbar vfunc pointers. */
   object_class = g_type_class_ref (GTK_TYPE_SCROLLBAR);
