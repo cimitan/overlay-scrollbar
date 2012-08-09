@@ -155,8 +155,6 @@ static GQuark os_quark_qdata = 0;
 static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
 static cairo_region_t *os_workarea = NULL;
 
-void gtk_module_init (void);
-
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static OsScrollbarPrivate* get_private (GtkWidget *widget);
@@ -4158,6 +4156,9 @@ scrollbar_mode_changed_cb (GObject    *object,
   g_slist_free (mapped_list);
   g_slist_free (tmp_list);
 }
+
+/* Suppress the warning 'missing-declarations'. */
+void gtk_module_init (void);
 
 void
 gtk_module_init (void)
