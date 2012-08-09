@@ -155,6 +155,8 @@ static GQuark os_quark_qdata = 0;
 static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
 static cairo_region_t *os_workarea = NULL;
 
+void gtk_module_init (void);
+
 static void adjustment_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static void adjustment_value_changed_cb (GtkAdjustment *adjustment, gpointer user_data);
 static OsScrollbarPrivate* get_private (GtkWidget *widget);
@@ -194,10 +196,8 @@ static void (* pre_hijacked_scrollbar_size_allocate) (GtkWidget *widget, GdkRect
 static void (* pre_hijacked_scrollbar_unmap) (GtkWidget *widget);
 static void (* pre_hijacked_scrollbar_unrealize) (GtkWidget *widget);
 static void (* pre_hijacked_scrollbar_dispose) (GObject *object);
-static void (* pre_hijacked_scrollbar_finalize) (GObject *object);
 
 /* Hijacked GtkScrollbar vfunc pointers. */
-static void hijacked_scrollbar_finalize (GObject *object);
 #ifdef USE_GTK3
 static gboolean hijacked_scrollbar_draw (GtkWidget *widget, cairo_t *cr);
 static void hijacked_scrollbar_get_preferred_width (GtkWidget *widget, gint *minimal_width, gint *natural_width);
@@ -841,7 +841,7 @@ sanitize_x (GtkScrollbar *scrollbar,
   screen_x = rect.x;
   screen_width = rect.x + rect.width;
 
-  OS_DCHECK (os_workarea);
+  OS_DCHECK (os_workarea != NULL);
 
   if (!cairo_region_is_empty (os_workarea))
     {
@@ -986,7 +986,7 @@ sanitize_y (GtkScrollbar *scrollbar,
   screen_y = rect.y;
   screen_height = rect.y + rect.height;
 
-  OS_DCHECK (os_workarea);
+  OS_DCHECK (os_workarea != NULL);
 
   if (!cairo_region_is_empty (os_workarea))
     {
@@ -1859,10 +1859,8 @@ thumb_enter_notify_event_cb (GtkWidget        *widget,
                              gpointer          user_data)
 {
   GtkScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
 
   scrollbar = GTK_SCROLLBAR (user_data);
-  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
   /* Gtk+ 3.3.18 emits more GdkEventCrossing
@@ -3252,6 +3250,8 @@ hijacked_scrollbar_draw (GtkWidget *widget,
     return TRUE;
 
   (* pre_hijacked_scrollbar_draw) (widget, cr);
+
+  return FALSE;
 }
 #else
 static gboolean
@@ -3262,6 +3262,8 @@ hijacked_scrollbar_expose_event (GtkWidget      *widget,
     return TRUE;
 
   (* pre_hijacked_scrollbar_expose_event) (widget, event);
+
+  return FALSE;
 }
 #endif
 
