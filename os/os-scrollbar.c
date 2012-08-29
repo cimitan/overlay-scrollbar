@@ -3981,7 +3981,7 @@ app_is_blacklisted (void)
     if (g_strcmp0 (blacklist[i], prgname) == 0)
       return TRUE;
   for (i = 0; i < nr_programs_prefix; i++)
-    if (g_str_has_prefix (prgname, blacklist_prefix[i]) == 0)
+    if (g_str_has_prefix (prgname, blacklist_prefix[i]))
       return TRUE;
 
   return FALSE;
