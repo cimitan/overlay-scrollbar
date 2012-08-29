@@ -3927,30 +3927,27 @@ app_is_blacklisted (void)
   static const gchar *blacklist[] = {
     "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
-    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
-    "emacs23", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
-    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
-    "firefox-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
-    "firefox-trunk", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
-    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
-    "gimp-2.6", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
-    "gimp-2.7", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
-    "gimp-2.8", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
     "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
     "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
     "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
     "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
     "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
-    "thunderbird-bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
     "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
     "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
     "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+  };
+  static const gchar *blacklist_prefix[] = {
+    "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
+    "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
+    "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "thunderbird", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
   };
 
   GModule *module;
   gpointer func;
   gint32 i;
   const gint32 nr_programs = G_N_ELEMENTS (blacklist);
+  const gint32 nr_programs_prefix = G_N_ELEMENTS (blacklist_prefix);
   const gchar *prgname;
   const gchar *flag;
 
@@ -3982,6 +3979,9 @@ app_is_blacklisted (void)
   /* Black-list of program names. */
   for (i = 0; i < nr_programs; i++)
     if (g_strcmp0 (blacklist[i], prgname) == 0)
+      return TRUE;
+  for (i = 0; i < nr_programs_prefix; i++)
+    if (g_str_has_prefix (prgname, blacklist_prefix[i]) == 0)
       return TRUE;
 
   return FALSE;
