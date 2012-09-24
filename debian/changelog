@@ -1,0 +1,421 @@
+overlay-scrollbar (0.2.16+r353-0ubuntu2) quantal; urgency=low
+
+  * debian/control: 
+    - drop hardcoded libgtk depends and let the shlibs get those
+    - let the -gtk packages depends on the overlay-scrollbar binary which 
+      has the schemas glib schemas
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Fri, 24 Aug 2012 19:03:45 +0200
+
+overlay-scrollbar (0.2.16+r353-0ubuntu1) quantal; urgency=low
+
+  * Updated to r353, fixes a segfault issue (lp: #1012698)
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Thu, 09 Aug 2012 15:56:42 +0200
+
+overlay-scrollbar (0.2.16+r348-0ubuntu1) quantal; urgency=low
+
+  * New snapshot r348 from trunk
+  * debian/control
+    - removed -dev and lib packages
+    - make new gtk module packages replace and conflict shared lib 
+      and devel packages << 0.2.16+r348
+  * debian/*.install
+    - no longer a shared library, installs as a gtk module
+  * debian/*.symbols
+    - removed, no longer built as a shared lib
+  * debian/ayatana-scrollbar.py
+    - removed apport hook, no longer useful now as a proper gtk module
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 May 2012 16:34:53 -0400
+
+overlay-scrollbar (0.2.16-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+    - Always use bg[SELECTED] for the bar in Gtk+ 2.
+    - nautilus crashed with SIGSEGV in show_thumb_cb (LP: #907111)
+    - Low visibility impaired users can't easily disable overlay 
+      scrollbar (LP: #934123)
+    - scroll *on* thumb not functional (LP: #951121)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 21 Mar 2012 11:41:13 -0400
+
+overlay-scrollbar (0.2.15-0ubuntu1) precise; urgency=low
+
+  * New upstream release:
+    - Resize using thumbs.   
+    - Fixes for Coverity bugs and support new Gtk+ versions.
+      (lp: #937396, #937395)
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Wed, 22 Feb 2012 21:37:28 +0100
+
+overlay-scrollbar (0.2.14-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+  * debian/control
+    - bumped build depends for libgtk-3-dev to >= 3.3.6-0ubuntu1
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 17 Jan 2012 11:11:24 -0500
+
+overlay-scrollbar (0.2.13-0ubuntu2) precise; urgency=low
+
+  * os/os-bar.c
+    - cherry picked fix for crasher when gtk theme changes (LP: #902928)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 12 Dec 2011 11:39:45 -0500
+
+overlay-scrollbar (0.2.13-0ubuntu1) precise; urgency=low
+
+  * New upstream release.
+    - Proximity area enlarged to the whole page. (LP: #758576)
+    - New thumb positioning according to mouse pointer and bar position.
+    - The thumb is more freely movable while touching an edge.
+    - Press Control while dragging to enter fine-scroll mode.
+    - Press Control while doing page up/down to do step up/down instead.
+    - Jumping is now triggered via Middle Click or via Shift + Button1.
+    - Can no longer jump to a specific position in a 
+      document/window (LP: #752338)
+    - Overlay ScrollBar not easily findable in a large document (LP: #763247)
+    - Overlay scrollbars rendered in the wrong place when inside another, 
+      external, scrolled window (LP: #868739)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 07 Dec 2011 12:32:50 -0500
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb5) precise; urgency=low
+
+  * build for precise
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Sun, 20 Nov 2011 13:04:08 -0500
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb4) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 17 Oct 2011 12:10:15 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb3) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 12 Oct 2011 12:25:07 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb2) oneiric; urgency=low
+
+  * merged latest changes from the experimental branch
+  * debian/ayatana-scrollbar.py
+    - s/pager/bar/g
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 07 Oct 2011 12:12:35 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1+newthumb1) oneiric; urgency=low
+
+  * experimental new thumb functionality
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 06 Oct 2011 14:44:46 -0400
+
+overlay-scrollbar (0.2.11-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    Updated blacklist:
+    - added gimp-2.6, gimp-2.7, gimp-2.8.
+    - removed apport-gtk, codeblocks, codelite, pgadmin3, update-manager.
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 13 Sep 2011 15:50:02 +0200
+
+overlay-scrollbar (0.2.10-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Thu, 08 Sep 2011 21:11:21 +0200
+
+overlay-scrollbar (0.2.9-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Page scroll kinetic should depend on the actual scroll (LP: #838733)
+    - thumb does not always change look when dragged (LP: #838258)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 01 Sep 2011 15:13:05 -0400
+
+overlay-scrollbar (0.2.7-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Blacklist firefox, firefox-trunk, gimp
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 24 Aug 2011 16:31:01 -0400
+
+overlay-scrollbar (0.2.6-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - does not work in some windows (LP: #822806)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 09 Aug 2011 15:56:40 -0400
+
+overlay-scrollbar (0.2.5-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Support insensitive state.
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 14 Jul 2011 15:29:48 -0400
+
+overlay-scrollbar (0.2.4-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - Animate page up and page down.
+    - Fine scroll after paging.
+    - Enable glib assertions on releases.
+    - Fix thumb rendering on page up and down.
+    - disabled the fadeout on scroll over the thumb (LP: #778891)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 08 Jul 2011 12:31:00 -0400
+
+overlay-scrollbar (0.2.3-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+    - New thumb design.
+    - Scrollbars now use Gtk+ colors.
+    - Scrollbars are now less rounded.
+    - Support RTL locales and different scrolled window placements.
+    - Added tolerance to pageup and down buttons before dragging.
+    - Adjusted timings before hiding the thumb.
+    - Shrink the thumb size on small scrolled windows.
+    - Cannot scroll in small areas (LP: #771450)
+    - support left (and top) scrollbar placements (LP: #761138)
+    - Overlay scrollbars do not work in right to left locales (LP: #782022)
+    - emacs23-x crashing in liboverlay-scrollbar-0.2.so.0 (LP: #800387)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 30 Jun 2011 17:45:35 +0100
+
+overlay-scrollbar (0.2.1-0ubuntu2) oneiric; urgency=low
+
+  * debian/control
+    - Added a depends on liboverlay-scrollbar3-0.2-0
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 20 Jun 2011 10:36:32 -0400
+
+overlay-scrollbar (0.2.1-0ubuntu1) oneiric; urgency=low
+
+  * New upstream release.
+  * soname bump for 0.2
+  * debian/control
+    - updated standards version to 3.9.2
+    - Added binaries for gtk3 builds
+    - Added build depends for gtk3
+  * debian/rules
+    - dual build for gtk2 and gtk3
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 16 Jun 2011 13:18:13 -0400
+
+overlay-scrollbar (0.1.12-0ubuntu1) natty-proposed; urgency=low
+
+  * New upstream release.
+    - Updated blacklist:
+      * -deja-dup
+      * -inkscape
+      * -lshw-gtk 
+      * +vmplayer
+    - some apps show grey overlay instead orange even if the window is 
+      focused (LP: #771511)
+    - anjuta doesn't display scrollbar after resetting the layout (LP: #771563)
+  * debian/control
+    - Changed maintainer to ~ubuntu-desktop 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 27 Apr 2011 10:23:24 -0400
+
+overlay-scrollbar (0.1.10-0ubuntu1) natty-proposed; urgency=low
+
+  * New upstream release.
+    - Updated blacklist:
+      * vmware (LP: #770625)
+      * gnucash (LP: #770304)
+      * pgadmin3, codeblocks and codelite (LP: #769232)
+    - liferea and cardapio requires 
+      GDK_POINTER_MOTION_MASK (LP: #769217) (LP: #769460)
+    - liboverlay doesn't work in detached tabs (LP: #769427)
+    - Scrollbar's slider appears away from the mouse (LP: #763707)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Tue, 26 Apr 2011 14:21:57 -0400
+
+overlay-scrollbar (0.1.9-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - stop the animation *after* calling g_source_remove
+    - Call the toplevel_leave_notify_event in the filter func
+    - Use a blacklist instead of a whitelist (LP: #766660)
+    - Add more apps to the blacklist: apport-gtk, Banshee, deja-dup eclipse,
+      inkscape, liferea, lshw-gtk, meld, synaptic, and update-manager
+  * os/os-utils.c
+    - Always return true from the whitelist check (LP: #766660)
+  * debian/overlay-scrollbar.install
+    - Don't install the Xsession script
+  * debian/ayatana-scrollbar.py
+    - Don't add ayatana-scrollbar tag
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 21 Apr 2011 13:33:24 -0400
+
+overlay-scrollbar (0.1.7-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - ccsm crashed with SIGSEGV in os_pager_draw() (LP: #754717)
+    - Banshee crashed with SIGABRT in g_main_context_dispatch() (LP: #754927)
+    - The last line of files in a directory is being 'duplicated' (LP: #754306)
+    - should not stay on screen when switching applications (LP: #754736)
+    - Scrollbar does not work with vinagre (LP: #758581)
+    - Cannot use the thumb to PgUp/PgDown multiple times, because it 
+      fades (LP: #758581)
+    - Enabling Desktop-based Viewport Switching can cause fade on 
+      scroll (LP: #756243)
+  * debian/ayatana-scrollbar.py
+    - added add_package_info to the apport hook
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 13 Apr 2011 13:35:22 -0400
+
+overlay-scrollbar (0.1.6-0ubuntu2) natty; urgency=low
+
+  * debian/ayatana-scrollbar.py
+    - Don't use "_" in tag names, they are invalid
+  * os/os-pager.c
+    - Cherry picked crasher fix from trunk for SIGSEGV in 
+      os_pager_draw() (LP: #754717)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 11 Apr 2011 10:42:51 -0400
+
+overlay-scrollbar (0.1.6-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - if the window is unfocused and you click on one of its scrollbars, 
+      the scrollbar disappear (LP: #737518)
+    - Black Background on Overlay Scrollbar in Banshee (LP: #746189)
+    - hide the thumb after a timeout, with a fade-out animation (LP: #751444)
+    - Thumb blocks the right side of a maximized window (LP: #731653)
+    - in wxWidgets, pager is not colored properly (LP: #737661)
+    - animate the pager's colorization (LP: #746862)
+    - colorize the pager following mouse movement (LP: #746864)
+    - Add mouse-wheel functionality to the thumb (LP: #750879)
+    - use g_source_remove instead g_object_ref/unref for 
+      g_timeout_add (LP: #751440)
+    - lock position of the thumb when it's internal (LP: #751442)
+    - Thumb doesn't fade-out after click (and no motion after 
+      release) (LP: #751652)
+    - pager should immediately change color when changing gtk+ 
+      theme (LP: #752705)
+    - wrong colorization on restacking (LP: #752836)
+    - Panel's scrollbar is left behind (LP: #753440)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 07 Apr 2011 13:44:04 -0400
+
+overlay-scrollbar (0.1.5-0ubuntu4) natty; urgency=low
+
+  * debian/liboverlay-scrollbar-0.1-0.symbols
+    - Added symbols file
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 06 Apr 2011 12:39:22 -0400
+
+overlay-scrollbar (0.1.5-0ubuntu3) natty; urgency=low
+
+  * debian/control
+    - Make overlay-scrollbar Break/Replace 
+      liboverlay-scrollbar-0.1-0 << 0.1.5-0ubuntu2
+    - Fixed overlay-scrollbar package description 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 06 Apr 2011 10:40:58 -0400
+
+overlay-scrollbar (0.1.5-0ubuntu2) natty; urgency=low
+
+  [ Ken VanDine ]
+  * debian/control
+    - Fixed Vcs-Bzr
+    - Bumped depends for gtk to >= 2.24.3-0ubuntu5
+    - New binary package overlay-scrollbar
+  * debian/overlay-scrollbar.install
+    - Moved the apport hook to non-soname specific binary
+
+  [ Martin Pitt ]
+  * debian/control: Fix Homepage. (LP: #750572)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 06 Apr 2011 09:57:51 -0400
+
+overlay-scrollbar (0.1.5-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Compiz: make it sibling of the parent toplevel window (LP: #728412)
+    - Rendering error on multiple monitors (LP: #736992)
+    - overlay scrollbar thumbs not hidden if different window has 
+      focus (LP: #743229)
+    - Scrollbar stays on top after closing window (LP: #744431)
+    - use proper allocation, not from the parent (LP: #741885)
+  * debian/ayatana-scrollbar.py
+    - Added apport hook (LP: #740278)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 30 Mar 2011 14:29:24 -0400
+
+overlay-scrollbar (0.1.4-0ubuntu2) natty; urgency=low
+
+  * debian/control
+    - Bump the depends for gtk to >= 2.24.3-0ubuntu4+overlayscrollbar1 
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Mon, 28 Mar 2011 10:06:17 -0400
+
+overlay-scrollbar (0.1.4-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Add whitelist support (LP: #740276)
+    - Improve scrolling speed (LP: #728418)
+    - Scrollbars are not working with wxWidgets (LP: #731369)
+    - blacklist RTL languages (LP: #741071)
+    - stop events when the thumb is unmapped (LP: #737627)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 23 Mar 2011 16:05:07 -0400
+
+overlay-scrollbar (0.1.3-0ubuntu2) natty; urgency=low
+
+  * Merged in grab fixes from trunk r169
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Fri, 18 Mar 2011 13:47:09 -0400
+
+overlay-scrollbar (0.1.3-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+    - Performance improvements
+    - Scrollbar (thumb) is not working in modal dialogs (LP: #728664)
+    - unity's restore from maximize is breaking the positioning of 
+      overlay (LP: #732091)
+    - with jjardon's performance tweak branch, sometimes the pager is 
+      not (LP: #735618)
+    - You can scroll even if the thumb is not shown (LP: #735906)
+    - rendering issues for the pager (LP: #736076)
+    - Issues when reallocating widgets (LP: #733031)
+    - The thumb has black borders after switching back to metacity (LP: #736280)
+    - scrollbar should be shifted depending on the scrolled 
+      window's (LP: #733212)
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 17 Mar 2011 21:21:41 -0400
+
+overlay-scrollbar (0.1.2+r161-0ubuntu1) natty; urgency=low
+
+  * New snapshot from r161
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Wed, 16 Mar 2011 22:16:42 -0400
+
+overlay-scrollbar (0.1.2-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+
+ -- Ken VanDine <ken.vandine@canonical.com>  Thu, 10 Mar 2011 15:02:27 -0500
+
+overlay-scrollbar (0.1.1-0ubuntu2) natty; urgency=low
+
+  * Force new gtk
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 08 Mar 2011 08:46:23 +0100
+
+overlay-scrollbar (0.1.1-0ubuntu1) natty; urgency=low
+
+  * New upstream release.
+
+ -- Didier Roche <didrocks@ubuntu.com>  Mon, 07 Mar 2011 19:30:47 +0100
+
+overlay-scrollbar (0.1.0-0ubuntu1) natty; urgency=low
+
+  * Initial packaging
+
+ -- Didier Roche <didrocks@ubuntu.com>  Wed, 02 Mar 2011 19:50:47 +0100
