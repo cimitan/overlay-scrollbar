@@ -1,4 +1,4 @@
-overlay-scrollbar (0.2.16+r353-0ubuntu2) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r353-0ubuntu2) quantal; urgency=low
 
   * debian/control: 
     - drop hardcoded libgtk depends and let the shlibs get those
