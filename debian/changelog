@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.16+r353-0ubuntu3) UNRELEASED; urgency=low
+
+  * debian/patches/01_workaround_qt_overlay_crash.patch:
+    avoid crashes in Qt apps, removing the overlay scrollbars for them
+    (LP: #1005677)
+
+ -- Didier Roche <didrocks@ubuntu.com>  Mon, 24 Sep 2012 14:44:26 +0200
+
 overlay-scrollbar (0.2.16+r353-0ubuntu2) quantal; urgency=low
 
   * debian/control: 
