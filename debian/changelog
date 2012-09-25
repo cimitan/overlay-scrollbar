@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.16+r356-0ubuntu2) UNRELEASED; urgency=low
+
+  * Reuploaded now that gtk2 has a fix for it
+
+ -- Didier Roche <didrocks@ubuntu.com>  Tue, 25 Sep 2012 13:12:47 +0200
+
 overlay-scrollbar (0.2.16+r356-0ubuntu1) quantal-proposed; urgency=low
 
   * New upstream release:
