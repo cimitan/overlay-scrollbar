@@ -1,4 +1,4 @@
-overlay-scrollbar (0.2.16+r356-0ubuntu2) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r356-0ubuntu2) quantal-proposed; urgency=low
 
   * Reuploaded now that gtk2 has a fix for it
 
