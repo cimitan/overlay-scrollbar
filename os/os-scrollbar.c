@@ -607,6 +607,14 @@ deactivate_bar_cb (gpointer user_data)
 }
 #endif
 
+
+/* destroy the private struct */
+static void
+destroy_private (gpointer priv)
+{
+  g_slice_free (OsScrollbarPrivate, priv);
+}
+
 /* Get the private struct. If there isn't one, return NULL */
 static OsScrollbarPrivate*
 lookup_private (GtkWidget *widget)
@@ -672,7 +680,7 @@ get_private (GtkWidget *widget)
                                            scrolling_cb, scrolling_end_cb, widget);
 
       /* Store qdata. */
-      g_object_set_qdata (G_OBJECT (widget), os_quark_qdata, qdata);
+      g_object_set_qdata_full (G_OBJECT (widget), os_quark_qdata, qdata, destroy_private);
       priv = qdata;
 
       /* Create adjustment and thumb. */
