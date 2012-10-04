@@ -1,3 +1,9 @@
+overlay-scrollbar (0.2.16+r357-0ubuntu1) UNRELEASED; urgency=low
+
+  * Updated to r357, fixes memory leak (lp: #1058205)
+
+ -- Thomas Bechtold <thomasbechtold@jpberlin.de>  Thu, 04 Oct 2012 21:36:57 +0200
+
 overlay-scrollbar (0.2.16+r356-0ubuntu2) quantal-proposed; urgency=low
 
   * Reuploaded now that gtk2 has a fix for it
