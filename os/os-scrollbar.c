@@ -607,14 +607,21 @@ deactivate_bar_cb (gpointer user_data)
 }
 #endif
 
-/* Get the private struct. */
+/* Get the private struct. If there isn't one, return NULL */
+static OsScrollbarPrivate*
+lookup_private (GtkWidget *widget)
+{
+  return g_object_get_qdata (G_OBJECT (widget), os_quark_qdata);
+}
+
+/* Get the private struct. If there isn't one, create it */
 static OsScrollbarPrivate*
 get_private (GtkWidget *widget)
 {
   OsScrollbarPrivate *priv;
 
   /* Fetch the private qdata struct. */
-  priv = g_object_get_qdata (G_OBJECT (widget), os_quark_qdata);
+  priv = lookup_private (widget);
 
   if (!priv)
     {
@@ -3173,31 +3180,6 @@ hijacked_scrollbar_dispose (GObject *object)
       OsScrollbarPrivate *priv;
 
       scrollbar = GTK_SCROLLBAR (object);
-      priv = get_private (GTK_WIDGET (scrollbar));
-
-      if (priv->source_deactivate_bar_id != 0)
-        {
-          g_source_remove (priv->source_deactivate_bar_id);
-          priv->source_deactivate_bar_id = 0;
-        }
-
-      if (priv->source_hide_thumb_id != 0)
-        {
-          g_source_remove (priv->source_hide_thumb_id);
-          priv->source_hide_thumb_id = 0;
-        }
-
-      if (priv->source_show_thumb_id != 0)
-        {
-          g_source_remove (priv->source_show_thumb_id);
-          priv->source_show_thumb_id = 0;
-        }
-
-      if (priv->source_unlock_thumb_id != 0)
-        {
-          g_source_remove (priv->source_unlock_thumb_id);
-          priv->source_unlock_thumb_id = 0;
-        }
 
       os_root_list = g_slist_remove (os_root_list, scrollbar);
 
@@ -3213,26 +3195,54 @@ hijacked_scrollbar_dispose (GObject *object)
                                     root_filter_func, NULL);
         }
 
-      if (priv->animation != NULL)
+      priv = lookup_private (GTK_WIDGET(scrollbar));
+      if (priv != NULL)
         {
-          g_object_unref (priv->animation);
-          priv->animation = NULL;
-        }
+          if (priv->source_deactivate_bar_id != 0)
+            {
+              g_source_remove (priv->source_deactivate_bar_id);
+              priv->source_deactivate_bar_id = 0;
+            }
 
-      if (priv->bar != NULL)
-        {
-          g_object_unref (priv->bar);
-          priv->bar = NULL;
-        }
+          if (priv->source_hide_thumb_id != 0)
+            {
+              g_source_remove (priv->source_hide_thumb_id);
+              priv->source_hide_thumb_id = 0;
+            }
 
-      if (priv->window_group != NULL)
-        {
-          g_object_unref (priv->window_group);
-          priv->window_group = NULL;
-        }
+          if (priv->source_show_thumb_id != 0)
+            {
+              g_source_remove (priv->source_show_thumb_id);
+              priv->source_show_thumb_id = 0;
+            }
 
-      swap_adjustment (scrollbar, NULL);
-      swap_thumb (scrollbar, NULL);
+          if (priv->source_unlock_thumb_id != 0)
+            {
+              g_source_remove (priv->source_unlock_thumb_id);
+              priv->source_unlock_thumb_id = 0;
+            }
+
+          if (priv->animation != NULL)
+            {
+              g_object_unref (priv->animation);
+              priv->animation = NULL;
+            }
+
+          if (priv->bar != NULL)
+            {
+              g_object_unref (priv->bar);
+              priv->bar = NULL;
+            }
+
+          if (priv->window_group != NULL)
+            {
+              g_object_unref (priv->window_group);
+              priv->window_group = NULL;
+            }
+
+          swap_adjustment (scrollbar, NULL);
+          swap_thumb (scrollbar, NULL);
+        }
     }
 
   (* pre_hijacked_scrollbar_dispose) (object);
