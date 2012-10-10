@@ -3946,7 +3946,7 @@ app_is_blacklisted (void)
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
     "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
     "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
-    "notes.bin", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
+    "lnotes", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
     "soffice", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847918 */
     "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
     "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
@@ -3957,6 +3957,7 @@ app_is_blacklisted (void)
     "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
     "firefox", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847922 */
     "gimp", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/803163 */
+    "notes", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
     "thunderbird", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847929 */
   };
 
