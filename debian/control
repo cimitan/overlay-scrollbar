@@ -11,7 +11,11 @@ Build-Depends: debhelper (>= 9),
 Standards-Version: 3.9.3
 Section: libs
 Homepage: http://launchpad.net/ayatana-scrollbar
-Vcs-Bzr: https://code.launchpad.net/~ubuntu-desktop/ayatana-scrollbar/ubuntu
+# If you aren't a member of ~ayatana-scrollbar-team but need to upload
+# packaging changes, just go ahead. ~ayatana-scrollbar-team will notice
+# and sync up the code again.
+Vcs-Bzr: https://code.launchpad.net/~ayatana-scrollbar-team/ayatana-scrollbar/trunk
+Vcs-Browser: https://bazaar.launchpad.net/~ayatana-scrollbar-team/ayatana-scrollbar/trunk/files
 
 Package: overlay-scrollbar-gtk3
 Section: libs
