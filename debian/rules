@@ -1,28 +1,39 @@
 #!/usr/bin/make -f
 
-DEB_BUILDDIR = build
-DEB_MAKE_FLAVORS = gtk2 gtk3
+FLAVORS = gtk2 gtk3
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/gnome.mk
-include /usr/share/cdbs/1/rules/autoreconf.mk
-include /usr/share/cdbs/1/rules/simple-patchsys.mk
+CONFIGURE_FLAGS_gtk2 = --with-gtk=2
+CONFIGURE_FLAGS_gtk3 = --with-gtk=3
+CONFIGURE_COMMON_FLAGS = --disable-static --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) 
 
-DEB_MAKE_DESTDIRSKEL = $(CURDIR)/debian/tmp/@FLAVOR@
-DEB_DESTDIR = $(CURDIR)/debian/tmp/$(cdbs_make_curflavor)/
+%:
+	dh $@ --with autoreconf
 
-DEB_CONFIGURE_FLAGS_gtk2 = --with-gtk=2
-DEB_CONFIGURE_FLAGS_gtk3 = --with-gtk=3
-DEB_CONFIGURE_EXTRA_FLAGS = --disable-static
-DEB_CONFIGURE_EXTRA_FLAGS += --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) 
-DEB_DH_MAKESHLIBS_ARGS_ALL += --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-2.0/modules
-DEB_DH_MAKESHLIBS_ARGS_ALL += --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-3.0/modules
+override_dh_auto_configure: $(FLAVORS:%=doconfigure-%)
 
-debian/stamp-autotools/gtk2: cdbs_configure_flags += $(DEB_CONFIGURE_FLAGS_gtk2)
-debian/stamp-autotools/gtk3: cdbs_configure_flags += $(DEB_CONFIGURE_FLAGS_gtk3)
+doconfigure-%:
+	dh_auto_configure --builddirectory=build/$* -- \
+		$(CONFIGURE_FLAGS_$*) \
+		$(CONFIGURE_COMMON_FLAGS)
 
-common-install-arch::
+override_dh_auto_build: $(FLAVORS:%=dobuild-%)
+
+dobuild-%:
+	dh_auto_build --builddirectory=build/$*
+
+override_dh_auto_install: $(FLAVORS:%=doinstall-%)
+
+doinstall-%:
+	dh_auto_install --sourcedir=build/$* --destdir=debian/tmp/$*
+
+override_dh_install:
 	find debian/tmp -name \*.la -delete
 	rm -rf debian/tmp/gtk2/usr/share/glib-2.0/schemas
 	rm -f debian/tmp/gtk2/etc/X11/Xsession.d/81overlay-scrollbar
 	dh_install --fail-missing
+
+override_dh_makeshlibs:
+	dh_makeshlibs \
+		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-2.0/modules \
+		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-3.0/modules 
+
