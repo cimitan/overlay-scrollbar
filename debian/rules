@@ -9,6 +9,9 @@ CONFIGURE_COMMON_FLAGS = --disable-static --libdir=\$${prefix}/lib/$(DEB_HOST_MU
 %:
 	dh $@ --with autoreconf
 
+override_dh_autoreconf:
+	NOCONFIGURE=1 dh_autoreconf ./autogen.sh
+
 override_dh_auto_configure: $(FLAVORS:%=doconfigure-%)
 
 doconfigure-%:
