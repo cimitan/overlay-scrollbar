@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 8),
                libgtk2.0-dev,
                libgtk-3-dev,
                libcairo2-dev (>= 1.10),
-               dh-autoreconf
+               dh-autoreconf,
 Standards-Version: 3.9.3
 Section: libs
 Homepage: http://launchpad.net/ayatana-scrollbar
@@ -20,9 +20,11 @@ Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, 
          ${misc:Depends}, 
-         overlay-scrollbar
-Replaces: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348)
-Conflicts: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348)
+         overlay-scrollbar,
+Replaces: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348),
+          liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348),
+Conflicts: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348),
+           liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348),
 Description: GTK 3 module for overlay scrollbars
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
@@ -32,9 +34,11 @@ Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, 
          ${misc:Depends}, 
-         overlay-scrollbar
-Replaces: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348)
-Conflicts: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348), liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348)
+         overlay-scrollbar,
+Replaces: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348),
+          liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348),
+Conflicts: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348),
+           liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348),
 Description: GTK 2 module for overlay scrollbars
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
 
@@ -43,6 +47,6 @@ Section: libs
 Architecture: all
 Depends: overlay-scrollbar-gtk2,
          overlay-scrollbar-gtk3,
-         ${misc:Depends}
+         ${misc:Depends},
 Description: Scrollbar overlay
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
