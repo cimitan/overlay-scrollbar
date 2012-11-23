@@ -10,6 +10,7 @@ overlay-scrollbar (0.2.16+r357-0ubuntu2) UNRELEASED; urgency=low
     - Drop Build-Depends on cdbs.
     - Bump debhelper Build-Depends to (>= 9).
     - Update Vcs-Bzr, Vcs-Browser and add a notice to uploaders.
+  * debian/compat: bump to compat level 9.
 
  -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Fri, 23 Nov 2012 12:20:25 -0500
 
