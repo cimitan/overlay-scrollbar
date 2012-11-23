@@ -1,9 +1,5 @@
-overlay-scrollbar (0.2.16+r357-0ubuntu2) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r369-0ubuntu1) UNRELEASED; urgency=low
 
-  [ Thomas Bechtold ]
-  * Updated to r357, fixes memory leak (lp: #1058205)
-
-  [ Mathieu Trudel-Lapierre ]
   * debian/control:
     - Update style to use trailing commas at the end of dependency lists.
     - Sort Build-Depends for clarity.
@@ -16,6 +12,12 @@ overlay-scrollbar (0.2.16+r357-0ubuntu2) UNRELEASED; urgency=low
     - Override dh_autoreconf to call autogen.sh and not run configure.
 
  -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Fri, 23 Nov 2012 12:20:25 -0500
+
+overlay-scrollbar (0.2.16+r357-0ubuntu1) quantal; urgency=low
+
+  * Updated to r357, fixes memory leak (lp: #1058205)
+
+ -- Thomas Bechtold <thomasbechtold@jpberlin.de>  Thu, 04 Oct 2012 21:36:57 +0200
 
 overlay-scrollbar (0.2.16+r356-0ubuntu2) quantal-proposed; urgency=low
 
