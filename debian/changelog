@@ -10,6 +10,8 @@ overlay-scrollbar (0.2.16+r369-0ubuntu1) UNRELEASED; urgency=low
   * debian/rules:
     - Convert from cdbs to using the dh9 sequencer.
     - Override dh_autoreconf to call autogen.sh and not run configure.
+    - Drop override for dh_makeshlibs.
+    - Add and export DPKG_GENSYMBOLS_CHECK_LEVEL.
 
  -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Fri, 23 Nov 2012 12:20:25 -0500
 

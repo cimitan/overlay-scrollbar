@@ -6,6 +6,8 @@ CONFIGURE_FLAGS_gtk2 = --with-gtk=2
 CONFIGURE_FLAGS_gtk3 = --with-gtk=3
 CONFIGURE_COMMON_FLAGS = --disable-static --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) 
 
+export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
+
 %:
 	dh $@ --with autoreconf
 
@@ -34,9 +36,4 @@ override_dh_install:
 	rm -rf debian/tmp/gtk2/usr/share/glib-2.0/schemas
 	rm -f debian/tmp/gtk2/etc/X11/Xsession.d/81overlay-scrollbar
 	dh_install --fail-missing
-
-override_dh_makeshlibs:
-	dh_makeshlibs \
-		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-2.0/modules \
-		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/gtk-3.0/modules 
 
