@@ -1,5 +1,6 @@
-overlay-scrollbar (0.2.16+r369-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r359-0ubuntu1) UNRELEASED; urgency=low
 
+  * Automatic snapshot from revision 359 (bootstrap).
   * debian/control:
     - Update style to use trailing commas at the end of dependency lists.
     - Sort Build-Depends for clarity.
