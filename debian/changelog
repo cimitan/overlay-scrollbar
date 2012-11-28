@@ -1,5 +1,6 @@
-overlay-scrollbar (0.2.16+r359-0ubuntu1) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r359daily12.11.28.1-0ubuntu1) raring; urgency=low
 
+  [ Mathieu Trudel-Lapierre ]
   * Automatic snapshot from revision 359 (bootstrap).
   * debian/control:
     - Update style to use trailing commas at the end of dependency lists.
@@ -15,7 +16,10 @@ overlay-scrollbar (0.2.16+r359-0ubuntu1) UNRELEASED; urgency=low
     - Add and export DPKG_GENSYMBOLS_CHECK_LEVEL.
   * debian/copyright: update to properly reflect upstream copyright.
 
- -- Mathieu Trudel-Lapierre <mathieu-tl@ubuntu.com>  Fri, 23 Nov 2012 12:20:25 -0500
+  [ Automatic PS uploader ]
+  * Automatic snapshot from revision 361
+
+ -- Automatic PS uploader <ps-jenkins@lists.canonical.com>  Wed, 28 Nov 2012 06:30:37 +0000
 
 overlay-scrollbar (0.2.16+r357-0ubuntu1) quantal; urgency=low
 
