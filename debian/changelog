@@ -1,3 +1,13 @@
+overlay-scrollbar (0.2.16+r359daily12.11.30-0ubuntu1) raring; urgency=low
+
+  [ Didier Roche ]
+  * system freezes when Calibre starts (LP: #1084255)
+
+  [ Automatic PS uploader ]
+  * Automatic snapshot from revision 363
+
+ -- Automatic PS uploader <ps-jenkins@lists.canonical.com>  Fri, 30 Nov 2012 08:49:45 +0000
+
 overlay-scrollbar (0.2.16+r359daily12.11.28.1-0ubuntu1) raring; urgency=low
 
   [ Mathieu Trudel-Lapierre ]
