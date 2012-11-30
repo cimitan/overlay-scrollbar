@@ -3174,7 +3174,11 @@ remove_window_filter (GtkScrollbar *scrollbar)
 static gboolean
 use_overlay_scrollbar (void)
 {
+#ifdef USE_GTK3
   return scrollbar_mode != SCROLLBAR_MODE_NORMAL;
+#else
+  return scrollbar_mode != SCROLLBAR_MODE_NORMAL && ubuntu_gtk_get_use_overlay_scrollbar ();
+#endif
 }
 
 static void
@@ -4246,6 +4250,10 @@ gtk_module_init (void)
                                    "    -GtkScrolledWindow-scrollbar-spacing: 0;\n"
                                    "    -GtkScrolledWindow-scrollbars-within-bevel: 1;\n"
                                    "}\n", -1, NULL);
+#endif
+
+#ifndef USE_GTK3
+  ubuntu_gtk_set_use_overlay_scrollbar (TRUE);
 #endif
 
   /* Load custom overlay scrollbar style. */
