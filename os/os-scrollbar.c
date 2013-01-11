@@ -2167,14 +2167,16 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                 }
               /* We're in the 'no action taken' area.
                * Skip this event. */
-              return FALSE;
+              if (!priv->allow_resize_paned)
+                return FALSE;
             }
 
           /* We're in the 'SCROLLING' area.
            * Continue processing the event. */
         }
-        else if (priv->allow_resize_paned &&
-                 !(priv->event & OS_EVENT_MOTION_NOTIFY))
+        
+        if (priv->allow_resize_paned &&
+            !(priv->event & OS_EVENT_MOTION_NOTIFY))
         {
           if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > 0.5 * f_y) ||
               ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > 0.5 * f_x))
