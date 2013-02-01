@@ -3657,7 +3657,6 @@ retrieve_resizability (GtkScrollbar *scrollbar)
       default:
         break;
     }
-
   }
   else if (GTK_IS_VPANED(paned))
   {
