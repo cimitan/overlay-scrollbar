@@ -2138,7 +2138,6 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
 
                   switch (priv->side)
                   {
-                    default:
                     case OS_SIDE_RIGHT:
                       window_edge = GDK_WINDOW_EDGE_EAST;
                       break;
