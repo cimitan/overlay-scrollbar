@@ -1962,17 +1962,19 @@ thumb_map_cb (GtkWidget *widget,
 {
   Display *display;
   GtkScrollbar *scrollbar;
-  OsScrollbarPrivate *priv;
   XWindowChanges changes;
   guint32 xid, xid_parent;
   unsigned int value_mask = CWSibling | CWStackMode;
   int res;
 
   scrollbar = GTK_SCROLLBAR (user_data);
-  priv = get_private (GTK_WIDGET (scrollbar));
 
 #ifdef USE_GTK3
+  OsScrollbarPrivate *priv;
+
   /* Immediately set the bar to be active. */
+  priv = get_private (GTK_WIDGET (scrollbar));
+
   priv->deactivable_bar = FALSE;
   os_bar_set_active (priv->bar, TRUE, FALSE);
 #endif
@@ -3830,10 +3832,8 @@ hijacked_scrollbar_size_request (GtkWidget      *widget,
 {
   if (use_overlay_scrollbar ())
     {
-      GtkScrollbar *scrollbar;
       OsScrollbarPrivate *priv;
 
-      scrollbar = GTK_SCROLLBAR (widget);
       priv = get_private (widget);
 
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
