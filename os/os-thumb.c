@@ -782,7 +782,6 @@ os_thumb_expose (GtkWidget      *widget,
   pattern_add_gdk_rgba_stop (pat, 0.5, &bg_shadow, 0.06);
   switch (action)
   {
-    default:
     case ACTION_NORMAL:
       pattern_add_gdk_rgba_stop (pat, 0.0, &bg_shadow, 0.22);
       pattern_add_gdk_rgba_stop (pat, 1.0, &bg_shadow, 0.22);
