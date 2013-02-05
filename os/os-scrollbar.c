@@ -124,6 +124,8 @@ typedef struct
   OsWindowFilter filter;
   gboolean active_window;
   gboolean allow_resize;
+  gboolean allow_resize_paned;
+  gboolean resizing_paned;
 #ifdef USE_GTK3
   gboolean deactivable_bar;
 #endif
@@ -686,6 +688,8 @@ get_private (GtkWidget *widget)
         swap_adjustment (GTK_SCROLLBAR (widget), gtk_range_get_adjustment (GTK_RANGE (widget)));
       priv->orientation = gtk_orientable_get_orientation (GTK_ORIENTABLE (widget));
       swap_thumb (GTK_SCROLLBAR (widget), os_thumb_new (priv->orientation));
+
+      priv->resizing_paned = FALSE;
 
       /* Connect to adjustment and orientation signals. */
       g_signal_connect (G_OBJECT (widget), "notify::adjustment",
@@ -2164,11 +2168,56 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                 }
               /* We're in the 'no action taken' area.
                * Skip this event. */
-              return FALSE;
+              if (!priv->allow_resize_paned)
+                return FALSE;
             }
 
           /* We're in the 'SCROLLING' area.
            * Continue processing the event. */
+        }
+        
+        if (priv->allow_resize_paned &&
+            !(priv->event & OS_EVENT_MOTION_NOTIFY))
+        {
+          if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > 0.5 * f_y) ||
+              ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > 0.5 * f_x))
+            {
+              /* We're either in the 'RESIZE' or in the 'no action taken' area. */
+              if (((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) && f_x > TOLERANCE_DRAG) ||
+                  ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > TOLERANCE_DRAG))
+                {
+                  /* We're in the 'RESIZE' area. */
+                  GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (scrollbar), GTK_TYPE_PANED));
+                 
+                  if (!paned)
+                    return FALSE;
+
+                  GdkWindow *handle_window = gtk_paned_get_handle_window (paned);
+
+                  GdkEventButton *fwd_event = (GdkEventButton*) gdk_event_new (GDK_BUTTON_PRESS);
+
+                  fwd_event->window = handle_window;
+                  fwd_event->time =  event->time;
+                  fwd_event->x = 1;
+                  fwd_event->y = 1;
+                  fwd_event->state = event->state;
+                  fwd_event->button = 1;
+                  fwd_event->x_root = event->x_root;
+                  fwd_event->y_root = event->y_root;
+                  fwd_event->device = event->device;
+
+                  gdk_event_put ((GdkEvent*) fwd_event);
+
+                  priv->resizing_paned = TRUE;
+
+                  gtk_widget_hide (widget);
+                }
+
+              /* We're in the 'no action taken' area.
+               * Skip this event. */
+              return FALSE;
+            }
+
         }
 
       if (!(priv->event & OS_EVENT_MOTION_NOTIFY))
@@ -3027,7 +3076,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid) && !priv->resizing_paned)
                   show_thumb (scrollbar);
               }
           }
@@ -3104,7 +3153,7 @@ window_filter_func (GdkXEvent *gdkxevent,
                 if (priv->state & OS_STATE_LOCKED)
                   return GDK_FILTER_CONTINUE;
 
-                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid))
+                if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid) && !priv->resizing_paned)
                   show_thumb (scrollbar);
               }
             else
@@ -3576,6 +3625,41 @@ retrieve_resizability (GtkScrollbar *scrollbar)
     case OS_SIDE_TOP:
       if (y_pos - y <= THUMB_WIDTH)
         priv->allow_resize = TRUE;
+      break;
+    default:
+      break;
+  }
+
+  GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (scrollbar), GTK_TYPE_PANED));
+  if (!paned)
+    return;
+
+  GdkWindow *handle_window = gtk_paned_get_handle_window (paned);
+
+  gdk_window_get_origin (handle_window, &x, &y);
+
+  priv->allow_resize_paned = FALSE;
+  priv->resizing_paned = FALSE;
+  
+  /* Check if the thumb is next to a paned handle,
+   * if that's the case, set the allow_resize_paned gboolean. */
+  switch (priv->side)
+  {
+    case OS_SIDE_RIGHT:
+      if (x + gdk_window_get_width (handle_window) - x_pos <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_BOTTOM:
+      if (y + gdk_window_get_height (handle_window) - y_pos <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_LEFT:
+      if (x_pos - x <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_TOP:
+      if (y_pos - y <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
       break;
     default:
       break;
