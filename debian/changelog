@@ -1,3 +1,13 @@
+overlay-scrollbar (0.2.16+r359daily13.02.05-0ubuntu1) raring; urgency=low
+
+  [ Brandon Schaefer ]
+  * Coverity DEADCODE - CID 13650 (LP: #1109115)
+
+  [ Automatic PS uploader ]
+  * Automatic snapshot from revision 365
+
+ -- Automatic PS uploader <ps-jenkins@lists.canonical.com>  Tue, 05 Feb 2013 00:00:56 +0000
+
 overlay-scrollbar (0.2.16+r359daily12.11.30-0ubuntu1) raring; urgency=low
 
   [ Didier Roche ]
