@@ -1,3 +1,20 @@
+overlay-scrollbar (0.2.16+r359daily13.02.06-0ubuntu1) raring; urgency=low
+
+  [ Brandon Schaefer ]
+  * Scrollbars - difficult to resize panels with overlay scrollbar (LP:
+    #907837)
+  * Coverity UNUSED_VALUE - CID 13652 (LP: #1109113)
+  * Coverity UNUSED_VALUE - CID 13653 (LP: #1109114)
+
+  [ Andrea Azzarone ]
+  * Scrollbars - difficult to resize panels with overlay scrollbar (LP:
+    #907837)
+
+  [ Automatic PS uploader ]
+  * Automatic snapshot from revision 369
+
+ -- Automatic PS uploader <ps-jenkins@lists.canonical.com>  Wed, 06 Feb 2013 00:00:54 +0000
+
 overlay-scrollbar (0.2.16+r359daily13.02.05-0ubuntu1) raring; urgency=low
 
   [ Brandon Schaefer ]
