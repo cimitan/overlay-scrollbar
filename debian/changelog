@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.16+r359daily13.02.06-0ubuntu2) UNRELEASED; urgency=low
+
+  * debian/control:
+    - Modified Vcs-Bzr to point to the maintenance branch
+
+ -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@canonical.com>  Wed, 01 May 2013 20:53:26 +0200
+
 overlay-scrollbar (0.2.16+r359daily13.02.06-0ubuntu1) raring; urgency=low
 
   [ Brandon Schaefer ]
