@@ -978,6 +978,8 @@ os_thumb_map (GtkWidget *widget)
       gtk_grab_remove (priv->grabbed_widget);
     }
 
+  os_thumb_resize (thumb, THUMB_WIDTH, THUMB_HEIGHT);
+
   GTK_WIDGET_CLASS (os_thumb_parent_class)->map (widget);
 }
 
