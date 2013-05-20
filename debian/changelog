@@ -1,10 +1,14 @@
-overlay-scrollbar (0.2.16+r359daily13.02.06-0ubuntu2) UNRELEASED; urgency=low
+overlay-scrollbar (0.2.16+r359daily13.05.20ubuntu.unity.next-0ubuntu1) raring; urgency=low
 
+  [ Łukasz 'sil2100' Zemczak ]
   * Remove debian/watch
   * debian/control, debian/overlay-scrollbar.install:
     - Modifications related to compliance with our packaging standards
 
- -- Łukasz 'sil2100' Zemczak <lukasz.zemczak@canonical.com>  Wed, 01 May 2013 21:08:09 +0200
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 371 (ubuntu-unity/next)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 20 May 2013 00:01:26 +0000
 
 overlay-scrollbar (0.2.16+r359daily13.02.06-0ubuntu1) raring; urgency=low
 
