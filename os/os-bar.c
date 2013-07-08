@@ -40,12 +40,6 @@
 /* Min duration of the retracting tail. */
 #define MIN_DURATION_TAIL 100
 
-#ifdef USE_GTK3
-#define SHAPE_REGION(x) (cairo_region_create_rectangle (x))
-#else
-#define SHAPE_REGION(x) (gdk_region_rectangle (x))
-#endif
-
 struct _OsBarPrivate {
   GdkRectangle bar_mask;
   GdkRectangle tail_mask; /* In theory not needed, but easier to read. */
@@ -221,6 +215,28 @@ rectangle_changed (GdkRectangle rectangle1,
   return FALSE;
 }
 
+/* wrapper around gdk_window_shape_combine_region() */
+static void
+os_bar_window_shape_combine_region (GdkWindow          * window,
+                                    const GdkRectangle * shape_rect,
+                                    gint                 offset_x,
+                                    gint                 offset_y)
+{
+#ifdef USE_GTK3
+
+  cairo_region_t * shape_region = cairo_region_create_rectangle (shape_rect);
+  gdk_window_shape_combine_region (window, shape_region, offset_x, offset_y);
+  cairo_region_destroy (shape_region);
+
+#else
+
+  GdkRegion * shape_region = gdk_region_rectangle (shape_rect);
+  gdk_window_shape_combine_region (window, shape_region, offset_x, offset_y);
+  gdk_region_destroy (shape_region);
+
+#endif
+}
+
 /* Callback called by the retract-tail animation. */
 static void
 retract_tail_cb (gfloat   weight,
@@ -255,9 +271,11 @@ retract_tail_cb (gfloat   weight,
     }
 
   if (weight < 1.0)
-    gdk_window_shape_combine_region (priv->tail_window,
-                                     SHAPE_REGION(&tail_mask),
-                                     0, 0);
+    {
+      os_bar_window_shape_combine_region (priv->tail_window,
+                                          &tail_mask,
+                                          0, 0);
+    }
   else
     {
       /* Store the new tail_mask and hide the tail_window. */
@@ -280,9 +298,9 @@ retract_tail_stop_cb (gpointer user_data)
   if (priv->parent == NULL)
     return;
 
-  gdk_window_shape_combine_region (priv->tail_window,
-                                   SHAPE_REGION(&priv->tail_mask),
-                                   0, 0);
+  os_bar_window_shape_combine_region (priv->tail_window,
+                                      &priv->tail_mask,
+                                      0, 0);
 }
 
 G_DEFINE_TYPE (OsBar, os_bar, G_TYPE_OBJECT);
@@ -420,9 +438,9 @@ mask_tail (OsBar *bar)
 
   priv = bar->priv;
 
-  gdk_window_shape_combine_region (priv->tail_window,
-                                   SHAPE_REGION(&priv->tail_mask),
-                                   0, 0);
+  os_bar_window_shape_combine_region (priv->tail_window,
+                                      &priv->tail_mask,
+                                      0, 0);
 }
 
 /**
@@ -493,9 +511,9 @@ mask_bar (OsBar *bar)
 
   priv = bar->priv;
 
-  gdk_window_shape_combine_region (priv->bar_window,
-                                   SHAPE_REGION(&priv->bar_mask),
-                                   0, 0);
+  os_bar_window_shape_combine_region (priv->tail_window,
+                                      &priv->tail_mask,
+                                      0, 0);
 }
 
 /**
