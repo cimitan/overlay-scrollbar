@@ -1,3 +1,14 @@
+overlay-scrollbar (0.2.16+r359+13.10.20130712-0ubuntu1) saucy; urgency=low
+
+  [ Charles Kerr ]
+  * in os/os-bar.c, don't leak pango_region_t and GdkRegion structs when
+    calling gdk_window_shape_combine_region(). (LP: #1199144)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 375
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 12 Jul 2013 00:02:25 +0000
+
 overlay-scrollbar (0.2.16+r359daily13.05.30-0ubuntu1) saucy; urgency=low
 
   * Automatic snapshot from revision 373
