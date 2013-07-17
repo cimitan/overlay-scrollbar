@@ -511,8 +511,8 @@ mask_bar (OsBar *bar)
 
   priv = bar->priv;
 
-  os_bar_window_shape_combine_region (priv->tail_window,
-                                      &priv->tail_mask,
+  os_bar_window_shape_combine_region (priv->bar_window,
+                                      &priv->bar_mask,
                                       0, 0);
 }
 
