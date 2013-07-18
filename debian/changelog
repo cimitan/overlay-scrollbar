@@ -1,3 +1,14 @@
+overlay-scrollbar (0.2.16+r359+13.10.20130718-0ubuntu1) saucy; urgency=low
+
+  [ Sebastien Bacher ]
+  * Use the right bar variable, that fixes the orange bar being wrongly
+    displayed. (LP: #1201019)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 377
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 18 Jul 2013 00:02:16 +0000
+
 overlay-scrollbar (0.2.16+r359+13.10.20130712-0ubuntu1) saucy; urgency=low
 
   [ Charles Kerr ]
