@@ -3712,6 +3712,8 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
           if (priv->side == OS_SIDE_RIGHT)
             priv->bar_all.x = allocation->x - BAR_SIZE;
 
+          priv->bar_all.x = MAX(priv->bar_all.x, 0);
+
           priv->bar_all.width = BAR_SIZE;
 
           priv->thumb_all.width = THUMB_WIDTH;
@@ -3720,6 +3722,8 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
             priv->thumb_all.x = allocation->x - priv->bar_all.width;
           else
             priv->thumb_all.x = allocation->x + priv->bar_all.width - priv->thumb_all.width;
+
+          priv->thumb_all.x = MAX(priv->thumb_all.x, 0);
 
           allocation->width = 0;
         }
@@ -3735,6 +3739,8 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
           if (priv->side == OS_SIDE_BOTTOM)
             priv->bar_all.y = allocation->y - BAR_SIZE;
 
+          priv->bar_all.y = MAX(priv->bar_all.y, 0);
+
           priv->bar_all.height = BAR_SIZE;
 
           priv->thumb_all.height = THUMB_WIDTH;
@@ -3743,6 +3749,8 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
             priv->thumb_all.y = allocation->y - priv->bar_all.height;
           else
             priv->thumb_all.y = allocation->y + priv->bar_all.height - priv->thumb_all.height;
+
+          priv->thumb_all.y = MAX(priv->thumb_all.y, 0);
 
           allocation->height = 0;
         }
@@ -3930,10 +3938,23 @@ hijacked_scrollbar_size_request (GtkWidget      *widget,
 
       priv = get_private (widget);
 
+      int requested_bar_size = 0;
+
+      /* If the scrollbar is alone in a container, make sure it requests
+       *  some size so that it gets drawn */
+      GtkWidget* parent = gtk_widget_get_parent (widget);
+      if (!GTK_IS_SCROLLED_WINDOW (parent))
+        {
+          GList* list = gtk_container_get_children(GTK_CONTAINER(parent));
+          if (!list->next)
+            requested_bar_size = BAR_SIZE;
+          g_list_free (list);
+        }
+
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
-        requisition->width = 0;
+        requisition->width = requested_bar_size;
       else
-        requisition->height = 0;
+        requisition->height = requested_bar_size;
 
       widget->requisition = *requisition;
 
