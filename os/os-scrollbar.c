@@ -3630,6 +3630,9 @@ retrieve_resizability (GtkScrollbar *scrollbar)
       break;
   }
 
+  if (priv->allow_resize)
+    return;
+
   GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (scrollbar), GTK_TYPE_PANED));
   if (!paned)
     return;
@@ -3643,37 +3646,26 @@ retrieve_resizability (GtkScrollbar *scrollbar)
 
   /* Check if the thumb is next to a paned handle,
    * if that's the case, set the allow_resize_paned gboolean. */
-  if (GTK_IS_HPANED(paned))
+  switch (priv->side)
   {
-    switch (priv->side)
-    {
-      case OS_SIDE_RIGHT:
-        if (x + gdk_window_get_width (handle_window) - x_pos <= THUMB_WIDTH)
-          priv->allow_resize_paned = TRUE;
-        break;
-      case OS_SIDE_LEFT:
-        if (x_pos - x <= THUMB_WIDTH)
-          priv->allow_resize_paned = TRUE;
-        break;
-      default:
-        break;
-    }
-  }
-  else if (GTK_IS_VPANED(paned))
-  {
-    switch (priv->side)
-    {
-      case OS_SIDE_BOTTOM:
-        if (y + gdk_window_get_height (handle_window) - y_pos <= THUMB_WIDTH)
-          priv->allow_resize_paned = TRUE;
-        break;
-      case OS_SIDE_TOP:
-        if (y_pos - y <= THUMB_WIDTH)
-          priv->allow_resize_paned = TRUE;
-        break;
-      default:
-        break;
-    }
+    case OS_SIDE_RIGHT:
+      if (x + gdk_window_get_width (handle_window) - x_pos <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_LEFT:
+      if (x_pos - x <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_BOTTOM:
+      if (y + gdk_window_get_height (handle_window) - y_pos <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    case OS_SIDE_TOP:
+      if (y_pos - y <= THUMB_WIDTH)
+        priv->allow_resize_paned = TRUE;
+      break;
+    default:
+      break;
   }
 }
 
