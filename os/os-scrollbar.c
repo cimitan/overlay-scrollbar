@@ -2069,6 +2069,43 @@ capture_movement (GtkScrollbar *scrollbar,
   gtk_adjustment_set_value (priv->adjustment, new_value);
 }
 
+static GtkPaned*
+find_gtk_paned_from_scrollbar(GtkScrollbar *scrollbar)
+{
+  OsScrollbarPrivate *priv;
+  priv = get_private (GTK_WIDGET (scrollbar));
+
+  GtkWidget* temp = GTK_WIDGET (scrollbar);
+
+  do
+  {
+    GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (temp), GTK_TYPE_PANED));
+
+    if (!paned)
+      return FALSE;
+
+    if ((priv->side == OS_SIDE_RIGHT || priv->side == OS_SIDE_LEFT) &&
+         gtk_orientable_get_orientation (GTK_ORIENTABLE (paned)) == GTK_ORIENTATION_HORIZONTAL)
+    {
+      temp = GTK_WIDGET (paned);
+      break;
+    }
+    else if ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) &&
+              gtk_orientable_get_orientation (GTK_ORIENTABLE (paned)) == GTK_ORIENTATION_VERTICAL)
+    {
+      temp = GTK_WIDGET (paned);
+      break;
+    }
+    else
+    {
+      temp = gtk_widget_get_parent (GTK_WIDGET (paned));
+    }
+
+  } while(temp);
+
+  return GTK_PANED (temp);
+}
+
 static gboolean
 thumb_motion_notify_event_cb (GtkWidget      *widget,
                               GdkEventMotion *event,
@@ -2187,8 +2224,8 @@ thumb_motion_notify_event_cb (GtkWidget      *widget,
                   ((priv->side == OS_SIDE_BOTTOM || priv->side == OS_SIDE_TOP) && f_y > TOLERANCE_DRAG))
                 {
                   /* We're in the 'RESIZE' area. */
-                  GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (scrollbar), GTK_TYPE_PANED));
-                 
+                  GtkPaned* paned = find_gtk_paned_from_scrollbar(scrollbar);
+
                   if (!paned)
                     return FALSE;
 
@@ -3633,7 +3670,9 @@ retrieve_resizability (GtkScrollbar *scrollbar)
   if (priv->allow_resize)
     return;
 
-  GtkPaned *paned = GTK_PANED (gtk_widget_get_ancestor (GTK_WIDGET (scrollbar), GTK_TYPE_PANED));
+
+  GtkPaned* paned = find_gtk_paned_from_scrollbar(scrollbar);
+
   if (!paned)
     return;
 
