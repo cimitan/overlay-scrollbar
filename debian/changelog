@@ -1,3 +1,15 @@
+overlay-scrollbar (0.2.16+r359+13.10.20130826-0ubuntu1) saucy; urgency=low
+
+  [ Brandon Schaefer ]
+  * Remove the check if a GtkPaned is H/VPaned, as its deprecated in gtk
+    3.0. Now just use the priv->side to tell if which way its facing. If
+    its true on the side, then allow paned to be resized. (LP: #907837)
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 379
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 26 Aug 2013 22:04:43 +0000
+
 overlay-scrollbar (0.2.16+r359+13.10.20130718-0ubuntu1) saucy; urgency=low
 
   [ Sebastien Bacher ]
