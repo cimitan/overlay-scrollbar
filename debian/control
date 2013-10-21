@@ -14,8 +14,8 @@ Homepage: http://launchpad.net/ayatana-scrollbar
 # If you aren't a member of ~ayatana-scrollbar-team but need to upload
 # packaging changes, just go ahead. ~ayatana-scrollbar-team will notice
 # and sync up the code again.
-Vcs-Bzr: https://code.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/trunk
-Vcs-Browser: https://bazaar.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/trunk/files
+Vcs-Bzr: https://code.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/saucy
+Vcs-Browser: https://bazaar.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/saucy/files
 
 Package: overlay-scrollbar-gtk3
 Section: libs
