@@ -707,7 +707,7 @@ create_windows (OsBar *bar)
 #endif
 
   /* tail_window. */
-  priv->tail_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+  priv->tail_window = gdk_window_new (gtk_widget_get_parent_window (priv->parent),
                                             &attributes,
 #ifdef USE_GTK3
                                             GDK_WA_VISUAL);
@@ -715,10 +715,11 @@ create_windows (OsBar *bar)
                                             GDK_WA_VISUAL | GDK_WA_COLORMAP);
 #endif
 
-  g_object_ref_sink (priv->tail_window);
+  gdk_window_ensure_native (priv->tail_window);
+  gtk_widget_register_window (priv->parent, priv->tail_window);
+  gdk_window_show (priv->tail_window);
 
-  gdk_window_set_transient_for (priv->tail_window,
-                                gtk_widget_get_window (priv->parent));
+  g_object_ref_sink (priv->tail_window);
 
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->tail_window,
@@ -730,7 +731,7 @@ create_windows (OsBar *bar)
                                          0, 0);
 
   /* bar_window. */
-  priv->bar_window = gdk_window_new (gtk_widget_get_window (priv->parent),
+  priv->bar_window = gdk_window_new (gtk_widget_get_parent_window (priv->parent),
                                      &attributes,
 #ifdef USE_GTK3
                                      GDK_WA_VISUAL);
@@ -738,10 +739,11 @@ create_windows (OsBar *bar)
                                      GDK_WA_VISUAL | GDK_WA_COLORMAP);
 #endif 
 
-  g_object_ref_sink (priv->bar_window);
+  gdk_window_ensure_native (priv->bar_window);
 
-  gdk_window_set_transient_for (priv->bar_window,
-                                gtk_widget_get_window (priv->parent));
+  gtk_widget_register_window (priv->parent, priv->bar_window);
+
+  g_object_ref_sink (priv->bar_window);
 
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->bar_window,
@@ -751,6 +753,8 @@ create_windows (OsBar *bar)
                                          gdk_region_new (),
 #endif
                                          0, 0);
+
+  mask_tail (bar);
 }
 
 /**

@@ -3233,7 +3233,7 @@ add_window_filter (GtkScrollbar *scrollbar)
       gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
     {
       priv->filter.running = TRUE;
-      gdk_window_add_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
+      gdk_window_add_filter (gtk_widget_get_parent_window (GTK_WIDGET (scrollbar)),
                              window_filter_func,
                              scrollbar);
     }
@@ -3252,7 +3252,7 @@ remove_window_filter (GtkScrollbar *scrollbar)
       gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
     {
       priv->filter.running = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
+      gdk_window_remove_filter (gtk_widget_get_parent_window (GTK_WIDGET (scrollbar)),
                                 window_filter_func,
                                 scrollbar);
     }
@@ -3534,23 +3534,23 @@ hijacked_scrollbar_realize (GtkWidget *widget)
 
       (* widget_class_realize) (widget);
 
-      gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
+      os_bar_set_parent (priv->bar, widget);
 
-      gdk_window_set_events (gtk_widget_get_window (widget),
-                             gdk_window_get_events (gtk_widget_get_window (widget)) |
-                             GDK_BUTTON_PRESS_MASK |
-                             GDK_BUTTON_RELEASE_MASK |
-                             GDK_POINTER_MOTION_MASK);
+      gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
       if (priv->filter.proximity)
         add_window_filter (scrollbar);
+
+      gdk_window_set_events (gtk_widget_get_parent_window (widget),
+                             gdk_window_get_events (gtk_widget_get_parent_window (widget)) |
+                             GDK_BUTTON_PRESS_MASK |
+                             GDK_BUTTON_RELEASE_MASK |
+                             GDK_POINTER_MOTION_MASK);
 
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
       calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
-
-      os_bar_set_parent (priv->bar, widget);
 
       return;
     }
@@ -4049,7 +4049,7 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
       gtk_widget_hide (priv->thumb);
 
       priv->filter.running = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
+      gdk_window_remove_filter (gtk_widget_get_parent_window (widget), window_filter_func, scrollbar);
 
       g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
                                             G_CALLBACK (toplevel_configure_event_cb), scrollbar);
