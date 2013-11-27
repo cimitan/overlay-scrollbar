@@ -716,8 +716,13 @@ create_windows (OsBar *bar)
 #endif
 
   gdk_window_ensure_native (priv->tail_window);
-  gtk_widget_register_window (priv->parent, priv->tail_window);
   gdk_window_show (priv->tail_window);
+
+#ifdef USE_GTK3
+  gtk_widget_register_window (priv->parent, priv->tail_window);
+#else
+  gdk_window_set_user_data (priv->tail_window, priv->parent);
+#endif
 
   g_object_ref_sink (priv->tail_window);
 
@@ -741,7 +746,11 @@ create_windows (OsBar *bar)
 
   gdk_window_ensure_native (priv->bar_window);
 
+#ifdef USE_GTK3
   gtk_widget_register_window (priv->parent, priv->bar_window);
+#else
+  gdk_window_set_user_data (priv->bar_window, priv->parent);
+#endif
 
   g_object_ref_sink (priv->bar_window);
 
