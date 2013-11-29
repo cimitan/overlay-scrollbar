@@ -715,6 +715,11 @@ create_windows (OsBar *bar)
                                             GDK_WA_VISUAL | GDK_WA_COLORMAP);
 #endif
 
+#ifdef USE_GTK3
+  gdk_window_ensure_native (priv->tail_window);
+  gtk_widget_register_window (priv->parent, priv->tail_window);
+#endif
+
   g_object_ref_sink (priv->tail_window);
 
   gdk_window_set_transient_for (priv->tail_window,
@@ -738,6 +743,11 @@ create_windows (OsBar *bar)
                                      GDK_WA_VISUAL | GDK_WA_COLORMAP);
 #endif 
 
+#ifdef USE_GTK3
+  gdk_window_ensure_native (priv->bar_window);
+  gtk_widget_register_window (priv->parent, priv->bar_window);
+#endif
+
   g_object_ref_sink (priv->bar_window);
 
   gdk_window_set_transient_for (priv->bar_window,
@@ -751,6 +761,8 @@ create_windows (OsBar *bar)
                                          gdk_region_new (),
 #endif
                                          0, 0);
+
+  mask_tail (bar);
 }
 
 /**
