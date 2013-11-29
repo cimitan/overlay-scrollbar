@@ -3534,23 +3534,23 @@ hijacked_scrollbar_realize (GtkWidget *widget)
 
       (* widget_class_realize) (widget);
 
-      os_bar_set_parent (priv->bar, widget);
-
       gtk_window_group_add_window (priv->window_group, GTK_WINDOW (gtk_widget_get_toplevel (widget)));
 
-      if (priv->filter.proximity)
-        add_window_filter (scrollbar);
-
-      gdk_window_set_events (gtk_widget_get_parent_window (widget),
-                             gdk_window_get_events (gtk_widget_get_parent_window (widget)) |
+      gdk_window_set_events (gtk_widget_get_window (widget),
+                             gdk_window_get_events (gtk_widget_get_window (widget)) |
                              GDK_BUTTON_PRESS_MASK |
                              GDK_BUTTON_RELEASE_MASK |
                              GDK_POINTER_MOTION_MASK);
+
+      if (priv->filter.proximity)
+        add_window_filter (scrollbar);
 
       g_signal_connect (G_OBJECT (gtk_widget_get_toplevel (widget)), "configure-event",
                         G_CALLBACK (toplevel_configure_event_cb), scrollbar);
 
       calc_layout_bar (scrollbar, gtk_adjustment_get_value (priv->adjustment));
+
+      os_bar_set_parent (priv->bar, widget);
 
       return;
     }
