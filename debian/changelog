@@ -1,3 +1,17 @@
+overlay-scrollbar (0.2.16+r359+14.04.20131129-0ubuntu1) trusty; urgency=low
+
+  [ Lars Uebernickel ]
+  * Create native windows for the scrollbar overlay and tail As of gtk
+    3.10, non-native windows are clipped to their widget's allocation.
+    The hijacked scrollbar is given a 0-width or height when horizontal)
+    allocation to make it disappear. Using native windows makes sure
+    that the overlay and tail are drawn regardless.
+
+  [ Ubuntu daily release ]
+  * Automatic snapshot from revision 381
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 29 Nov 2013 18:06:45 +0000
+
 overlay-scrollbar (0.2.16+r359+13.10.20130826-0ubuntu1) saucy; urgency=low
 
   [ Brandon Schaefer ]
