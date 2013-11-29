@@ -3233,7 +3233,7 @@ add_window_filter (GtkScrollbar *scrollbar)
       gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
     {
       priv->filter.running = TRUE;
-      gdk_window_add_filter (gtk_widget_get_parent_window (GTK_WIDGET (scrollbar)),
+      gdk_window_add_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
                              window_filter_func,
                              scrollbar);
     }
@@ -3252,7 +3252,7 @@ remove_window_filter (GtkScrollbar *scrollbar)
       gtk_widget_get_realized (GTK_WIDGET (scrollbar)))
     {
       priv->filter.running = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_parent_window (GTK_WIDGET (scrollbar)),
+      gdk_window_remove_filter (gtk_widget_get_window (GTK_WIDGET (scrollbar)),
                                 window_filter_func,
                                 scrollbar);
     }
@@ -4049,7 +4049,7 @@ hijacked_scrollbar_unrealize (GtkWidget *widget)
       gtk_widget_hide (priv->thumb);
 
       priv->filter.running = FALSE;
-      gdk_window_remove_filter (gtk_widget_get_parent_window (widget), window_filter_func, scrollbar);
+      gdk_window_remove_filter (gtk_widget_get_window (widget), window_filter_func, scrollbar);
 
       g_signal_handlers_disconnect_by_func (G_OBJECT (gtk_widget_get_toplevel (widget)),
                                             G_CALLBACK (toplevel_configure_event_cb), scrollbar);
