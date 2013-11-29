@@ -722,6 +722,9 @@ create_windows (OsBar *bar)
 
   g_object_ref_sink (priv->tail_window);
 
+  gdk_window_set_transient_for (priv->tail_window,
+                                gtk_widget_get_window (priv->parent));
+
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->tail_window,
 #ifdef USE_GTK3
@@ -746,6 +749,9 @@ create_windows (OsBar *bar)
 #endif
 
   g_object_ref_sink (priv->bar_window);
+
+  gdk_window_set_transient_for (priv->bar_window,
+                                gtk_widget_get_window (priv->parent));
 
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->bar_window,
