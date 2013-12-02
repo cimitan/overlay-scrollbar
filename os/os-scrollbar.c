@@ -4232,7 +4232,10 @@ scrollbar_mode_changed_unload_gfunc (gpointer data,
   /* The following unrealize will unmap the widget:
    * create a list of mapped scrollbars to remap them afterwards. */
   if (gtk_widget_get_mapped (widget))
-    *mapped_list = g_slist_prepend (*mapped_list, widget);
+    {
+      *mapped_list = g_slist_prepend (*mapped_list, widget);
+      gtk_widget_hide (widget);
+    }
 
   gtk_widget_unrealize (widget);
 }
@@ -4253,6 +4256,8 @@ scrollbar_mode_changed_load_end_gfunc (gpointer data,
   GtkWidget *widget;
 
   widget = GTK_WIDGET (data);
+
+  gtk_widget_show (widget);
 
   /* Remap the list of scrollbars that were unmapped by the unload gfunc.
    * Request a resize to update widget allocation. */
