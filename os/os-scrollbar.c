@@ -4257,11 +4257,9 @@ scrollbar_mode_changed_load_end_gfunc (gpointer data,
 
   widget = GTK_WIDGET (data);
 
-  gtk_widget_show (widget);
-
   /* Remap the list of scrollbars that were unmapped by the unload gfunc.
    * Request a resize to update widget allocation. */
-  gtk_widget_map (widget);
+  gtk_widget_show (widget);
   gtk_widget_queue_resize (widget);
 }
 
