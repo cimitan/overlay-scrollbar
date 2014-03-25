@@ -116,6 +116,7 @@ typedef struct
   GtkWindowGroup *window_group;
   OsAnimation *animation;
   OsBar *bar;
+  EMConverter *converter;
   OsCoordinate pointer;
   OsCoordinate thumb_win;
   OsEventFlags event;
@@ -676,6 +677,7 @@ get_private (GtkWidget *widget)
       qdata->fine_scroll_multiplier = 1.0;
       qdata->bar = os_bar_new ();
       qdata->window_group = gtk_window_group_new ();
+      qdata->converter = new_converter (widget);
       qdata->animation = os_animation_new (RATE_ANIMATION, MAX_DURATION_SCROLLING,
                                            scrolling_cb, scrolling_end_cb, widget);
 
@@ -1259,6 +1261,8 @@ swap_thumb (GtkScrollbar *scrollbar,
                         G_CALLBACK (thumb_scroll_event_cb), scrollbar);
       g_signal_connect (G_OBJECT (priv->thumb), "unmap",
                         G_CALLBACK (thumb_unmap_cb), scrollbar);
+
+      os_thumb_set_converter (OS_THUMB(priv->thumb), priv->converter);
     }
 }
 
@@ -3325,6 +3329,11 @@ hijacked_scrollbar_dispose (GObject *object)
               priv->animation = NULL;
             }
 
+          if (priv->converter != NULL)
+            {
+              cleanup_converter (priv->converter);
+            }
+
           if (priv->bar != NULL)
             {
               g_object_unref (priv->bar);
@@ -3383,8 +3392,8 @@ hijacked_scrollbar_get_preferred_width (GtkWidget *widget,
         *minimal_width = *natural_width = 0;
       else
         {
-          *minimal_width = MIN_THUMB_HEIGHT;
-          *natural_width = THUMB_HEIGHT;
+          *minimal_width = convert_pixels(priv->converter, MIN_THUMB_HEIGHT);
+          *natural_width = convert_pixels(priv->converter, THUMB_HEIGHT);
         }
 
       return;
@@ -3408,8 +3417,8 @@ hijacked_scrollbar_get_preferred_height (GtkWidget *widget,
         *minimal_height = *natural_height = 0;
       else
         {
-          *minimal_height = MIN_THUMB_HEIGHT;
-          *natural_height = THUMB_HEIGHT;
+          *minimal_height = convert_pixels(priv->converter, MIN_THUMB_HEIGHT);
+          *natural_height = convert_pixels(priv->converter, THUMB_HEIGHT);
         }
 
       return;
@@ -3720,6 +3729,10 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
       scrollbar = GTK_SCROLLBAR (widget);
       priv = get_private (widget);
 
+      int thumb_width  = convert_pixels(priv->converter, THUMB_WIDTH);
+      int thumb_height = convert_pixels(priv->converter, THUMB_HEIGHT);
+      int bar_size     = convert_pixels(priv->converter, BAR_SIZE);
+
       /* Get the side, then move thumb and bar accordingly. */
       retrieve_side (scrollbar);
 
@@ -3733,19 +3746,19 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
 
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         {
-          priv->slider.width = THUMB_WIDTH;
-          if (priv->slider.height != MIN (THUMB_HEIGHT, allocation->height))
+          priv->slider.width = thumb_width;
+          if (priv->slider.height != MIN (thumb_height, allocation->height))
             {
-              priv->slider.height = MIN (THUMB_HEIGHT, allocation->height);
+              priv->slider.height = MIN (thumb_height, allocation->height);
               os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
             }
 
           if (priv->side == OS_SIDE_RIGHT)
-            priv->bar_all.x = allocation->x - BAR_SIZE;
+            priv->bar_all.x = allocation->x - bar_size;
 
-          priv->bar_all.width = BAR_SIZE;
+          priv->bar_all.width = bar_size;
 
-          priv->thumb_all.width = THUMB_WIDTH;
+          priv->thumb_all.width = thumb_width;
 
           if (priv->side == OS_SIDE_RIGHT)
             priv->thumb_all.x = allocation->x - priv->bar_all.width;
@@ -3756,19 +3769,19 @@ hijacked_scrollbar_size_allocate (GtkWidget    *widget,
         }
       else
         {
-          priv->slider.height = THUMB_WIDTH;
-          if (priv->slider.width != MIN (THUMB_HEIGHT, allocation->width))
+          priv->slider.height = thumb_width;
+          if (priv->slider.width != MIN (thumb_height, allocation->width))
             {
-              priv->slider.width = MIN (THUMB_HEIGHT, allocation->width);
+              priv->slider.width = MIN (thumb_height, allocation->width);
               os_thumb_resize (OS_THUMB (priv->thumb), priv->slider.width, priv->slider.height);
             }
 
           if (priv->side == OS_SIDE_BOTTOM)
-            priv->bar_all.y = allocation->y - BAR_SIZE;
+            priv->bar_all.y = allocation->y - bar_size;
 
-          priv->bar_all.height = BAR_SIZE;
+          priv->bar_all.height = bar_size;
 
-          priv->thumb_all.height = THUMB_WIDTH;
+          priv->thumb_all.height = thumb_width;
 
           if (priv->side == OS_SIDE_BOTTOM)
             priv->thumb_all.y = allocation->y - priv->bar_all.height;

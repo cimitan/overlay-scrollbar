@@ -23,6 +23,7 @@
 #define __OS_PRIVATE_H__
 
 #include <gtk/gtk.h>
+#include "em-converter.h"
 
 /* Tell GCC not to export internal functions. */
 #ifdef __GNUC__
@@ -235,16 +236,19 @@ struct _OsThumbClass {
   GtkWindowClass parent_class;
 };
 
-GType      os_thumb_get_type     (void) G_GNUC_CONST;
+GType      os_thumb_get_type      (void) G_GNUC_CONST;
 
-GtkWidget* os_thumb_new          (GtkOrientation orientation);
+GtkWidget* os_thumb_new           (GtkOrientation orientation);
 
-void       os_thumb_resize       (OsThumb *thumb,
-                                  gint     width,
-                                  gint     height);
+void       os_thumb_resize        (OsThumb *thumb,
+                                   gint     width,
+                                   gint     height);
 
-void       os_thumb_set_detached (OsThumb *thumb,
-                                  gboolean detached);
+void       os_thumb_set_detached  (OsThumb *thumb,
+                                   gboolean detached);
+
+void       os_thumb_set_converter (OsThumb *thumb,
+                                   EMConverter *converter);
 
 G_END_DECLS
 

@@ -5,10 +5,12 @@ VER=
 endif
 
 source_h = \
+	$(srcdir)/em-converter.h \
 	$(srcdir)/os-private.h \
 	$(srcdir)/os-scrollbar.h
 
 source_c = \
+	$(srcdir)/em-converter.c \
 	$(srcdir)/os-animation.c \
 	$(srcdir)/os-bar.c \
 	$(srcdir)/os-log.c \

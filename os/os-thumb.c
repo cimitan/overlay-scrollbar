@@ -53,6 +53,7 @@ struct _OsThumbPrivate {
   GtkOrientation orientation;
   GtkWidget *grabbed_widget;
   OsAnimation *animation;
+  EMConverter *converter;
   OsCoordinate pointer;
   OsCoordinate pointer_root;
   OsEventFlags event;
@@ -651,6 +652,10 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
+  cairo_surface_t *surface = cairo_get_target(cr);
+  float scale = dpi_scale(priv->converter);
+  cairo_surface_set_device_scale(surface, scale, scale);
+
   radius = priv->rgba ? THUMB_RADIUS : 0;
 
 #ifdef USE_GTK3
@@ -678,6 +683,9 @@ os_thumb_expose (GtkWidget      *widget,
 
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
 #endif
+
+  width /= scale;
+  height /= scale;
 
   cairo_save (cr);
 
@@ -1267,4 +1275,25 @@ os_thumb_set_detached (OsThumb *thumb,
 
       gtk_widget_queue_draw (GTK_WIDGET (thumb));
     }
+}
+
+/**
+* os_thumb_set_converter:
+* @thumb: a #OsThumb
+* @converter: an #EMConveter
+*
+* Sets the thumbs EMConverter, needed to scale DPI dynamically
+**/
+
+void
+os_thumb_set_converter (OsThumb* thumb,
+                        EMConverter* converter)
+{
+  OsThumbPrivate *priv;
+
+  g_return_if_fail (OS_IS_THUMB (thumb));
+
+  priv = thumb->priv;
+
+  priv->converter = converter;
 }
