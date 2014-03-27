@@ -41,11 +41,6 @@ update_dpi_value(EMConverter* converter, double scale_value)
   converter->dpi     = BASE_DPI * scale_value;
 }
 
-extern void test(EMConverter* converter)
-{
-  converter->old_dpi = converter->dpi;
-}
-
 static void
 parse_font_scale_factor (EMConverter* converter)
 {
@@ -59,13 +54,24 @@ parse_font_scale_factor (EMConverter* converter)
 
   screen = gtk_widget_get_screen (converter->parent);
 
-  monitor_name = gdk_screen_get_monitor_plug_name (screen, 0);
+  monitor_name = gdk_screen_get_monitor_plug_name (screen, converter->monitor);
   if (g_variant_lookup(dict, monitor_name, "i", &raw_value))
     value = raw_value / CONVERT_TO_SCALE;
 
   g_free (monitor_name);
 
   update_dpi_value(converter, value);
+}
+
+
+void
+set_converter_monitor (EMConverter* converter, int monitor)
+{
+  if (converter->monitor != monitor)
+  {
+    converter->monitor = monitor;
+    parse_font_scale_factor(converter);
+  }
 }
 
 static void
@@ -91,7 +97,7 @@ new_converter (GtkWidget *parent)
 {
   EMConverter* converter = (EMConverter*)malloc(sizeof(EMConverter));
 
-  converter->montior        = 0;
+  converter->monitor        = 0;
   converter->dpi            = BASE_DPI;
   converter->unity_settings = NULL;
   converter->parent         = parent;

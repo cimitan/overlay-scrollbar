@@ -25,7 +25,7 @@
 #include <gtk/gtk.h>
 
 typedef struct {
-  int montior;
+  int monitor;
   int dpi;
   int old_dpi;
   GSettings *unity_settings;
@@ -35,9 +35,10 @@ typedef struct {
 
 extern double convert_pixels (EMConverter* converter, double pixel);
 extern double dpi_scale (EMConverter* converter);
-extern void test(EMConverter* converter);
+extern void set_converter_monitor (EMConverter* converter, int monitor);
 
 extern EMConverter* new_converter (GtkWidget *parent);
 extern void cleanup_converter (EMConverter* converter);
+
 
 #endif /* EM_CONVERTER_H */

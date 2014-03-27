@@ -847,6 +847,9 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
+
+  set_converter_monitor(priv->converter, n_monitor);
+
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 #else
@@ -990,6 +993,9 @@ sanitize_y (GtkScrollbar *scrollbar,
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, monitor_y);
+
+  set_converter_monitor(priv->converter, n_monitor);
+
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
 #else
