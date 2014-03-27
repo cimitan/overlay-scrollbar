@@ -652,10 +652,6 @@ os_thumb_expose (GtkWidget      *widget,
   thumb = OS_THUMB (widget);
   priv = thumb->priv;
 
-  cairo_surface_t *surface = cairo_get_target(cr);
-  float scale = dpi_scale(priv->converter);
-  cairo_surface_set_device_scale(surface, scale, scale);
-
   radius = priv->rgba ? THUMB_RADIUS : 0;
 
 #ifdef USE_GTK3
@@ -683,6 +679,10 @@ os_thumb_expose (GtkWidget      *widget,
 
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
 #endif
+
+  cairo_surface_t *surface = cairo_get_target(cr);
+  float scale = dpi_scale(priv->converter);
+  cairo_surface_set_device_scale(surface, scale, scale);
 
   width /= scale;
   height /= scale;
@@ -823,8 +823,8 @@ os_thumb_expose (GtkWidget      *widget,
   cairo_stroke (cr);
 
   /* Only draw the grip when the thumb is at full height. */
-  if ((priv->orientation == GTK_ORIENTATION_VERTICAL && height == THUMB_HEIGHT - 1) ||
-      (priv->orientation == GTK_ORIENTATION_HORIZONTAL && width == THUMB_HEIGHT - 1) )
+  if ((priv->orientation == GTK_ORIENTATION_VERTICAL && height < THUMB_HEIGHT) ||
+      (priv->orientation == GTK_ORIENTATION_HORIZONTAL && width < THUMB_HEIGHT) )
     {
       if (priv->orientation == GTK_ORIENTATION_VERTICAL)
         pat = cairo_pattern_create_linear (0, 0, 0, height);
