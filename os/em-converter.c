@@ -63,15 +63,18 @@ parse_font_scale_factor (EMConverter* converter)
   update_dpi_value(converter, value);
 }
 
-
-void
+gboolean
 set_converter_monitor (EMConverter* converter, int monitor)
 {
   if (converter->monitor != monitor)
   {
     converter->monitor = monitor;
     parse_font_scale_factor(converter);
+
+    return TRUE;
   }
+
+  return FALSE;
 }
 
 static void

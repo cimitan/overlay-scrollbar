@@ -35,7 +35,7 @@ typedef struct {
 
 extern double convert_pixels (EMConverter* converter, double pixel);
 extern double dpi_scale (EMConverter* converter);
-extern void set_converter_monitor (EMConverter* converter, int monitor);
+extern gboolean set_converter_monitor (EMConverter* converter, int monitor);
 
 extern EMConverter* new_converter (GtkWidget *parent);
 extern void cleanup_converter (EMConverter* converter);

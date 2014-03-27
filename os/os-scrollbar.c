@@ -825,6 +825,15 @@ scrolling_end_cb (gpointer user_data)
   priv->state &= ~(OS_STATE_RECONNECTING);
 }
 
+static void
+update_scrollbar_size_allocation(GtkScrollbar *scrollbar)
+{
+  /* Hack to update the size allocation if the monitor changes */
+  GtkAllocation allocation;
+  gtk_widget_get_allocation ((GTK_WIDGET (scrollbar)), &allocation);
+  hijacked_scrollbar_size_allocate (GTK_WIDGET(scrollbar), &allocation);
+}
+
 /* Sanitize x coordinate of thumb window. */
 static gint
 sanitize_x (GtkScrollbar *scrollbar,
@@ -848,7 +857,8 @@ sanitize_x (GtkScrollbar *scrollbar,
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
 
-  set_converter_monitor(priv->converter, n_monitor);
+  if (set_converter_monitor(priv->converter, n_monitor))
+    update_scrollbar_size_allocation(scrollbar);
 
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
@@ -994,7 +1004,8 @@ sanitize_y (GtkScrollbar *scrollbar,
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, x, monitor_y);
 
-  set_converter_monitor(priv->converter, n_monitor);
+  if (set_converter_monitor(priv->converter, n_monitor))
+    update_scrollbar_size_allocation(scrollbar);
 
 #ifdef USE_GTK3
   gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
