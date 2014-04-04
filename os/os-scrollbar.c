@@ -2841,7 +2841,7 @@ check_proximity (GtkScrollbar *scrollbar,
 
   priv = get_private (GTK_WIDGET (scrollbar));
 
-  proximity_size = PROXIMITY_SIZE;
+  proximity_size = convert_pixels (priv->converter, PROXIMITY_SIZE);
 
   /* If the thumb is internal, enlarge the proximity area. */
   if (priv->state & OS_STATE_INTERNAL)
