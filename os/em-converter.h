@@ -27,7 +27,6 @@
 typedef struct {
   int monitor;
   int dpi;
-  int old_dpi;
   GSettings *unity_settings;
   GtkWidget *parent;
 

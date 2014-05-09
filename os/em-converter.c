@@ -26,7 +26,7 @@
 
 #define BASE_DPI         96.0
 #define PIXELS_PER_INCH  72.0
-#define CONVERT_TO_SCALE 8.0
+#define CONVERT_TO_SCALE  8.0
 
 #define SCALE_FATOR            "scale-factor"
 #define UNITY_GSETTINGS_SCHEMA "com.ubuntu.user-interface"
@@ -37,7 +37,6 @@ update_dpi_value(EMConverter* converter, double scale_value)
   if (!converter)
     return;
 
-  converter->old_dpi = converter->dpi;
   converter->dpi     = BASE_DPI * scale_value;
 }
 
@@ -54,9 +53,12 @@ parse_font_scale_factor (EMConverter* converter)
 
   screen = gtk_widget_get_screen (converter->parent);
 
+
   monitor_name = gdk_screen_get_monitor_plug_name (screen, converter->monitor);
   if (g_variant_lookup(dict, monitor_name, "i", &raw_value))
     value = raw_value / CONVERT_TO_SCALE;
+  else
+    value = BASE_DPI;
 
   g_free (monitor_name);
 
@@ -107,8 +109,6 @@ new_converter (GtkWidget *parent)
 
   get_unity_settings(converter);
   parse_font_scale_factor(converter);
-
-  converter->old_dpi = converter->dpi;
 
   return converter;
 }
