@@ -4322,8 +4322,7 @@ gtk_module_init (void)
 
   /* We only support X11 */
 #if GTK_MAJOR_VERSION == 3
-  GdkDisplay *display = gdk_display_get_default ();
-  if (!GDK_IS_X11_DISPLAY (display))
+  if (!GDK_IS_X11_DISPLAY (gdk_display_get_default ()))
     return;
 #endif
 
