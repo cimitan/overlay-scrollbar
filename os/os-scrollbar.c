@@ -4320,6 +4320,12 @@ gtk_module_init (void)
   if (app_is_blacklisted ())
     return;
 
+  /* We only support X11 */
+#if GTK_MAJOR_VERSION == 3
+  if (!GDK_IS_X11_DISPLAY (gdk_display_get_default ()))
+    return;
+#endif
+
   /* Initialize static variables. */
   net_active_window_atom = gdk_x11_get_xatom_by_name ("_NET_ACTIVE_WINDOW");
   unity_net_workarea_region_atom = gdk_x11_get_xatom_by_name ("_UNITY_NET_WORKAREA_REGION");
