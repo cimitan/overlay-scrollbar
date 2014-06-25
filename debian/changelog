@@ -1,3 +1,15 @@
+overlay-scrollbar (0.2.16+r359+14.10.20140625-0ubuntu1) utopic; urgency=low
+
+  [ Robert Ancell ]
+  * Only attempt to run under X11
+
+  [ Lars Uebernickel ]
+  * Hide scrollbars before unmapping them Otherwise
+    gtk_widget_pop_verify_invariants throws a warning about unrealizing
+    a visible widget.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 25 Jun 2014 08:02:28 +0000
+
 overlay-scrollbar (0.2.16+r359+14.04.20131129-0ubuntu1) trusty; urgency=low
 
   [ Lars Uebernickel ]
