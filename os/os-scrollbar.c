@@ -153,6 +153,7 @@ static GSList *os_root_list = NULL;
 static GSList *scrollbar_list = NULL;
 static GQuark os_quark_placement = 0;
 static GQuark os_quark_qdata = 0;
+static gboolean theme_supports_os = FALSE;
 static ScrollbarMode scrollbar_mode = SCROLLBAR_MODE_NORMAL;
 static cairo_region_t *os_workarea = NULL;
 
@@ -3262,9 +3263,9 @@ static gboolean
 use_overlay_scrollbar (void)
 {
 #ifdef USE_GTK3
-  return scrollbar_mode != SCROLLBAR_MODE_NORMAL;
+  return theme_supports_os && scrollbar_mode != SCROLLBAR_MODE_NORMAL;
 #else
-  return scrollbar_mode != SCROLLBAR_MODE_NORMAL && ubuntu_gtk_get_use_overlay_scrollbar ();
+  return theme_supports_os && scrollbar_mode != SCROLLBAR_MODE_NORMAL && ubuntu_gtk_get_use_overlay_scrollbar ();
 #endif
 }
 
@@ -4263,16 +4264,37 @@ scrollbar_mode_changed_load_end_gfunc (gpointer data,
   gtk_widget_queue_resize (widget);
 }
 
-/* Callback called when scrollbar-mode changes. */
-static void
-scrollbar_mode_changed_cb (GObject    *object,
-                           GParamSpec *pspec,
-                           gpointer    user_data)
+static gboolean
+theme_supports_overlay_scrollbars ()
 {
-  GSettings *settings;
+  gchar *theme;
+  gchar **data_dirs;
+  gchar *filename;
+  GKeyFile *keyfile;
+  gboolean ret = FALSE;
+
+  if (g_getenv ("XDG_DATA_DIRS") == NULL)
+    return FALSE;
+
+  g_object_get (gtk_settings_get_default (), "gtk-theme-name", &theme, NULL);
+  data_dirs = g_strsplit (g_getenv ("XDG_DATA_DIRS"), ":", 0);
+  filename = g_build_path ("/", "themes", theme, "index.theme", NULL);
+  keyfile = g_key_file_new ();
+  if (g_key_file_load_from_dirs (keyfile, filename, (const gchar **) data_dirs, NULL, G_KEY_FILE_NONE, NULL))
+    ret = g_key_file_get_boolean (keyfile, "X-GNOME-Metatheme", "X-Ubuntu-UseOverlayScrollbars", NULL);
+
+  g_key_file_unref (keyfile);
+  g_free (filename);
+  g_strfreev (data_dirs);
+  g_free (theme);
+  return ret;
+}
+
+static void
+update_scrollbars ()
+{
   GSList *tmp_list, *mapped_list;
 
-  settings = G_SETTINGS (object);
   tmp_list = g_slist_copy (scrollbar_list);
 
   /* Initialize the pointer by initializing its variable. */
@@ -4280,9 +4302,6 @@ scrollbar_mode_changed_cb (GObject    *object,
 
   /* Unload all scrollbars, using previous scrollbar_mode. */
   g_slist_foreach (tmp_list, scrollbar_mode_changed_unload_gfunc, &mapped_list);
-
-  /* Update the scrollbar_mode variable. */
-  scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
 
 #ifdef USE_GTK3
   /* Load or unload custom style for overlay scrollbar. */
@@ -4304,6 +4323,27 @@ scrollbar_mode_changed_cb (GObject    *object,
 
   g_slist_free (mapped_list);
   g_slist_free (tmp_list);
+}
+
+static void
+theme_changed_cb (GObject    *object,
+                  GParamSpec *pspec,
+                  gpointer    user_data)
+{
+  theme_supports_os = theme_supports_overlay_scrollbars ();
+  update_scrollbars ();
+}
+
+/* Callback called when scrollbar-mode changes. */
+static void
+scrollbar_mode_changed_cb (GObject    *object,
+                           GParamSpec *pspec,
+                           gpointer    user_data)
+{
+  GSettings *settings = G_SETTINGS (object);
+
+  scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+  update_scrollbars ();
 }
 
 /* Suppress the warning 'missing-declarations'. */
@@ -4375,6 +4415,10 @@ gtk_module_init (void)
   g_signal_connect (settings, "changed::scrollbar-mode",
                     G_CALLBACK (scrollbar_mode_changed_cb), NULL);
   scrollbar_mode = g_settings_get_enum (settings, "scrollbar-mode");
+
+  g_signal_connect (gtk_settings_get_default (), "notify::gtk-theme-name",
+                    G_CALLBACK (theme_changed_cb), NULL);
+  theme_supports_os = theme_supports_overlay_scrollbars ();
 
 #ifdef USE_GTK3
   /* Initialize styling bits. */
