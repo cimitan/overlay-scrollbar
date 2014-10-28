@@ -4166,7 +4166,8 @@ patch_scrollbar_class_vtable (GType type)
   if (widget_class->state_changed == pre_hijacked_scrollbar_state_changed)
     widget_class->state_changed = hijacked_scrollbar_state_changed;
 #endif
-  if (widget_class->grab_notify == pre_hijacked_scrollbar_grab_notify)
+  if (pre_hijacked_scrollbar_grab_notify &&
+      widget_class->grab_notify == pre_hijacked_scrollbar_grab_notify)
     widget_class->grab_notify = hijacked_scrollbar_grab_notify;
   if (widget_class->hide == pre_hijacked_scrollbar_hide)
     widget_class->hide = hijacked_scrollbar_hide;
