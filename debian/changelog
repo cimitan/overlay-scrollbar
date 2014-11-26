@@ -1,3 +1,12 @@
+overlay-scrollbar (0.2.16+r359+15.04.20141126-0ubuntu1) vivid; urgency=low
+
+  [ Tim Lunn ]
+  * Check for null grab_notify handler before hijacking it. This fixes a
+    crash in GTK+3.14 where grab_notify is no longer used, Thanks Marius
+    Gedminas for the fix! (LP: #1386255)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 26 Nov 2014 15:18:56 +0000
+
 overlay-scrollbar (0.2.16+r359+14.10.20140625-0ubuntu1) utopic; urgency=low
 
   [ Robert Ancell ]
