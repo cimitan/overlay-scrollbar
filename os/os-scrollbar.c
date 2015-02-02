@@ -4072,6 +4072,7 @@ app_is_blacklisted (void)
   static const gchar *blacklist[] = {
     "acroread", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/876218 */
     "eclipse", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/769277 */
+    "gnome-system-monitor", /* https://bugs.launchpad.net/overlay-scrollbar/+bug/1415964 */
     "gnucash", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770304 */
     "gvim", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847943 */
     "lnotes", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/890986 */
