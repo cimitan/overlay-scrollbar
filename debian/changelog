@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.16+r359+15.04.20150202-0ubuntu1) vivid; urgency=medium
+
+  [ Iain Lane ]
+  * Don't use overlay-scrollbars in gnome-system-monitor, they cause it
+    to have a transparent background. (LP: #1415964)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Mon, 02 Feb 2015 15:48:44 +0000
+
 overlay-scrollbar (0.2.16+r359+15.04.20141126-0ubuntu1) vivid; urgency=low
 
   [ Tim Lunn ]
