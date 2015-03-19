@@ -4080,7 +4080,8 @@ app_is_blacklisted (void)
     "synaptic", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/755238 */
     "vinagre", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847932 */
     "vmplayer", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
-    "vmware"/* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "vmware", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/770625 */
+    "gnome-boxes"
   };
   static const gchar *blacklist_prefix[] = {
     "emacs", /* https://bugs.launchpad.net/ayatana-scrollbar/+bug/847940 */
