@@ -1,3 +1,10 @@
+overlay-scrollbar (0.2.16+r359+15.04.20150319-0ubuntu1) vivid; urgency=medium
+
+  [ Lars Uebernickel ]
+  * Add gnome-boxes to the blacklist
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Thu, 19 Mar 2015 09:00:11 +0000
+
 overlay-scrollbar (0.2.16+r359+15.04.20150202-0ubuntu1) vivid; urgency=medium
 
   [ Iain Lane ]
