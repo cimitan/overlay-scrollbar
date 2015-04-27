@@ -1,6 +1,8 @@
 #!/usr/bin/make -f
 
-CONFIGURE_COMMON_FLAGS = --disable-static --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) 
+CONFIGURE_COMMON_FLAGS = --disable-static \
+			 --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+			 --disable-silent-rules
 
 export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
 
