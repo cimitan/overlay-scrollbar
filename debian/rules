@@ -19,3 +19,4 @@ override_dh_install:
 	dh_install --fail-missing
 	find debian/overlay-scrollbar-gtk2 -name \*.la -delete
 
+override_dh_makeshlibs:
