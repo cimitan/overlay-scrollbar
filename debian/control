@@ -17,26 +17,11 @@ Homepage: http://launchpad.net/ayatana-scrollbar
 Vcs-Bzr: https://code.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/trunk
 Vcs-Browser: https://bazaar.launchpad.net/~ayatana-scrollbar-team/overlay-scrollbar/trunk/files
 
-Package: overlay-scrollbar-gtk3
-Section: libs
-Architecture: any
-Multi-Arch: same
-Depends: overlay-scrollbar,
-         ${misc:Depends},
-         ${shlibs:Depends},
-Replaces: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348),
-          liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348),
-Conflicts: liboverlay-scrollbar3-0.2-0 (<< 0.2.16+r348),
-           liboverlay-scrollbar3-0.2-dev (<< 0.2.16+r348),
-Description: GTK 3 module for overlay scrollbars
- Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
-
 Package: overlay-scrollbar-gtk2
 Section: libs
 Architecture: any
 Multi-Arch: same
-Depends: overlay-scrollbar,
-         ${misc:Depends},
+Depends: ${misc:Depends},
          ${shlibs:Depends},
 Replaces: liboverlay-scrollbar-0.2-0 (<< 0.2.16+r348),
           liboverlay-scrollbar-0.2-dev (<< 0.2.16+r348),
@@ -49,7 +34,6 @@ Package: overlay-scrollbar
 Section: libs
 Architecture: all
 Depends: overlay-scrollbar-gtk2,
-         overlay-scrollbar-gtk3,
          ${misc:Depends},
 Description: Scrollbar overlay
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.

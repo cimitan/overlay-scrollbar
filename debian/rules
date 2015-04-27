@@ -1,9 +1,5 @@
 #!/usr/bin/make -f
 
-FLAVORS = gtk2 gtk3
-
-CONFIGURE_FLAGS_gtk2 = --with-gtk=2
-CONFIGURE_FLAGS_gtk3 = --with-gtk=3
 CONFIGURE_COMMON_FLAGS = --disable-static --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) 
 
 export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
@@ -14,26 +10,10 @@ export DPKG_GENSYMBOLS_CHECK_LEVEL = 4
 override_dh_autoreconf:
 	NOCONFIGURE=1 dh_autoreconf ./autogen.sh
 
-override_dh_auto_configure: $(FLAVORS:%=doconfigure-%)
-
-doconfigure-%:
-	dh_auto_configure --builddirectory=build/$* -- \
-		$(CONFIGURE_FLAGS_$*) \
-		$(CONFIGURE_COMMON_FLAGS)
-
-override_dh_auto_build: $(FLAVORS:%=dobuild-%)
-
-dobuild-%:
-	dh_auto_build --builddirectory=build/$*
-
-override_dh_auto_install: $(FLAVORS:%=doinstall-%)
-
-doinstall-%:
-	dh_auto_install --sourcedir=build/$* --destdir=debian/tmp/$*
+override_dh_auto_configure:
+	dh_auto_configure -- $(CONFIGURE_COMMON_FLAGS)
 
 override_dh_install:
-	find debian/tmp -name \*.la -delete
-	rm -rf debian/tmp/gtk2/usr/share/glib-2.0/schemas
-	rm -f debian/tmp/gtk2/etc/X11/Xsession.d/81overlay-scrollbar
 	dh_install --fail-missing
+	find debian/overlay-scrollbar-gtk2 -name \*.la -delete
 

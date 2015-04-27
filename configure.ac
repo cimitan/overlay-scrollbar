@@ -38,26 +38,13 @@ GLIB_GSETTINGS
 
 AC_SUBST(glib_req, 2.26.0)
 AC_SUBST(gtk_req, 2.22.0)
-AC_SUBST(gtk3_req, 3.4.0)
 AC_SUBST(cairo_req, 1.10)
 
-AC_ARG_WITH([gtk],
-            [AS_HELP_STRING([--with-gtk], [Which version of gtk to use @<:@default=3@:>@])],
-            [],
-            [with_gtk=3])
-AS_IF([test "x$with_gtk" = x3],
-      [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-3.0 >= $gtk3_req cairo >= $cairo_req)
-       AC_SUBST(DEPS_CFLAGS)
-       AC_SUBST(DEPS_LIBS)],
-      [test "x$with_gtk" = x2],
-      [PKG_CHECK_MODULES(DEPS, glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req)
-       AC_SUBST(DEPS_CFLAGS)
-       AC_SUBST(DEPS_LIBS)],
-      [AC_MSG_FAILURE([Value for --with-gtk was neither 2 nor 3])]
-)
-AM_CONDITIONAL(USE_GTK3, [test "x$with_gtk" = x3])
+PKG_CHECK_MODULES(DEPS, [glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req],
+                  [AC_SUBST(DEPS_CFLAGS)
+                  AC_SUBST(DEPS_LIBS)])
 
-GTK_MODULES_DIR="${libdir}/gtk-"$with_gtk".0/modules"
+GTK_MODULES_DIR="${libdir}/gtk-2.0/modules"
 AC_SUBST(GTK_MODULES_DIR)
 
 # Check if build tests
@@ -146,7 +133,6 @@ echo ""
 echo "  overlay-scrollbar $PACKAGE_VERSION"
 echo "  ======================="
 echo ""
-echo "  Gtk+:   ${with_gtk}"
 echo "  Tests:  ${enable_tests}"
 echo "  Debug:  ${enable_debug}"
 echo "  Prefix: ${prefix}"

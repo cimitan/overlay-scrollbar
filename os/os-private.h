@@ -196,10 +196,6 @@ void   os_bar_connect       (OsBar       *bar,
 void   os_bar_move_resize   (OsBar       *bar,
                              GdkRectangle mask);
 
-void   os_bar_set_active    (OsBar   *bar,
-                             gboolean active,
-                             gboolean animate);
-
 void   os_bar_set_detached  (OsBar   *bar,
                              gboolean detached,
                              gboolean animate);

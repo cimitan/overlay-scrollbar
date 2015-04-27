@@ -250,18 +250,10 @@ main (int   argc,
   gtk_window_set_title (GTK_WINDOW (window), "Vertical \"Overlay Scrollbar\" test");
 
   /* vbox */
-#ifdef USE_GTK3
-  vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
-#else
   vbox = gtk_vbox_new (TRUE, 2);
-#endif
 
   /* hbox */
-#ifdef USE_GTK3
-  hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 2);
-#else
   hbox = gtk_hbox_new (TRUE, 2);
-#endif
 
   /* scrolled_window_text0 */
   scrolled_window_text0 = gtk_scrolled_window_new (NULL, NULL);
