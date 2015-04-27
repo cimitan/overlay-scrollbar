@@ -19,6 +19,6 @@ liboverlay_scrollbar_la_SOURCES = $(source_h) $(source_c)
 
 liboverlay_scrollbar_la_CFLAGS = $(OS_CFLAGS)
 
-liboverlay_scrollbar_la_LIBADD = $(OS_LIBADD)
+liboverlay_scrollbar_la_LIBADD = $(OS_LIBADD) -lm
 
 liboverlay_scrollbar_la_LDFLAGS = $(OS_LDFLAGS)

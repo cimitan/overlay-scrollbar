@@ -40,7 +40,7 @@ AC_SUBST(glib_req, 2.26.0)
 AC_SUBST(gtk_req, 2.22.0)
 AC_SUBST(cairo_req, 1.10)
 
-PKG_CHECK_MODULES(DEPS, [glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req],
+PKG_CHECK_MODULES(DEPS, [glib-2.0 >= $glib_req gtk+-2.0 >= $gtk_req cairo >= $cairo_req gmodule-2.0 >= $glib_req x11],
                   [AC_SUBST(DEPS_CFLAGS)
                   AC_SUBST(DEPS_LIBS)])
 
