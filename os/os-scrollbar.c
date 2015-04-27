@@ -2810,11 +2810,6 @@ window_filter_func (GdkXEvent *gdkxevent,
       /* Get the motion_notify_event trough XEvent. */
       if (!priv->window_button_press && os_xevent == OS_XEVENT_MOTION)
       {
-          /* React to motion_notify_event
-           * and set the state accordingly. */
-          if (!is_insensitive (scrollbar) && !priv->active_window)
-              bar_set_state_from_pointer (scrollbar, event_x, event_y);
-
           /* Proximity area. */
           if (check_proximity (scrollbar, event_x, event_y))
           {
