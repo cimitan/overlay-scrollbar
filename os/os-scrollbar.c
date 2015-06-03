@@ -782,7 +782,12 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &gdk_rect);
+
+  rect.x = gdk_rect.x;
+  rect.y = gdk_rect.y;
+  rect.width = gdk_rect.width;
+  rect.height = gdk_rect.height;
 
   screen_x = rect.x;
   screen_width = rect.x + rect.width;
@@ -2725,132 +2730,132 @@ window_filter_func (GdkXEvent *gdkxevent,
       /* Deal with X core events, when apps (like rhythmbox),
        * are using gdk_disable_miltidevice (). */
       if (xev->type == ButtonPress)
-          os_xevent = OS_XEVENT_BUTTON_PRESS;
+        os_xevent = OS_XEVENT_BUTTON_PRESS;
 
       if (xev->type == ButtonRelease)
-      {
+        {
           os_xevent = OS_XEVENT_BUTTON_RELEASE;
           event_x = xev->xbutton.x;
           event_y = xev->xbutton.y;
-      }
+        }
 
       if (xev->type == LeaveNotify)
-          os_xevent = OS_XEVENT_LEAVE;
+        os_xevent = OS_XEVENT_LEAVE;
 
       if (xev->type == MotionNotify)
-      {
+        {
           os_xevent = OS_XEVENT_MOTION;
           event_x = xev->xmotion.x;
           event_y = xev->xmotion.y;
-      }
+        }
 
       if (os_xevent == OS_XEVENT_BUTTON_PRESS)
-      {
+        {
           priv->window_button_press = TRUE;
 
           if (priv->source_show_thumb_id != 0)
-          {
+            {
               g_source_remove (priv->source_show_thumb_id);
               priv->source_show_thumb_id = 0;
-          }
+            }
 
           gtk_widget_hide (priv->thumb);
-      }
+        }
 
       if (priv->window_button_press && os_xevent == OS_XEVENT_BUTTON_RELEASE)
-      {
+        {
           priv->window_button_press = FALSE;
 
           /* Proximity area. */
           if (check_proximity (scrollbar, event_x, event_y))
-          {
+            {
               priv->hidable_thumb = FALSE;
 
               adjust_thumb_position (scrollbar, event_x, event_y);
 
               if (priv->state & OS_STATE_LOCKED)
-                  return GDK_FILTER_CONTINUE;
+                return GDK_FILTER_CONTINUE;
 
               if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid) && !priv->resizing_paned)
-                  show_thumb (scrollbar);
-          }
-      }
+                show_thumb (scrollbar);
+            }
+        }
 
       if (os_xevent == OS_XEVENT_LEAVE)
-      {
+        {
           priv->window_button_press = FALSE;
 
           if (gtk_widget_get_mapped (priv->thumb) &&
-                  !(priv->event & OS_EVENT_BUTTON_PRESS))
-          {
+              !(priv->event & OS_EVENT_BUTTON_PRESS))
+            {
               priv->hidable_thumb = TRUE;
 
               if (priv->source_hide_thumb_id != 0)
-                  g_source_remove (priv->source_hide_thumb_id);
+                g_source_remove (priv->source_hide_thumb_id);
 
               priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                      hide_thumb_cb,
-                      scrollbar);
-          }
+                                                          hide_thumb_cb,
+                                                          scrollbar);
+            }
 
           if (priv->source_show_thumb_id != 0)
-          {
+            {
               g_source_remove (priv->source_show_thumb_id);
               priv->source_show_thumb_id = 0;
-          }
+            }
 
           if (priv->source_unlock_thumb_id != 0)
-              g_source_remove (priv->source_unlock_thumb_id);
+            g_source_remove (priv->source_unlock_thumb_id);
 
           priv->source_unlock_thumb_id = g_timeout_add (TIMEOUT_TOPLEVEL_HIDE,
-                  unlock_thumb_cb,
-                  scrollbar);
-      }
+                                                        unlock_thumb_cb,
+                                                        scrollbar);
+        }
 
       /* Get the motion_notify_event trough XEvent. */
       if (!priv->window_button_press && os_xevent == OS_XEVENT_MOTION)
-      {
+        {
           /* Proximity area. */
           if (check_proximity (scrollbar, event_x, event_y))
-          {
+            {
               priv->hidable_thumb = FALSE;
 
               if (priv->source_hide_thumb_id != 0)
-              {
+                {
                   g_source_remove (priv->source_hide_thumb_id);
                   priv->source_hide_thumb_id = 0;
-              }
+                }
 
               adjust_thumb_position (scrollbar, event_x, event_y);
 
               if (priv->state & OS_STATE_LOCKED)
-                  return GDK_FILTER_CONTINUE;
+                return GDK_FILTER_CONTINUE;
 
               if (!is_touch_mode (GTK_WIDGET (scrollbar), sourceid) && !priv->resizing_paned)
-                  show_thumb (scrollbar);
-          }
+                show_thumb (scrollbar);
+            }
           else
-          {
+            {
               priv->state &= ~(OS_STATE_LOCKED);
 
               if (priv->source_show_thumb_id != 0)
-              {
+                {
                   g_source_remove (priv->source_show_thumb_id);
                   priv->source_show_thumb_id = 0;
-              }
+                }
 
               if (gtk_widget_get_mapped (priv->thumb) &&
-                      !(priv->event & OS_EVENT_BUTTON_PRESS))
-              {
+                  !(priv->event & OS_EVENT_BUTTON_PRESS))
+                {
                   priv->hidable_thumb = TRUE;
 
                   if (priv->source_hide_thumb_id == 0)
-                      priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
-                              hide_thumb_cb,
-                              scrollbar);
-              }
-          }
-      }
+                    priv->source_hide_thumb_id = g_timeout_add (TIMEOUT_PROXIMITY_HIDE,
+                                                                hide_thumb_cb,
+                                                                scrollbar);
+                }
+            }
+        }
     }
 
   return GDK_FILTER_CONTINUE;
