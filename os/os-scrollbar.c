@@ -782,7 +782,12 @@ sanitize_x (GtkScrollbar *scrollbar,
 
   screen = gtk_widget_get_screen (GTK_WIDGET (scrollbar));
   n_monitor = gdk_screen_get_monitor_at_point (screen, monitor_x, y);
-  gdk_screen_get_monitor_geometry (screen, n_monitor, &rect);
+  gdk_screen_get_monitor_geometry (screen, n_monitor, &gdk_rect);
+
+  rect.x = gdk_rect.x;
+  rect.y = gdk_rect.y;
+  rect.width = gdk_rect.width;
+  rect.height = gdk_rect.height;
 
   screen_x = rect.x;
   screen_width = rect.x + rect.width;
