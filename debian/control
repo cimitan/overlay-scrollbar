@@ -34,5 +34,7 @@ Section: libs
 Architecture: all
 Depends: overlay-scrollbar-gtk2,
          ${misc:Depends},
+Conflicts: overlay-scrollbar-gtk3
+Replaces: overlay-scrollbar-gtk3
 Description: Scrollbar overlay
  Overlay scrollbar is a GtkModule enabling a dynamic overlay behavior.
