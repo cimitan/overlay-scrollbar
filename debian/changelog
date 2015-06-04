@@ -1,4 +1,4 @@
-overlay-scrollbar (0.2.17+r359+15.04.20150319-0ubuntu2) UNRELEASED; urgency=medium
+overlay-scrollbar (0.2.17.1+15.10.20150604-0ubuntu1) UNRELEASED; urgency=medium
 
   * Drop overlay-scrollbar-gtk3 - this is no longer needed with GTK 3.16.
     Force it to be removed, since loading it with GTK 3.16 causes visual
