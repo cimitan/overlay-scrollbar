@@ -40,14 +40,12 @@
 /* Number of tolerance pixels, before hiding the thumb. */
 #define TOLERANCE_FADE 3
 
-#ifndef USE_GTK3
 typedef struct {
   gdouble red;
   gdouble green;
   gdouble blue;
   gdouble alpha;
 } GdkRGBA;
-#endif
 
 struct _OsThumbPrivate {
   GtkOrientation orientation;
@@ -71,11 +69,7 @@ enum {
 static gboolean os_thumb_button_press_event (GtkWidget *widget, GdkEventButton *event);
 static gboolean os_thumb_button_release_event (GtkWidget *widget, GdkEventButton *event);
 static void os_thumb_composited_changed (GtkWidget *widget);
-#ifdef USE_GTK3
-static gboolean os_thumb_draw (GtkWidget *widget, cairo_t *cr);
-#else
 static gboolean os_thumb_expose (GtkWidget *widget, GdkEventExpose *event);
-#endif
 static gboolean os_thumb_leave_notify_event (GtkWidget *widget, GdkEventCrossing *event);
 static gboolean os_thumb_motion_notify_event (GtkWidget *widget, GdkEventMotion *event);
 static void os_thumb_map (GtkWidget *widget);
@@ -145,11 +139,7 @@ os_thumb_class_init (OsThumbClass *class)
   widget_class->button_press_event   = os_thumb_button_press_event;
   widget_class->button_release_event = os_thumb_button_release_event;
   widget_class->composited_changed   = os_thumb_composited_changed;
-#ifdef USE_GTK3
-  widget_class->draw                 = os_thumb_draw;
-#else
   widget_class->expose_event         = os_thumb_expose;
-#endif
   widget_class->leave_notify_event   = os_thumb_leave_notify_event;
   widget_class->map                  = os_thumb_map;
   widget_class->motion_notify_event  = os_thumb_motion_notify_event;
@@ -602,7 +592,6 @@ shade_gdk_rgba (const GdkRGBA *a,
   b->alpha = a->alpha;
 }
 
-#ifndef USE_GTK3
 /* Convert a GdkColor to GdkRGBA. */
 static void
 convert_gdk_color_to_gdk_rgba (GdkColor *color,
@@ -614,7 +603,6 @@ convert_gdk_color_to_gdk_rgba (GdkColor *color,
 
   rgba->alpha = 1.0;
 }
-#endif
 
 enum {
   ACTION_NORMAL,
@@ -624,19 +612,12 @@ enum {
 };
 
 static gboolean
-#ifdef USE_GTK3
-os_thumb_draw (GtkWidget *widget,
-               cairo_t   *cr)
-{
-  GtkStyleContext *style_context;
-#else
 os_thumb_expose (GtkWidget      *widget,
                  GdkEventExpose *event)
 {
   GtkAllocation allocation;
   cairo_t *cr;
   GtkStyle *style;
-#endif
   GdkRGBA bg, bg_active, bg_selected;
   GdkRGBA bg_arrow_up, bg_arrow_down;
   GdkRGBA bg_shadow, bg_dark_line, bg_bright_line;
@@ -653,17 +634,6 @@ os_thumb_expose (GtkWidget      *widget,
 
   radius = priv->rgba ? THUMB_RADIUS : 0;
 
-#ifdef USE_GTK3
-  width = gtk_widget_get_allocated_width (widget);
-  height = gtk_widget_get_allocated_height (widget);
-
-  style_context = gtk_widget_get_style_context (widget);
-
-  gtk_style_context_get_background_color (style_context, gtk_widget_get_state_flags (widget), &bg);
-  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_ACTIVE, &bg_active);
-  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &bg_selected);
-  gtk_style_context_get_color (style_context, gtk_widget_get_state_flags (widget), &arrow_color);
-#else
   gtk_widget_get_allocation (widget, &allocation);
  
   width = allocation.width;
@@ -677,7 +647,6 @@ os_thumb_expose (GtkWidget      *widget,
   convert_gdk_color_to_gdk_rgba (&style->fg[gtk_widget_get_state (widget)], &arrow_color);
 
   cr = gdk_cairo_create (gtk_widget_get_window (widget));
-#endif
 
   cairo_save (cr);
 
@@ -912,12 +881,8 @@ os_thumb_expose (GtkWidget      *widget,
     }
 
   cairo_restore (cr);
-
   cairo_restore (cr);
-
-#ifndef USE_GTK3
   cairo_destroy (cr);
-#endif
 
   return FALSE;
 }
@@ -1037,16 +1002,6 @@ static void
 os_thumb_screen_changed (GtkWidget *widget,
                          GdkScreen *old_screen)
 {
-#ifdef USE_GTK3
-  GdkScreen *screen;
-  GdkVisual *visual;
-
-  screen = gtk_widget_get_screen (widget);
-  visual = gdk_screen_get_rgba_visual (screen);
-
- if (visual)
-   gtk_widget_set_visual (widget, visual);
-#else
   GdkScreen *screen;
   GdkColormap *colormap;
 
@@ -1055,7 +1010,6 @@ os_thumb_screen_changed (GtkWidget *widget,
 
   if (colormap)
     gtk_widget_set_colormap (widget, colormap);
-#endif
 }
 
 static gboolean

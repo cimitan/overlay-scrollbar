@@ -1,8 +1,4 @@
-if USE_GTK3
-VER=3
-else
 VER=
-endif
 
 source_h = \
 	$(srcdir)/os-private.h \
@@ -21,12 +17,8 @@ liboverlay_scrollbardir = $(GTK_MODULES_DIR)
 
 liboverlay_scrollbar_la_SOURCES = $(source_h) $(source_c)
 
-if USE_GTK3
-liboverlay_scrollbar_la_CFLAGS = $(OS_CFLAGS) -DUSE_GTK3
-else
 liboverlay_scrollbar_la_CFLAGS = $(OS_CFLAGS)
-endif
 
-liboverlay_scrollbar_la_LIBADD = $(OS_LIBADD)
+liboverlay_scrollbar_la_LIBADD = $(OS_LIBADD) -lm
 
 liboverlay_scrollbar_la_LDFLAGS = $(OS_LDFLAGS)

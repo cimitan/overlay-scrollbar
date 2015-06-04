@@ -62,13 +62,8 @@ static void os_bar_finalize (GObject *object);
 static void
 draw_bar (OsBar *bar)
 {
-#ifdef USE_GTK3
-  GdkRGBA c1, c2, color;
-  GtkStyleContext *style_context;
-#else
   GdkColor color;
   GtkStyle *style;
-#endif
   OsBarPrivate *priv;
   gfloat weight;
 
@@ -76,27 +71,6 @@ draw_bar (OsBar *bar)
 
   weight = priv->weight;
 
-#ifdef USE_GTK3
-  style_context = gtk_widget_get_style_context (priv->parent);
-
-  if (priv->active == FALSE)
-    {
-      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_INSENSITIVE, &c1);
-      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &c2);
-    }
-  else
-    {
-      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_SELECTED, &c1);
-      gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_INSENSITIVE, &c2);
-    }
-
-  color.red   = weight * c1.red   + (1.0 - weight) * c2.red;
-  color.green = weight * c1.green + (1.0 - weight) * c2.green;
-  color.blue  = weight * c1.blue  + (1.0 - weight) * c2.blue;
-  color.alpha = 1.0;
-
-  gdk_window_set_background_rgba (priv->bar_window, &color);
-#else
   style = gtk_widget_get_style (priv->parent);
 
   color = style->bg[GTK_STATE_SELECTED];
@@ -104,7 +78,6 @@ draw_bar (OsBar *bar)
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->bar_window), &color, FALSE, TRUE);
 
   gdk_window_set_background (priv->bar_window, &color);
-#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -113,26 +86,12 @@ draw_bar (OsBar *bar)
 static void
 draw_tail (OsBar *bar)
 {
-#ifdef USE_GTK3
-  GdkRGBA color;
-  GtkStyleContext *style_context;
-#else
   GdkColor color;
   GtkStyle *style;
-#endif
   OsBarPrivate *priv;
 
   priv = bar->priv;
 
-#ifdef USE_GTK3
-  style_context = gtk_widget_get_style_context (priv->parent);
-
-  gtk_style_context_get_background_color (style_context, GTK_STATE_FLAG_ACTIVE, &color);
-
-  color.alpha = 1.0;
-
-  gdk_window_set_background_rgba (priv->tail_window, &color);
-#else
   style = gtk_widget_get_style (priv->parent);
 
   color = style->bg[GTK_STATE_ACTIVE];
@@ -140,7 +99,6 @@ draw_tail (OsBar *bar)
   gdk_colormap_alloc_color (gdk_drawable_get_colormap (priv->tail_window), &color, FALSE, TRUE);
 
   gdk_window_set_background (priv->tail_window, &color);
-#endif
 
   gdk_window_invalidate_rect (gtk_widget_get_window (priv->parent), &priv->allocation, TRUE);
 }
@@ -222,19 +180,9 @@ os_bar_window_shape_combine_region (GdkWindow          * window,
                                     gint                 offset_x,
                                     gint                 offset_y)
 {
-#ifdef USE_GTK3
-
-  cairo_region_t * shape_region = cairo_region_create_rectangle (shape_rect);
-  gdk_window_shape_combine_region (window, shape_region, offset_x, offset_y);
-  cairo_region_destroy (shape_region);
-
-#else
-
   GdkRegion * shape_region = gdk_region_rectangle (shape_rect);
   gdk_window_shape_combine_region (window, shape_region, offset_x, offset_y);
   gdk_region_destroy (shape_region);
-
-#endif
 }
 
 /* Callback called by the retract-tail animation. */
@@ -545,60 +493,6 @@ os_bar_move_resize (OsBar       *bar,
 }
 
 /**
- * os_bar_set_active:
- * @bar: a #OsBar
- * @active: whether is active or not
- * @animate: whether animate it or not
- *
- * Changes the activity state of @bar.
- **/
-void
-os_bar_set_active (OsBar   *bar,
-                   gboolean active,
-                   gboolean animate)
-{
-#ifdef USE_GTK3
-  OsBarPrivate *priv;
-
-  g_return_if_fail (OS_IS_BAR (bar));
-
-  priv = bar->priv;
-
-  /* Set the state and draw even if there's a state_animation running, that is
-   * (!animate && os_animation_is_running (priv->state_animation)). */
-  if ((priv->active != active) ||
-      (!animate && os_animation_is_running (priv->state_animation)))
-    {
-      gboolean visible;
-
-      priv->active = active;
-
-      if (priv->parent == NULL)
-        return;
-
-      visible = gdk_window_is_visible (priv->bar_window);
-
-      if (visible)
-        os_animation_stop (priv->state_animation, NULL);
-
-      if (visible && animate)
-        {
-          os_animation_set_duration (priv->state_animation, priv->active ? DURATION_FADE_IN :
-                                                                           DURATION_FADE_OUT);
-          os_animation_start (priv->state_animation);
-        }
-
-      if (!visible || !animate)
-        {
-          priv->weight = 1.0f;
-
-          draw_bar (bar);
-        }
-    }
-#endif
-}
-
-/**
  * os_bar_set_detached:
  * @bar: a #OsBar
  * @detached: whether the bar is detached or not
@@ -702,23 +596,12 @@ create_windows (OsBar *bar)
   attributes.wclass = GDK_INPUT_OUTPUT;
   attributes.window_type = GDK_WINDOW_CHILD;
   attributes.visual = gtk_widget_get_visual (priv->parent);
-#ifndef USE_GTK3
   attributes.colormap = gtk_widget_get_colormap (priv->parent);
-#endif
 
   /* tail_window. */
   priv->tail_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                             &attributes,
-#ifdef USE_GTK3
-                                            GDK_WA_VISUAL);
-#else
                                             GDK_WA_VISUAL | GDK_WA_COLORMAP);
-#endif
-
-#ifdef USE_GTK3
-  gdk_window_ensure_native (priv->tail_window);
-  gtk_widget_register_window (priv->parent, priv->tail_window);
-#endif
 
   g_object_ref_sink (priv->tail_window);
 
@@ -727,26 +610,13 @@ create_windows (OsBar *bar)
 
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->tail_window,
-#ifdef USE_GTK3
-                                         cairo_region_create (),
-#else
                                          gdk_region_new (),
-#endif
                                          0, 0);
 
   /* bar_window. */
   priv->bar_window = gdk_window_new (gtk_widget_get_window (priv->parent),
                                      &attributes,
-#ifdef USE_GTK3
-                                     GDK_WA_VISUAL);
-#else
                                      GDK_WA_VISUAL | GDK_WA_COLORMAP);
-#endif 
-
-#ifdef USE_GTK3
-  gdk_window_ensure_native (priv->bar_window);
-  gtk_widget_register_window (priv->parent, priv->bar_window);
-#endif
 
   g_object_ref_sink (priv->bar_window);
 
@@ -755,11 +625,7 @@ create_windows (OsBar *bar)
 
   /* FIXME(Cimi) maybe this is not required with 0 as event mask. */
   gdk_window_input_shape_combine_region (priv->bar_window,
-#ifdef USE_GTK3
-                                         cairo_region_create (),
-#else
                                          gdk_region_new (),
-#endif
                                          0, 0);
 
   mask_tail (bar);
