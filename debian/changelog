@@ -1,3 +1,11 @@
+overlay-scrollbar (0.2.17.1+16.04.20151117-0ubuntu1) xenial; urgency=medium
+
+  * Have the -gtk2 library depend on overlay-scrollbar. It contains
+    gsettings schemas and configuration, so having it this way round is
+    right.
+
+ -- Iain Lane <iain@orangesquash.org.uk>  Tue, 17 Nov 2015 17:04:58 +0000
+
 overlay-scrollbar (0.2.17.1+15.10.20150604.1-0ubuntu1) wily; urgency=medium
 
   [ Iain Lane ]
