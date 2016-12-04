@@ -33,6 +33,7 @@ Description: GTK 2 module for overlay scrollbars
 Package: overlay-scrollbar
 Section: libs
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends},
 Conflicts: overlay-scrollbar-gtk3
 Replaces: overlay-scrollbar-gtk3
